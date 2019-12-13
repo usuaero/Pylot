@@ -1,0 +1,32 @@
+{
+    "tag" : "Example of flight simulator input.",
+    "run" : {
+        "real_time" : false,
+        "dt" : 0.01,
+        "start_time" : 0.0,
+        "final_time" : 100.0,
+        "state_output" : "sim_states.txt"
+    },
+    "solver" : {
+        "type" : "linear"
+    },
+    "units" : "English",
+    "scene" : {
+        "atmosphere" : {
+            "density" : 0.0023769,
+            "wind" : "russell_babbs_thermals.csv"
+        },
+        "aircraft" : {
+            "my_airplane" : {
+                "file" : "airplane.json",
+                "initial" : {
+                    "velocity" : 175,
+                    "position" : [0.0, 0.0, -500.0],
+                    "climb" : 20.0,
+                    "bank" : 30.0,
+                    "heading" : 0.0
+                }
+            }
+        }
+    }
+}
