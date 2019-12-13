@@ -5,19 +5,25 @@ import numpy as np
 import machupX as mx
 from abc import abstractmethod
 
-class BaseAirplane:
+class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
 
     Parameters
     ----------
+    name : str
+        Name of the aircraft.
+
     input_dict : dict
         Dictionary describing the airplane.
     """
 
-    def __init__(self, input_dict):
+    def __init__(self, name, input_dict):
 
         # Store input
         self._input_dict = input_dict
+
+        # Initialize state
+        self.y = np.zeros(13)
 
 
     def dy_dt(self, t):
@@ -29,14 +35,38 @@ class BaseAirplane:
         pass
 
 
-class LinearAirplane(BaseAirplane):
+    @abstractmethod
+    def trim(self, **kwargs):
+        pass
+
+
+class LinearAirplane(BaseAircraft):
     """An airplane defined by a linearized model of aerodynamic coefficients.
     
     Parameters
     ----------
+    name : str
+        Name of the aircraft.
+
     input_dict : dict
         Dictionary describing the airplane.
     """
 
-    def __init__(self, input_dict):
-        super.__init__(input_dict)
+    def __init__(self, name, input_dict):
+        super.__init__(name, input_dict)
+
+
+class MachUpXAirplane(BaseAircraft):
+    """An airplane defined by MachUpX.
+    
+    Parameters
+    ----------
+    name : str
+        Name of the aircraft.
+
+    input_dict : dict
+        Dictionary describing the airplane.
+    """
+
+    def __init__(self, name, input_dict):
+        super.__init__(name, input_dict)
