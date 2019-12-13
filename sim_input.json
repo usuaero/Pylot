@@ -5,10 +5,7 @@
         "dt" : 0.01,
         "start_time" : 0.0,
         "final_time" : 100.0,
-        "state_output" : "sim_states.txt"
-    },
-    "solver" : {
-        "type" : "linear"
+        "enable_graphics" : false
     },
     "units" : "English",
     "scene" : {
@@ -25,7 +22,8 @@
                     "climb" : 20.0,
                     "bank" : 30.0,
                     "heading" : 0.0
-                }
+                },
+                "state_output" : "states.txt"
             }
         }
     }
