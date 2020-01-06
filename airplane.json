@@ -59,6 +59,12 @@
             }
         }
     },
+    "aero_model" : {
+        "type" : "linearized_coefficients"
+        or
+        "type" : "MachUpX",
+        "solver" : "linear"
+    },
     "coefficients" : {
         "CD" : 0.05,
         "CL,a" : 4.40,
