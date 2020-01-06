@@ -1,6 +1,6 @@
 {
     "tag" : "Example of flight simulator input.",
-    "run" : {
+    "simulation" : {
         "real_time" : false,
         "dt" : 0.01,
         "start_time" : 0.0,
@@ -8,23 +8,34 @@
         "enable_graphics" : false
     },
     "units" : "English",
-    "scene" : {
-        "atmosphere" : {
-            "density" : 0.0023769,
-            "wind" : "russell_babbs_thermals.csv"
+    "atmosphere" : {
+        "density" : "standard" or some constant value
+    },
+    "aircraft" : {
+        "name" : "my_airplane",
+        "file" : "airplane.json",
+        "aero_model" : {
+            "type" : "coefficients"
+            or
+            "type" : "MachUpX",
+            "solver" : "linear"
         },
-        "aircraft" : {
-            "my_airplane" : {
-                "file" : "airplane.json",
-                "initial" : {
-                    "velocity" : 175,
-                    "position" : [0.0, 0.0, -500.0],
-                    "climb" : 20.0,
-                    "bank" : 30.0,
-                    "heading" : 0.0
-                },
-                "state_output" : "states.txt"
-            }
-        }
+        "trim" : {
+            "velocity" : 175,
+            "position" : [0.0, 0.0, -500.0],
+            "climb" : 20.0,
+            "bank" : 30.0,
+            "heading" : 0.0,
+            "verbose" : true
+        },
+        or
+        "initial_state" : {
+            "position" : [0.0, 0.0, -500.0],
+            "velocity" : [50.0, 0.0, 0.0],
+            "angular_rates" : [0.0, 0.0, 0.0],
+            "orientation" : [1.0, 0.0, 0.0, 0.0]
+        },
+        "state_output" : "states.txt",
+        "control_input" : "joystick" or "keyboard" or "file.txt"
     }
 }
