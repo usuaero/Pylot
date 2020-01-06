@@ -1,4 +1,7 @@
 from math import sqrt, cos, sin, atan2, asin, pi
+import numpy as np
+import os
+import copy
 
 def QuatMult(q0, q1):
     q00 = q0[0]
@@ -97,7 +100,7 @@ def Fixed2Body(v, q):
     v0 = v[0]
     v1 = v[1]
     v2 = v[2]
-    return [(qxx+q00-qyy-qzz)*v0 + (qxy+q0z)*v1 + (qxz-q0y)*v2, (qxy-q0z)*v0 + (qyy+q00-qxx-qzz)*v1
+    return [(qxx+q00-qyy-qzz)*v0 + (qxy+q0z)*v1 + (qxz-q0y)*v2, (qxy-q0z)*v0 + (qyy+q00-qxx-qzz)*v1 + (qyz+q0x)*v2, (qxz+q0y)*v0 + (qyz-q0x)*v1 + (qzz+q00-qxx-qyy)*v2]
 
 def check_filepath(input_filename, correct_ext):
     # Check correct file extension and that file exists
