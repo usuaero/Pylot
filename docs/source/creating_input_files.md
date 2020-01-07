@@ -193,7 +193,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >**"control_inputs" : dict, optional**
 >>Defines the control inputs of the aircraft. The number and names of inputs are arbitrary and may be specified by the user. A simple aircraft, such as a chuck glider may have no controls, whereas a more complex aircraft may have controls for aileron, elevator, rudder, and multiple flaps. Defining the controls here can be thought of as deciding which control knobs/switches/sticks you want to make available to the pilot. These control inputs assume settings between 0.0 and 1.0, with 0.5 being the neutral setting.
 >
->>**"<CONTROL_NAME>" : dict**
+>>**"<CONTROL_INPUT_NAME>" : dict**
 >>
 >>>**"is_symmetric" : bool**
 >>>>Specifies whether this control causes symmetric or asymmetric control surface deflections (e.g. for a typical aircraft, the elevator control causes symmetric deflections whereas the aileron causes asymmetric deflections).
@@ -207,6 +207,18 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>| 3             | throttle                  |
 >>>>
 >>>>For most aircraft, each joystick/keyboard axis will typically correspond to their traditional control surfaces. However, other configurations may be desired. For example, in an aircraft with no ailerons, it may be desirable to tie the "rudder" control to the joystick roll axis, to simplify user input. For more information on the joystick and keyboard axes, see [User Interface](user_interface).
+>
+>**"control_surfaces" : dict**
+>>Describes how the control inputs affect the physical control surfaces on the airplane. A dictionary should be specified for each control surface.
+>>
+>>**"<CONTROL_SURFACE_NAME>" : dict**
+>>>A physical control surface on the aircraft.
+>>>
+>>>**"control_mixing" : dict**
+>>>>Describes how each input affects this control surface. The following key is reproduced for each control input that affects this control surface.
+>>>>
+>>>>**"<CONTROL_INPUT_NAME> : float**
+>>>>>Percentage of the control input to mix to this control surface. For example, a value of 0.5 will mean that a saturated control input will result in 50% deflection for this control surface.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated.
