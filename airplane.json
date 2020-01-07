@@ -18,16 +18,16 @@
         "density" : 0.0023769,
         "elevator" : 5.0
     },
-    "controls" : {
-        "aileron" : {
+    "control_inputs" : {
+        "roll" : {
             "is_symmetric" : false,
             "input_index" : 2
         },
-        "elevator" : {
+        "pitch" : {
             "is_symmetric" : true,
             "input_index" : 1
         },
-        "rudder" : {
+        "yaw" : {
             "is_symmetric" : false,
             "input_index" : 3
         },
@@ -36,26 +36,46 @@
             "input_index" : 4
         }
     },
+    "control_surfaces" : {
+        "aileron" : {
+            "control_mixing" : {
+                "roll" : 1.0
+            }
+        },
+        "rudder" : {
+            "control_mixing" : {
+                "yaw" : 1.0
+            }
+        },
+        "elevator" : {
+            "control_mixing" : {
+                "pitch" : 1.0
+            }
+        }
+    },
     "engines" : {
         "engine0" : {
             "offset" : [0.0, -2.0, -1.0],
+            "direction" : [-1.0, 0.0, 0.0],
             "T0" : 1500,
             "T1" : -3.5,
             "T2" : -0.0022,
             "a" : 1.0,
             "control_mixing" : {
                 "thottle" : 1.0,
-                "rudder" : 
+                "yaw" : -0.1
             }
         },
         "engine1" : {
             "offset" : [0.0, 2.0, -1.0],
+            "direction" : [-1.0, 0.0, 0.0],
             "T0" : 1500,
             "T1" : -3.5,
             "T2" : -0.0022,
             "a" : 1.0,
             "control_mixing" : {
-                "thottle" : 1.0
+                "thottle" : 1.0,
+                "yaw" : 0.1
             }
         }
     },
