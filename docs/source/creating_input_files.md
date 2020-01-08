@@ -136,11 +136,17 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>>Describes the control settings. The number and names of controls are arbitrary and may be specified by the user.
 >>>
 >>>>**"<CONTROL_NAME>" : float, optional**
->>>>>Control setting. Defaults to neutral setting of 0.5.
+>>>>>Control setting. Defaults to neutral setting.
+>>>>
 >>**"state_output" : string, optional**
 >>>If specified, the simulator will write the 13 element state vector of the aircraft to this file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Defaults to no output.
->>**"control_input" : string**
->>>Specifies how the aircraft is to be controlled. Real-time, direct user control is chosen by specifying "joystick" or "keyboard". The aircraft can also be controlled using a pre-defined control sequence. This sequence should be stored in a text file, the name of which is given here. The controls should be formatted in columns where the first column is the time index and each successive column corresponds the control settings. The order of the columns is determined by the "input_index" key in the "controls" object within the "aircraft" object. For example, if the aircraft has a control called "flaps" which was given the "input_index" of 1, then the second column in the text file given here will be used as the "flaps" control setting.
+>>
+>>**"controller" : string**
+>>>Specifies how the aircraft is to be controlled. Basic, Real-time, direct user control is chosen by specifying "joystick" or "keyboard". This implements a basic 4-channel aircraft control with aileron, elevator, rudder, and throttle control. For more information on this, see [User Interface](user_interface).
+>>>
+>>>The aircraft can also be controlled using a pre-defined control sequence. This sequence should be stored in a text file, the name of which is given here. The controls should be formatted in columns where the first column is the time index and each successive column corresponds the control settings. The order of the columns is determined by the "input_index" key in the "controls" object within the "aircraft" object. For example, if the aircraft has a control called "flaps" which was given the "input_index" of 1, then the second column in the text file given here will be used as the "flaps" control setting.
+>>>
+>>>The aircraft can also be controlled using a user-defined controller, allowing for complex control algorithms, more channels, differential thrust, and more! This is done by specifying "user-defined" for this key. Specific details for implementing this type of control can be found under [Building Custom Controllers](building_custom_controllers).
 
 ## Aircraft Object
 Describes an aircraft. The aerodynamics of the aircraft may be determined in one of two ways. The first is using a model of linearized aerodynamic coefficients, as described by Phillips (Mechanics of Flight, 2nd ed., pp. 1067-8). The second is using MachUpX, a Python implementation of general numerical lifting-line theory. The method is specified using the "aero_model" key. If the linearized model is to be used, then the "coefficients" key must be specified. Else, "wings" must be specified. All other keys are the same between the two methods. Examples of both can be found in the examples/ directory.
@@ -180,6 +186,8 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >
 >**"reference" : dict, optional**
 >>Specifies the reference lengths and areas used to redimensionalize coefficients. If the aircraft is to be modelled using MachUpX, all or none of these may be specified. If the aircraft is to be modelled using a set of linearized coefficients, at least two of these must be given, from which the third will be calculated, if not provided. It is assumed area = longitudinal_length * lateral_length.
+>>
+>>For the linearized aerodynamic model, this is also used to describe the steady, level, trim state of the aircraft at which the aerodynamic coefficients and derivatives were determined.
 >
 >>**"area" : float**
 >>>The reference area.
@@ -189,36 +197,28 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>
 >>**"lateral_length" : float**
 >>>Lateral reference length.
+>>
+>>**"airspeed" : float**
+>>>Reference airspeed. Required for linearized model.
+>>
+>>**"density" : float**
+>>>Reference air density. Required for linearized model.
+>>
+>>**"elevator" : float**
+>>>Elevator deflection at trim reference state. Required for linearized model.
 >
->**"control_inputs" : dict, optional**
->>Defines the control inputs of the aircraft. The number and names of inputs are arbitrary and may be specified by the user. A simple aircraft, such as a chuck glider may have no controls, whereas a more complex aircraft may have controls for aileron, elevator, rudder, and multiple flaps. Defining the controls here can be thought of as deciding which control knobs/switches/sticks you want to make available to the pilot. These control inputs assume settings between 0.0 and 1.0, with 0.5 being the neutral setting.
->
+>**"controls" : dict, optional**
+>>Defines the control inputs of the aircraft. If the joystick or keyboard are selected for user input, at most "aileron", "elevator", and "rudder" may be listed here. Any other controls listed will not be affected by input from the user. For information on using the joystick/keyboard, see [User Interface](user_interface).
+>>
+>>If a user-defined controller or time-sequence control file are being used, the number and names of inputs are arbitrary and may be specified by the user. A simple aircraft, such as a chuck glider may have no controls, whereas a more complex aircraft may have controls for aileron, elevator, rudder, and multiple flaps. Defining the controls here can be thought of as deciding which control knobs/switches/sticks you want to make available to the pilot. 
+>>
 >>**"<CONTROL_INPUT_NAME>" : dict**
 >>
->>>**"is_symmetric" : bool**
->>>>Specifies whether this control causes symmetric or asymmetric control surface deflections (e.g. for a typical aircraft, the elevator control causes symmetric deflections whereas the aileron causes asymmetric deflections).
->>>**"input_index" : int**
->>>>Specifies the joystick/keyboard axis or column index tied to this control. For joystick/keyboard control, the following indices correspond to the following input axes:
->>>>
->>>>| Input Index   | Joystick/Keyboard Axis    |
->>>>| 0             | roll                      |
->>>>| 1             | pitch                     |
->>>>| 2             | yaw                       |
->>>>| 3             | throttle                  |
->>>>
->>>>For most aircraft, each joystick/keyboard axis will typically correspond to their traditional control surfaces. However, other configurations may be desired. For example, in an aircraft with no ailerons, it may be desirable to tie the "rudder" control to the joystick roll axis, to simplify user input. For more information on the joystick and keyboard axes, see [User Interface](user_interface).
->
->**"control_surfaces" : dict**
->>Describes how the control inputs affect the physical control surfaces on the airplane. A dictionary should be specified for each control surface.
->>
->>**"<CONTROL_SURFACE_NAME>" : dict**
->>>A physical control surface on the aircraft.
+>>>**"is_symmetric" : bool, optional**
+>>>>Specifies whether this control causes symmetric or asymmetric control surface deflections (e.g. for a typical aircraft, the elevator control causes symmetric deflections whereas the aileron causes asymmetric deflections). This is only required when MachUpX is used as the aerodynamic model.
 >>>
->>>**"control_mixing" : dict**
->>>>Describes how each input affects this control surface. The following key is reproduced for each control input that affects this control surface.
->>>>
->>>>**"<CONTROL_INPUT_NAME> : float**
->>>>>Percentage of the control input to mix to this control surface. For example, a value of 0.5 will mean that a saturated control input will result in 50% deflection for this control surface.
+>>>**"input_index" : int, optional**
+>>>>Specifies the time-sequence file column index tied to this control. Only required if a time-sequence control file is used.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated.
@@ -234,158 +234,98 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
 >>>
 >>>**"direction" : vector, optional**
->>>>Direction of the thrust vector produced in body-fixed coordinates. Defaults to [-1.0, 0.0, 0.0].
+>>>>Direction of the thrust vector produced by the engine in body-fixed coordinates. Defaults to [-1.0, 0.0, 0.0].
 >>>
->>>**"T0"
+>>>**"T0" : float**
+>>>>Corresponds to T0 in the above thrust equation. Represents full-throttle, static thrust.
+>>>
+>>>**"T1" : float, optional**
+>>>>Corresponds to T1 in the above thrust equation. Represents the linear change in thrust produced due to airspeed for the same throttle setting and density. This value is typically negative. Defaults to 0.0.
+>>>
+>>>**"T2" : float, optional**
+>>>>Corresponds to T2 in the above thrust equation. Represents the quadratic change in thrust produced due to airspeed for the same throttle setting and density. Defaults to 0.0.
+>>>
+>>>**"a" : float, optional**
+>>>>Corresponds to a in the above thrust equation. Represents level of nonlinearity in the change in thrust due to changes in atmospheric density. Defaults to 1.0.
+>>>
+>>>**"control" : string or int, optional**
+>>>>Name of the control which governs the throttle setting for this engine. If the default joystick/keyboard is used, all engines are governed by the throttle control and this parameter is ignored. If a user-defined controller is used, this is the name of the control setting for this engine given by the controller. If a time-sequence control file is used, this is the column index of the control setting for this engine (as with "input_index" above).
 >
->**"airfoils" : dict**
->>Defines the airfoil section parameters for all airfoils used on the aircraft. Any number of airfoils can be defined for the aircraft. MachUp pulls from these airfoil definitions as needed, depending on which airfoils are specified for the wings. If no airfoils are listed here MachUp will automatically generate a default airfoil and use it on all lifting surfaces. The default values listed above are for a flat plate as predicted by thin airfoil theory. Do not expect these to give you accurate results. A dictionary defining an airfoil has the following structure:
->
->>**"<AIRFOIL_NAME>" : dict**
+>**"aero_model" : dict**
+>>Describes how the aerodynamics are to be modelled within the simulator.
 >>
->>>**"type" : string**
->>>>The type of information describing the airfoil. Can be "linear" and the following keys must be defined, either here or in a JSON object pointed to by "path". UNITS MAY NOT BE SPECIFIED BY THE USER FOR ANY AIRFOIL PARAMETERS. THESE VALUES MUST BE SPECIFIED IN THE UNITS GIVEN HERE.
->>>
->>>**"aL0" : float, optional**
->>>>The zero-lift angle of attack in radians. Defaults to 0.0.
->>>
->>>**"CLa" : float, optional**
->>>>The lift slope in radians^-1. Defaults to 2pi
->>>
->>>**"CmL0" : float, optional**
->>>>The zero-lift moment coefficient. Defaults to 0.0.
->>>
->>>**"Cma" : float, optional**
->>>>The moment slope in radians^-1. Defaults to 0.0.
->>>
->>>**"CD0" : float, optional**
->>>>Constant coefficient in the quadratic fit of the CD/CL curve. Defaults to 0.0.
->>>
->>>**"CD1" : float, optional**
->>>>Linear coefficient in the quadratic fit of the CD/CL curve. Defaults to 0.0.
->>>
->>>**"CD2" : float, optional**
->>>>Quadratic coefficient in the quadratic fir of the CD/CL curve. Defaults to 0.0.
->>>
->>>**"CL_max" : float, optional**
->>>>Maximum lift coefficient. Defaults to infinity.
->>>
->>>**"geometry" : dict, optional**
->>>>Describes the geometry of the airfoil.
->>>>
->>>>**"outline_points" : str or array, optional**
->>>>>Path to a file containing airfoil outline points or array of outline points. The first column contains x-coordinates and the second column contains y-coordinates, where x originates at the leading edge and points back along the chord line and y points up. If a file, it should be comma-delimited. The trailing edge should be sealed. The geometry specified here will only be used in generating 3D models and will not affect the aerodynamics. Cannot be specified along with "outline_points".
->>>>
->>>>**"NACA" : str, optional**
->>>>>NACA designation for the airfoil. If given, MachUpX will automatically generate outline points using the NACA equations. Can only be NACA 4-digit series. Cannot be specified along with "outline_points". Will not affect aerodynamics.
->>>
->>>**"path" : string, optional**
->>>>Path to file containing a JSON object describing the airfoil using the above keys.
->
->**"wings" : dict**
->>Gives the lifting surfaces for the aircraft. Wings, stabilizers, fins, etc. are all treated the same in numerical lifting-line and so should be included here as wing segments. MachUp is set up so the user can define complex geometries by attaching the ends of different wing segments together (for an example, see the examples/ directory). The user can define any number of wing segments within this dict. Note that each wing segment can only have one control surface.
->
->>**"<WING_SEGMENT_NAME>" : dict**
+>>**"type" : string**
+>>>May be "linearized_coefficients" to select a linearized model of aerodynamic coefficients or "MachUpX" to select a full numerical lifting-line solution.
 >>
->>>**"ID" : uint**
->>>>ID tag of the wing segment, used for specifying which other wing segments are defined relative to it. MAY NOT BE 0.
->>>
->>>**"is_main" : bool**
->>>>Specifies whether this wing segment is part of the main wing (used for determining reference lengths and areas).
->>>
->>>**"side" : string**
->>>>May be "right", "left", or "both". Defines which side(s) of the aircraft the wing segment appears on. If "both", the wing segment will be mirrored across the x-z plane.
->>>
->>>**"connect_to" : dict**
->>>>Places the origin for the wing segment. This can be defined relative to the aircraft's body-fixed origin, or the root or tip of any other wing segment.
->>>>
->>>>**"ID" : uint, optional**
->>>>>ID of the wing segment this wing segment's origin is being defined relative to. If 0, this wing segment's origin will be defined relative to the aircraft's body-fixed origin. Defaults to 0.
->>>>
->>>>**"location" : string, optional**
->>>>>May be "root" or "tip". Defines whether this wing segment's origin should be defined relative to the root or tip of the other wing segment. Defaults to "tip"
->>>>
->>>>**"dx" : float, optional**
->>>>>Displacement of the origin from the selected reference point in the body-fixed x- direction. Defaults to 0.
->>>>
->>>>**"dy" : float, optional**
->>>>>Displacement of the origin from the selected reference point in the body-fixed y- direction. NOTE: If "side" is specified as "both", changing this value will shift both sides of the wing segment in the SAME direction. The effect is not mirrored. Defaults to 0.
->>>>
->>>>**"dz" : float, optional**
->>>>>Displacement of the origin from the selected reference point in the body-fixed z- direction. Defaults to 0.
->>>>
->>>>**"y_offset" : float, optional**
->>>>>Distance the origin should be shifted from the centerline (positive offset corresponds to outward). If "side" is specified as "both", this effect is mirrored. Defaults to 0.
->>>
->>>**"semispan" : float**
->>>>Length of the wing segment, discounting sweep. If "side" is specified as "both", the total span of the segment is twice this value.
->>>
->>>**"twist" : float, array, or string, optional**
-<<<<<<< HEAD
->>>>Gives the GEOMETRIC twist of the wing. If specified as a float, then this is simply the mounting angle of the wing segment and the segment will have no further twist. If specified as an array, the array gives the twist as a function of span. The first column gives the span location as a fraction of the total span. This column must have values going from 0.0 to 1.0. The second column gives the twist at that span location. If specified as a string, this string must contain the path to a csv file containing the twist data formatted in columns, as with the array. For properties as a function of span, MachUp will linearly interpolate intermediate values. If a step change in distribution is needed, this can be done by specifying the span location where the step change occurs twice, once with each value:
->>>>
->>>>>**"twist" : [[0.0, 0.0], [0.5, 0.0], [0.5, 2.0], [1.0, 2.0]]**
->>>>
->>>>In the above example, the twist will be 0 degrees for the inner half of the wing and 2 degrees for the outer half of the wing. Note that this parameter also determines the mounting angle and washout of the wing segment. Defaults to 0.
-=======
->>>>Gives the GEOMETRIC twist of the wing. If specified as a float, then this is simply the mounting angle of the wing segment and the segment will have no further twist. If specified as an array, the array gives the twist as a function of span. The first column gives the span location as a fraction of the total span. This column must have values going from 0.0 to 1.0. The second column gives the twist at that span location. If specified as a string, this string must contain the path to a **.csv** file containing the twist data formatted in columns, as with the array. There should be no header in this file. For properties as a function of span, MachUp will linearly interpolate intermediate values. Note that this parameter also determines the mounting angle and washout of the wing segment. Defaults to 0.
->>>>>>> v1.0.1-dev
->>>
->>>**"dihedral" : float, array, or string, optional**
->>>>Gives the dihedral of the wing segment. This is a solid-body rotation of the wing about the body x-axis. Defined the same as "twist". Defaults to 0.
->>>
->>>**"sweep" : float, array, or string, optional**
->>>>Gives the sweep angle of the wing segment. Sweeping the wing is a shear tranformation, rather than a solid-body rotation. This means the amount of sweep will not affect the distance of the wingtip from the plane of symmetry. Defined the same as "twist". Defaults to 0.
->>>
->>>**"chord" : float, array, or string, optional**
->>>>Gives the chord length of the wing segment. Defined the same as "twist". Can optionally be specified as elliptic using the following definition:
->>>
->>>>>**"chord" : ["elliptic", 1.0]**
->>>
->>>>Where the number is the root chord length. Units can be specified using:
->>>
->>>>>**"chord" : ["elliptic", 1.0, "ft"]**
->>>
->>>>Defaults to 1.0.
->>>
->>>**"ac_offset" : float, array, or string, optional**
->>>>Gives the offset of the section aerodynamic center from the quarter chord as a fraction of the chord. A positive value puts the local aerodynamic center behind the quarter chord. Defined the same as "twist". Defaults to 0.
->>>
->>>**"airfoil" : string or array, optional**
->>>>Gives the section airfoil(s) of the wing segment. Can be the name of any airfoil defined under "airfoils" in this object. If specified as an array, the array gives the airfoil as a function of span. The first column gives the span location, as with "twist", and the second column gives the name of the airfoil at that location. Can also be the path to a csv file containing the airfoil distribution formatted in columns, as with the array. Defaults to the name of the first airfoil listed under "airfoils". Cannot have units.
->>>
->>>**"grid" : dict, optional**
->>>>Describes the distribution of control points along the wing.
->>>>
->>>>**"N" : int, optional**
->>>>>Number of horseshoe vortices used to model the wing segment in the numerical lifting-line algorithm. This is the number of horseshoe vortices per semispan. Defaults to 40.
->>>>
->>>>**"distribution" : str or list, optional**
->>>>>Specifies how vortex nodes and control points are to be distributed along the wing segment. Can be "linear", "cosine_cluster", or a list of span locations. "linear" will distribute the control points and vortex nodes evenly along the span. "cosine_cluster" will implement traditional cosine clustering, where points are spaced evenly in theta causing them to cluster at the tips of each segment. If this is a list, it must be an ordered list of span locations of length 2N+1 explicitly giving the span fraction location of each vortex node and control point. Should be arranged as ```[node_0_loc, cp_0_loc, node_1_loc, cp_1_loc,..., node_N_loc, cp_N_loc, node_N+1_loc]```. Defaults to "cosine_cluster".
->>>>
->>>>**"flap_edge_cluster" : bool, optional**
->>>>>If true, control points will be clustered around the edges of control surfaces. Can only be used if "distribution" is "cosine_cluster". Defaults to true.
->>>>
->>>>**"cluster_points" : list, optional**
->>>>>If extra clustering is desired (for example at a sharp change in geometry) the user can specify a list of additional span fractions here about which control points should be clustered. Can only be used is "distribution" is "cosine_cluster". Defaults to no extra clustering.
->>>
->>>**"control_surface" : dict, optional**
->>>>Defines a control surface on the trailing edge of the wing segment. Uses Phillips' approximations for trailing-edge flaps (Mechanics of Flight, ed. 2, Ch. 1.7).
->>>
->>>>**"root_span" : float, optional**
->>>>>The span location, as a fraction of total span, where the control surface begins. Defaults to 0.0.
->>>
->>>>**"tip_span" : float, optional**
->>>>>The span location, as a fraction of total span, where the control surface ends. Defaults to 1.0.
->>>
->>>>**"chord_fraction" : float, array, or string, optional**
->>>>>The depth of the control surface, as a fraction of the local chord length. Defined the same as "twist". If an array or file is specified, however, the start and end of the data must coincide with "root_span" and "tip_span", respectively. Defaults to 0.25.
->>>
->>>>**"is_sealed" : bool, optional**
->>>>>Whether or not the flap is sealed. Affects how parasitic drag is modelled. Defaults to true.
->>>
->>>>**"control_mixing" : dict**
->>>>>Determines which control inputs move this control surface. A control surface can be affected by any number of controls.
->>>>>
->>>>>**"<CONTROL_NAME>" : float**
->>>>>>Linearly maps the control deflection to the control surface deflection. The control deflection will be multiplied by this value and then applied to the control surface.
+>>**"solver" : string, optional**
+>>>May be "linear" or "nonlinear". Specifies whether the linear approximation or full nonlinear correction should be used in computing the lifting-line solution. Has no effect on computation if "type" is specified as "linearized_coefficients". Defaults to "linear".
+
+At this point, the structure of the airplane object for the two types of aerodynamic models diverges.
+
+## Model of Linearized Coefficients
+As mentioned above, this model relies on a set of equations given by Phillips. The inputs to this set of equations are the aerodynamic coefficients described below. These are all contained within a key called "coefficients".
+
+>**"coefficients" : dict**
+>>Aerodynamic coefficients and dreivatives describing the behavior of the aircraft at small perturbations from the given reference state. Note that damping derivatives are defined relative to the body-fixed axes, rather than stability axes. All coefficients use the traditional definition of dynamic pressure:
+>>
+>>q = 0.5\*rho\*V^2
+>>
+>>**"CD" : float**
+>>>Drag coefficient.
+>>
+>>**"CL,a" : float**
+>>>Lift slope.
+>>
+>>**"CD,a" : float**
+>>>First derivative of drag coefficient with respect to angle of attack.
+>>
+>>**"CD,a,a" : float**
+>>>Second derivative of drag coefficient with respect to angle of attack.
+>>
+>>**"CD3" : float**
+>>>Sets the proportionality of drag coefficient to the sideforce coefficient squared.
+>>
+>>**"Cm,a" : float**
+>>>Pitching moment slope.
+>>
+>>**"CY,b" : float**
+>>>Derivative of body-y force coefficient with respect to sideslip angle.
+>>
+>>**"Cl,b" : float**
+>>>Roll stability derivative.
+>>
+>>**"Cn,b" : float**
+>>>Yaw stability derivative.
+>>
+>>**"CL,q" : float**
+>>>Derivative of lift coefficient with respect to pitching rate.
+>>
+>>**"CD,q" : float**
+>>>Derivative of drag coefficient with respect to pitching rate.
+>>
+>>**"Cm,q" : float**
+>>>Pitch damping derivative.
+>>
+>>**"CY,p" : float**
+>>>Derivative of body-y force coefficient with respect to roll rate.
+>>
+>>**"Cl,p" : float**
+>>>Roll damping derivative.
+>>
+>>**"Cn,p" : float**
+>>>Derivative of yawing moment coefficient with respect to roll rate.
+>>
+>>**"CY,r" : float**
+>>>Derivative of body-y force coefficient with respect to yawing rate.
+>>
+>>**"Cl,r" : float**
+>>>Derivative of rolling moment coefficient with respect to yaw rate.
+>>
+>>**"Cn,r" : float**
+>>>Yaw damping derivative.
+>>
+>>**"<CONTROL_NAME>" : dict**
+>>>Describes the change in aerodynamic coefficients with respect to deflections of this control. This parameter is repeated for as many controls are specified in the "controls" parameter of the aircraft. Derivatives should be defined with respect to a change in deflection in radians, as is standard. The aerodynamic coefficients that may be affected by a control are "CL", "CD", "CY", "Cl", "Cm", and "Cn". Any coefficients not listed are assumed to not be affected by that specific control.
+
+## MachUpX Model
+This method relies on the implementation of general, numerical lifting-line, MachUpX, developed by the USU AeroLab ([website](github.com/usuaero/MachUpX)). MachUpX relies on definitions of the aircraft geometry and wing section properties. The last two keys required within the aircraft object are "airfoils" and "wings". Descriptions of these keys can be found in the [MachUpX documentation](https://machupx.readthedocs.io/en/latest/creating_input_files.html#aircraft-object) and the user should follow these instructions. The aircraft object for Pylot has been designed with MachUpX in mind and should be natively compatible with MachUpX (i.e. you should be able to pass your airplane object file to MachUpX and MachUpX will be able to parse it).
