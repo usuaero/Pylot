@@ -40,7 +40,7 @@ class BaseAircraft:
         pass
 
 
-class LinearAirplane(BaseAircraft):
+class LinearizedAirplane(BaseAircraft):
     """An airplane defined by a linearized model of aerodynamic coefficients.
     
     Parameters
