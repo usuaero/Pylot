@@ -18,39 +18,15 @@
         "density" : 0.0023769,
         "elevator" : 5.0
     },
-    "control_inputs" : {
-        "roll" : {
-            "is_symmetric" : false,
+    "controls" : {
+        "aileron" : {
             "input_index" : 2
         },
-        "pitch" : {
-            "is_symmetric" : true,
+        "elevator" : {
             "input_index" : 1
         },
-        "yaw" : {
-            "is_symmetric" : false,
-            "input_index" : 3
-        },
-        "throttle" : {
-            "is_symmetric" : true,
-            "input_index" : 4
-        }
-    },
-    "control_surfaces" : {
-        "aileron" : {
-            "control_mixing" : {
-                "roll" : 1.0
-            }
-        },
         "rudder" : {
-            "control_mixing" : {
-                "yaw" : 1.0
-            }
-        },
-        "elevator" : {
-            "control_mixing" : {
-                "pitch" : 1.0
-            }
+            "input_index" : 3
         }
     },
     "engines" : {
@@ -61,10 +37,7 @@
             "T1" : -3.5,
             "T2" : -0.0022,
             "a" : 1.0,
-            "control_mixing" : {
-                "thottle" : 1.0,
-                "yaw" : -0.1
-            }
+            "control" : "throttle"
         },
         "engine1" : {
             "offset" : [0.0, 2.0, -1.0],
@@ -73,10 +46,7 @@
             "T1" : -3.5,
             "T2" : -0.0022,
             "a" : 1.0,
-            "control_mixing" : {
-                "thottle" : 1.0,
-                "yaw" : 0.1
-            }
+            "control" : "throttle"
         }
     },
     "aero_model" : {

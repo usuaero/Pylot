@@ -39,6 +39,6 @@
             }
         },
         "state_output" : "states.txt",
-        "control_input" : "joystick" or "keyboard" or "file.txt"
+        "controller" : "joystick" or "keyboard" or "file.txt" or "user-defined"
     }
 }
