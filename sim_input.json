@@ -8,7 +8,7 @@
         "enable_graphics" : false
         or
         "enable_graphics" : true,
-        "target_frame_rate" : 60
+        "target_framerate" : 60
     },
     "units" : "English",
     "atmosphere" : {

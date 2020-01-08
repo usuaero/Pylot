@@ -8,7 +8,10 @@ import json
 import copy
 import time
 import pygame
-import graphics
+from pygame.locals import *
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from .graphics import *
 
 class Simulator:
     """A class for flight simulation using RK4 integration.
@@ -72,11 +75,10 @@ class Simulator:
         # Setup window size
         width, height = 1800,900
         pygame.display.set_icon(pygame.image.load('gsim/res/gameicon.jpg'))
-        screen = pygame.display.set_mode((width,height), HWSURFACE|OPENGL|DOUBLEBUF)
+        _ = pygame.display.set_mode((width,height), HWSURFACE|OPENGL|DOUBLEBUF)
         pygame.display.set_caption("GSim")
         glViewport(0,0,width,height)
         glEnable(GL_DEPTH_TEST)
-        default_view = np.identity(4)
         
         # Boolean variables for camera view, lose screen, and pause
         self._FPV = True
@@ -85,8 +87,7 @@ class Simulator:
         self._DATA = True
 
         # SIMULATION FRAMERATE
-        # pygame limits framerate to this value. Increasing framerate improves accuracy of simulation (max limit = 60) but may cause some lag in graphics
-        self._target_framerate = 30
+        self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
 
         # Initialize graphics objects
         # Loading screen is rendered and displayed while the rest of the objects are read and prepared
@@ -99,23 +100,10 @@ class Simulator:
         # Initialize game over screen
         self._gameover = Text(150)
 
-        # Initialize graphics for simulated entities
-        self._pilot_loc = kwargs.get("pilot_location", 0) # Pilot is in the first entity by default
-        self._entity_graphics = []
-        for entity in self._entities:
-            if isinstance(entity, MachUpXAirplane):
-                stl_file = "entity.stl"
-                entity._mx_scene.export_stl(stl_file, aircraft=entity.name, section_resolution=20)
-                obj_file = "entity.obj"
-                sp.call(["meshlabserver", "-i", stl_file, "-o", obj_file, "-om", "vn"])
-                graphics_aircraft = Mesh(obj_file,"gsim/shaders/aircraft.vs","gsim/shaders/aircraft.fs","gsim/res/grey.jpg",width,height)
-                sp.call(["rm", stl_file])
-                sp.call(["rm", obj_file])
-            else:
-                graphics_aircraft = Mesh("gsim/res/Cessna.obj","gsim/shaders/aircraft.vs","gsim/shaders/aircraft.fs","gsim/res/cessna_texture.jpg",width,height)
-            graphics_aircraft.set_orientation(entity.y[9:])
-            graphics_aircraft.set_position(entity.y[6:9])
-            self._entity_graphics.append(graphics_aircraft)
+        # Initialize graphics for aircraft
+        self._aircraft_graphics = self._aircraft.get_graphics_obj()
+        self._aircraft_graphics.set_orientation(self._aircraft.y[9:])
+        self._aircraft_graphics.set_position(self._aircraft.y[6:9])
 
         # Initialize HUD
         self._HUD = HeadsUp(width, height)

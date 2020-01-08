@@ -40,6 +40,11 @@ class BaseAircraft:
         pass
 
 
+    @abstractmethod
+    def get_graphics_obj(self):
+        pass
+
+
 class LinearizedAirplane(BaseAircraft):
     """An airplane defined by a linearized model of aerodynamic coefficients.
     
