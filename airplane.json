@@ -16,7 +16,9 @@
         "lateral_length" : 33.0,
         "airspeed" : 180.0,
         "density" : 0.0023769,
-        "elevator" : 5.0
+        "controls" : {
+            "elevator" : 5.0
+        }
     },
     "controls" : {
         "aileron" : {

@@ -5,6 +5,7 @@ import numpy as np
 import machupX as mx
 from abc import abstractmethod
 from .helpers import *
+from .std_atmos import *
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
@@ -18,7 +19,7 @@ class BaseAircraft:
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, state_output):
+    def __init__(self, name, input_dict, density, state_output, units):
 
         # Store input
         self._input_dict = input_dict
@@ -34,7 +35,7 @@ class BaseAircraft:
             print(header, file=self._output_handle)
 
         # Determine units and set gravity
-        self._units = self._input_dict.get("units", "English")
+        self._units = units
         if self._units == "English":
             self._g = 32.2
         elif self._units == "SI":
@@ -63,6 +64,13 @@ class BaseAircraft:
 
         # Set angular momentums
         self._hx, self._hy, self._hz = self._input_dict.get("angular_momentum", [0.0, 0.0, 0.0])
+
+        # Load engines
+        self._engines = []
+        self._num_engines = 0
+        for key, value in self._input_dict.get("engines", {}).items():
+            self._engines.append(Engine(key, **value, units=self._units))
+            self._num_engines += 1
 
 
     def __del__(self):
@@ -131,6 +139,11 @@ class BaseAircraft:
         return dy
 
 
+    def normalize(self):
+        """Normalizes the orientation quaternion."""
+        self.y[9:] = NormalizeQuaternion(self.y[9:])
+
+
     @abstractmethod
     def get_FM(self, t):
         pass
@@ -158,8 +171,99 @@ class LinearizedAirplane(BaseAircraft):
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, state_output):
-        super().__init__(name, input_dict, density, state_output)
+    def __init__(self, name, input_dict, density, state_output, units):
+        super().__init__(name, input_dict, density, state_output, units)
+
+        # Initialize density
+        self._get_density = self._initialize_density(density)
+
+        # Import reference params
+        self._Sw = self._input_dict["reference"].get("area", None)
+        self._bw = self._input_dict["reference"].get("lateral_length", None)
+        self._cw = self._input_dict["reference"].get("longitudinal_length", None)
+
+        # Check we have all the reference lengths we need
+        if self._Sw is not None and self._bw is not None and self._cw is None:
+            self._cw = self._Sw/self._bw
+        elif self._Sw is None and self._bw is not None and self._cw is not None:
+            self._Sw = self._cw*self._bw
+        elif self._Sw is not None and self._bw is None and self._cw is not None:
+            self._bw = self._Sw/self._cw
+        elif not (self._Sw is not None and self._bw is not None and self._cw is not None):
+            raise IOError("At least two of area, lateral length, or longitudinal length must be specified.")
+
+        # Read in coefficients
+        self._import_coefficients()
+
+        # Parse the reference state
+        rho_ref = import_value("density", self._input_dict["reference"], self._units, None)
+        V_ref = import_value("airspeed", self._input_dict["reference"], self._units, None)
+        self._CL_ref = self._W/(0.5*rho_ref*V_ref*V_ref*self._Sw)
+        self._ref_controls = self._input_dict["reference"].get("controls", {})
+
+        # Determine drag polar
+        self._CD2 = self._CD_a2/(2*self._CL_a*self._CL_a)
+        self._CD1 = self._CD_a/self._CL_a-2*self._CD2*self._CL_ref
+        self._CD0 = self._CD-self._CD1*self._CL_ref-self._CD2*self._CL_ref*self._CL_ref
+
+        # Determine reference aerodynamic moments
+        # This assumes thrust is evenly distributed among all engines
+        engine_CT = self._CD/self._num_engines
+        engine_CM = np.zeros(3)
+        for engine in self._engines:
+            engine_CM += engine.get_unit_thrust_moment()*engine_CT
+
+        self._Cl_ref = engine_CM[0]/self._bw
+        self._Cm_ref = engine_CM[1]/self._cw
+        self._Cn_ref = engine_CM[2]/self._bw
+
+
+    def _initialize_density(self, density):
+        # Sets up the density getter
+
+        if density == "standard": # Standard atmospheric profile
+
+            # English units
+            if self._units == "English":
+                def density_getter(alt):
+                    return statee(alt)[-1]
+
+            # SI units
+            else:
+                def density_getter(alt):
+                    return statsi(alt)[-1]
+
+        elif isinstance(density, float): # Constant
+            self._density = density
+            def density_getter(alt):
+                return self._density
+
+        else:
+            raise IOError("{0} is not a valid density specification.".format(density))
+
+        return density_getter
+
+
+    def _import_coefficients(self):
+        # Reads aerodynamic coefficients and derivatives in from input file
+        self._CL_a = self._input_dict["coefficients"]["CL,a"]
+        self._CD = self._input_dict["coefficients"]["CD"]
+        self._CD_a = self._input_dict["coefficients"]["CD,a"]
+        self._CD_a2 = self._input_dict["coefficients"]["CD,a,a"]
+        self._CD3 = self._input_dict["coefficients"]["CD3"]
+        self._Cm_a = self._input_dict["coefficients"]["Cm,a"]
+        self._CY_b = self._input_dict["coefficients"]["CY,b"]
+        self._Cl_b = self._input_dict["coefficients"]["Cl,b"]
+        self._Cn_b = self._input_dict["coefficients"]["Cn,b"]
+        self._CL_q = self._input_dict["coefficients"]["CL,q"]
+        self._CD_q = self._input_dict["coefficients"]["CD,q"]
+        self._Cm_q = self._input_dict["coefficients"]["Cm,q"]
+        self._CY_p = self._input_dict["coefficients"]["CY,p"]
+        self._Cl_p = self._input_dict["coefficients"]["Cl,p"]
+        self._Cn_p = self._input_dict["coefficients"]["Cn,p"]
+        self._CY_r = self._input_dict["coefficients"]["CY,r"]
+        self._Cl_r = self._input_dict["coefficients"]["Cl,r"]
+        self._Cn_r = self._input_dict["coefficients"]["Cn,r"]
 
 
 class MachUpXAirplane(BaseAircraft):
@@ -174,5 +278,97 @@ class MachUpXAirplane(BaseAircraft):
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, state_output):
-        super().__init__(name, input_dict, density, state_output)
+    def __init__(self, name, input_dict, density, state_output, units):
+        super().__init__(name, input_dict, density, state_output, units)
+
+
+class Engine:
+    """An engine for a simulated aircraft.
+
+    Parameters
+    ----------
+    name : str
+        Name of the engine.
+
+    offset : vector
+        Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
+
+    T0 : float
+    
+    T1 : float
+
+    T2 : float
+    
+    a : float
+
+    control : str
+        Name of the control that sets the throttle for this engine. Defaults to "throttle".
+
+    units : str
+        Unit system used for the engine.
+    """
+
+    def __init__(self, name, **kwargs):
+
+        # Store parameters
+        self._name = name
+        self._units = kwargs.get("units")
+        self._offset = import_value("offset", kwargs, self._units, [0.0, 0.0, 0.0])
+        self._direction = import_value("direction", kwargs, self._units, [-1.0, 0.0, 0.0])
+        self._T0 = import_value("T0", kwargs, self._units, None)
+        self._T1 = import_value("T1", kwargs, self._units, None)
+        self._T2 = import_value("T2", kwargs, self._units, None)
+        self._a = import_value("a", kwargs, self._units, None)
+        self._control = kwargs.get("control", "throttle")
+
+        # Normalize direction vector
+        self._direction /= np.linalg.norm(self._direction)
+
+        # Determine air density at sea level
+        if self._units == "English":
+            self._rho0 = statee(0)[-1]
+        else:
+            self._rho0 = statsi(0)[-1]
+
+
+    def get_thrust_FM(self, controls, rho, V):
+        """Returns the forces and moments due to thrust from this engine.
+
+        Parameters
+        ----------
+        controls : dict
+            Dictionary of control settings.
+
+        rho : float
+            Air density.
+
+        V : float
+            Airspeed.
+
+        Returns
+        -------
+        FM : vector
+            Forces and moments due to thrust.
+        """
+
+        FM = np.zeros(6)
+
+        # Get throttle setting
+        tau = controls.get(self._control, 0.0)
+
+        # Calculate thrust magnitude
+        T = tau*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V)
+
+        # Set thrust vector
+        FM[:3] = T*self._direction
+
+        # Set moments
+        FM[3:] = np.cross(self._offset, FM[:3])
+
+        return FM
+
+
+    def get_unit_thrust_moment(self):
+        """Returns the thrust moment vector assuming a thrust magnitude of unity.
+        """
+        return np.cross(self._offset, self._direction)
