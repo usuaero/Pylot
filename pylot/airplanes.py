@@ -72,6 +72,9 @@ class BaseAircraft:
             self._engines.append(Engine(key, **value, units=self._units))
             self._num_engines += 1
 
+        # Load controls
+        
+
 
     def __del__(self):
         if self.output_state:
@@ -264,6 +267,9 @@ class LinearizedAirplane(BaseAircraft):
         self._CY_r = self._input_dict["coefficients"]["CY,r"]
         self._Cl_r = self._input_dict["coefficients"]["Cl,r"]
         self._Cn_r = self._input_dict["coefficients"]["Cn,r"]
+
+        # Parse control derivatives
+
 
 
 class MachUpXAirplane(BaseAircraft):

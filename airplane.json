@@ -21,15 +21,9 @@
         }
     },
     "controls" : {
-        "aileron" : {
-            "input_index" : 2
-        },
-        "elevator" : {
-            "input_index" : 1
-        },
-        "rudder" : {
-            "input_index" : 3
-        }
+        "aileron" : {},
+        "elevator" : {},
+        "rudder" : {}
     },
     "engines" : {
         "engine0" : {
