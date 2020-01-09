@@ -31,17 +31,7 @@
     },
     "engines" : {
         "engine0" : {
-            "offset" : [0.0, -2.0, -1.0],
-            "direction" : [-1.0, 0.0, 0.0],
-            "T0" : 1500,
-            "T1" : -3.5,
-            "T2" : -0.0022,
-            "a" : 1.0,
-            "control" : "throttle"
-        },
-        "engine1" : {
-            "offset" : [0.0, 2.0, -1.0],
-            "direction" : [-1.0, 0.0, 0.0],
+            "offset" : [0.0, 0.0, -1.0],
             "T0" : 1500,
             "T1" : -3.5,
             "T2" : -0.0022,
@@ -51,9 +41,6 @@
     },
     "aero_model" : {
         "type" : "linearized_coefficients"
-        or
-        "type" : "MachUpX",
-        "solver" : "linear"
     },
     "coefficients" : {
         "CD" : 0.05,

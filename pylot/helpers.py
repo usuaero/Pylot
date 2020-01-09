@@ -133,7 +133,11 @@ def convert_units(in_value, units, system):
         "deg" : 1.0,
         "rad" : 57.29578,
         "deg/s" : 0.01745329,
-        "rad/s" : 1.0
+        "rad/s" : 1.0,
+        "slug ft^2" : 1.0,
+        "kg m^2" : 0.7375621419,
+        "slug ft^2/s" : 1.0,
+        "kg m^2/s" : 0.7375621419
     }
 
     to_si_default = {
@@ -155,7 +159,11 @@ def convert_units(in_value, units, system):
         "deg" : 1.0,
         "rad" : 57.29578,
         "deg/s" : 0.01745329,
-        "rad/s" : 1.0
+        "rad/s" : 1.0,
+        "slug ft^2" : 1.355817961,
+        "kg m^2" : 1.0,
+        "slug ft^2/s" : 1.355817961,
+        "kg m^2/s" : 1.0
     }
     try:
         if system == "English":
