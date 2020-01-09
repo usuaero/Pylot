@@ -36,15 +36,64 @@ class Simulator:
             self._t0 = self._input_dict["simulation"].get("start_time", 0.0)
             self._tf = self._input_dict["simulation"].get("final_time", np.inf)
 
-        # Load aircraft
-        self._load_aircraft()
+        # Initialize inter-process communication
+        manager = mp.Manager()
+        self._state_manager = manager.list()
+        self._graphics_conn, self._physics_conn = mp.Pipe()
 
-        # TODO: Atmospheric properties
+        # Kick off physics process
+        self._physics_process = mp.Process(target=self._run_physics, args=())
 
         # Initialize graphics
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
         if self._render_graphics:
             self._initialize_graphics()
+
+
+    def _run_physics(self):
+        # Handles physics on a separate process
+
+        # Load aircraft
+        self._load_aircraft()
+
+        # TODO: Atmospheric properties
+
+        # Get an initial guess for how long each sim step is going to take
+        t0 = time.time()
+        if self._real_time:
+            self._RK4(self._aircraft, self._t0, 0.0)
+            self._aircraft.normalize()
+            self._aircraft.output_state(self._t0)
+            t1 = time.time()
+            self._dt = t1-t0
+            t0 = t1
+
+        t = copy.copy(self._t0)
+
+        # Simulation loop
+        while t <= self._tf:
+
+            # Integrate
+            self._RK4(self._aircraft, t, self._dt)
+
+            # Normalize
+            self._aircraft.normalize()
+
+            # Output
+            self._aircraft.output_state(t)
+
+            # Step in time
+            if self._real_time:
+                t1 = time.time()
+                self._dt = t1-t0
+                t0 = t1
+            t += self._dt
+
+            # Pass information to graphics
+            if self._render_graphics:
+                self._state_manager = list(self._aircraft.y)
+
+            # Check for exit condition
 
 
     def _load_aircraft(self):
@@ -155,7 +204,18 @@ class Simulator:
     def run_sim(self):
         """Runs the simulation according to the defined inputs.
         """
-        pass
+
+        # Kick off the physics
+        self._physics_process.start()
+
+        # Run graphics loop
+        if self._render_graphics:
+            while True:
+                # Update graphics
+                pass
+
+        else: # Just wait for the physics to finish
+            self._physics_process.join()
 
 
     def _RK4(self, aircraft, t, dt):
