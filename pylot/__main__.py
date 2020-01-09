@@ -11,6 +11,9 @@ def simulate(filename):
         input_dict = json.load(input_handle)
     sim = Simulator(input_dict)
 
+    # Run
+    sim.run_sim()
+
 
 if __name__=="__main__":
 

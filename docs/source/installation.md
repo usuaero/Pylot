@@ -23,11 +23,9 @@ You can either download the source as a ZIP file and extract the contents, or cl
 
     $ git clone https://github.com/usuaero/Pylot
 
-We recommend cloning from the repository, as this will allow you to most easily download and install periodic updates. This can be done using the following command
+We recommend cloning from the repository, as this will allow you to most easily download and install periodic updates. Updates can be installed using the following command
 
     $ git pull
-
-Please reinstall after pulling from the repository.
 
 ## Installing
 

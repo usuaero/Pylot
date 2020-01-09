@@ -2,17 +2,14 @@
     "tag" : "Example of flight simulator input.",
     "simulation" : {
         "real_time" : false,
-        "dt" : 0.01,
+        "dt" : 0.05,
         "start_time" : 0.0,
-        "final_time" : 100.0,
+        "final_time" : 10.0,
         "enable_graphics" : false
-        or
-        "enable_graphics" : true,
-        "target_framerate" : 60
     },
     "units" : "English",
     "atmosphere" : {
-        "density" : "standard" or some constant value
+        "density" : 0.0023769
     },
     "aircraft" : {
         "name" : "my_airplane",
@@ -25,20 +22,7 @@
             "heading" : 0.0,
             "verbose" : true
         },
-        or
-        "initial_state" : {
-            "position" : [0.0, 0.0, -500.0],
-            "velocity" : [50.0, 0.0, 0.0],
-            "angular_rates" : [0.0, 0.0, 0.0],
-            "orientation" : [1.0, 0.0, 0.0, 0.0],
-            "control_state" : {
-                "elevator" : 0.5,
-                "aileron" : 0.5,
-                "rudder" : 0.5,
-                "throttle" : 0.5
-            }
-        },
         "state_output" : "states.txt",
-        "controller" : "joystick" or "keyboard" or "file.txt" or "user-defined"
+        "controller" : "joystick"
     }
 }
