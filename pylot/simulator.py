@@ -62,16 +62,16 @@ class Simulator:
         self._current_controls = manager.dict()
 
         # Get density model and output file
-        density = self._input_dict.get("atmosphere", {}).get("density", None)
+        density = import_value("density", self._input_dict.get("atmosphere", {}), self._units, [0.0023769, "slug/ft^3"])
         state_output = self._input_dict["aircraft"].get("state_output", None)
 
         # Linear aircraft
         if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, state_output)
+            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, state_output, self._units)
         
         # MachUpX aircraft
         else:
-            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, state_output)
+            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, state_output, self._units)
 
         # TODO: Trim/set initial state
 

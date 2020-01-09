@@ -204,8 +204,11 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>**"density" : float**
 >>>Reference air density. Required for linearized model.
 >>
->>**"elevator" : float**
->>>Elevator deflection at trim reference state. Required for linearized model.
+>>**"controls" : dict, optional**
+>>>Lists the control deflections required to trim the aircraft at the reference state. Required only for linearized model.
+>>>
+>>>**"<CONTROL_NAME>" : float, optional**
+>>>>Control deflection at trim reference state. This should be repeated for each aerodynamic control used to trim the aircraft at the reference state. Defaults to 0.0.
 >
 >**"controls" : dict, optional**
 >>Defines the control inputs of the aircraft. If the joystick or keyboard are selected for user input, at most "aileron", "elevator", and "rudder" may be listed here. Any other controls listed will not be affected by input from the user. For information on using the joystick/keyboard, see [User Interface](user_interface).
