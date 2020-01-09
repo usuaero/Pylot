@@ -219,6 +219,9 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>
 >>>**"is_symmetric" : bool, optional**
 >>>>Specifies whether this control causes symmetric or asymmetric control surface deflections (e.g. for a typical aircraft, the elevator control causes symmetric deflections whereas the aileron causes asymmetric deflections). This is only required when MachUpX is used as the aerodynamic model.
+>>>
+>>>**"max_deflection" : float, optional**
+>>>>Specifies the maximum control deflection in degrees. Only required if the keyboard or joystick are being used as input.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated.
