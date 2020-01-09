@@ -21,9 +21,15 @@
         }
     },
     "controls" : {
-        "aileron" : {},
-        "elevator" : {},
-        "rudder" : {}
+        "aileron" : {
+            "max_deflection" : 20.0
+        },
+        "elevator" : {
+            "max_deflection" : 20.0
+        },
+        "rudder" : {
+            "max_deflection" : 20.0
+        }
     },
     "engines" : {
         "engine0" : {

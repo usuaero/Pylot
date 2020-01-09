@@ -6,6 +6,7 @@ import machupX as mx
 from abc import abstractmethod
 from .helpers import *
 from .std_atmos import *
+from .controllers import *
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
@@ -73,7 +74,34 @@ class BaseAircraft:
             self._num_engines += 1
 
         # Load controls
-        
+        self._initialize_controller()
+
+
+    def _initialize_controller(self):
+        # Sets up the control input for the aircraft
+
+        # Determine the type of control
+        control_type = self._input_dict.get("controller", None)
+
+        # No control input
+        if control_type is None:
+            self._controller = NoController()
+
+        # Joystick
+        elif control_type == "joystick":
+            pass
+
+        # Keyboard
+        elif control_type == "keyboard":
+            pass
+
+        # User-defined
+        elif control_type == "user-defined":
+            pass
+
+        # Time sequence file
+        else:
+            pass
 
 
     def __del__(self):
