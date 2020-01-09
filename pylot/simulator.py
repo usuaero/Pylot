@@ -1,9 +1,10 @@
 # Class containing the simulator
 
 import math as m
-import numpy as mp
-from helpers import *
-from airplanes import *
+import numpy as np
+import multiprocessing as mp
+from .helpers import *
+from .airplanes import *
 import json
 import copy
 import time
@@ -55,13 +56,22 @@ class Simulator:
         with open(aircraft_file, 'r') as aircraft_file_handle:
             aircraft_dict = json.load(aircraft_file_handle)
 
+        # Create managers for passing information between the processes
+        manager = mp.Manager()
+        self._current_state = manager.list()
+        self._current_controls = manager.dict()
+
+        # Get density model and output file
+        density = self._input_dict.get("atmosphere", {}).get("density", None)
+        state_output = self._input_dict["aircraft"].get("state_output", None)
+
         # Linear aircraft
         if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict)
+            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, state_output)
         
         # MachUpX aircraft
         else:
-            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict)
+            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, state_output)
 
         # TODO: Trim/set initial state
 
