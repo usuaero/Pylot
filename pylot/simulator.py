@@ -110,19 +110,16 @@ class Simulator:
         self._current_state = manager.list()
         self._current_controls = manager.dict()
 
-        # Get density model and output file
+        # Get density model, controller, and output file
         density = import_value("density", self._input_dict.get("atmosphere", {}), self._units, [0.0023769, "slug/ft^3"])
-        state_output = self._input_dict["aircraft"].get("state_output", None)
 
         # Linear aircraft
         if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, state_output, self._units)
+            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
         
         # MachUpX aircraft
         else:
-            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, state_output, self._units)
-
-        # TODO: Trim/set initial state
+            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
 
 
     def _initialize_graphics(self):
@@ -211,11 +208,18 @@ class Simulator:
         # Run graphics loop
         if self._render_graphics:
             while True:
+
                 # Update graphics
+                self._update_graphics()
                 pass
 
         else: # Just wait for the physics to finish
             self._physics_process.join()
+
+
+    def _update_graphics(self):
+        # Does a step in graphics
+        pass
 
 
     def _RK4(self, aircraft, t, dt):

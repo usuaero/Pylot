@@ -20,7 +20,7 @@ class BaseAircraft:
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, state_output, units):
+    def __init__(self, name, input_dict, density, units, param_dict):
 
         # Store input
         self._input_dict = input_dict
@@ -29,6 +29,7 @@ class BaseAircraft:
         self.y = np.zeros(13)
 
         # Setup output
+        state_output = param_dict.get("state_output", None)
         self._output_state = state_output is not None
         if self._output_state:
             self._output_handle = open(state_output, 'w')
@@ -74,14 +75,12 @@ class BaseAircraft:
             self._num_engines += 1
 
         # Load controls
-        self._initialize_controller()
+        controller = param_dict.get("controller", None)
+        self._initialize_controller(controller)
 
 
-    def _initialize_controller(self):
+    def _initialize_controller(self, control_type):
         # Sets up the control input for the aircraft
-
-        # Determine the type of control
-        control_type = self._input_dict.get("controller", None)
 
         # No control input
         if control_type is None:
@@ -89,7 +88,7 @@ class BaseAircraft:
 
         # Joystick
         elif control_type == "joystick":
-            pass
+            self._controller = JoystickAircraftController(self._input_dict.get("controls", {}))
 
         # Keyboard
         elif control_type == "keyboard":
@@ -102,6 +101,10 @@ class BaseAircraft:
         # Time sequence file
         else:
             pass
+
+        # Setup storage
+        self._control_names = self._controller.get_control_names()
+        self._controls = {}
 
 
     def __del__(self):
@@ -202,8 +205,8 @@ class LinearizedAirplane(BaseAircraft):
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, state_output, units):
-        super().__init__(name, input_dict, density, state_output, units)
+    def __init__(self, name, input_dict, density, units, param_dict):
+        super().__init__(name, input_dict, density, units, param_dict)
 
         # Initialize density
         self._get_density = self._initialize_density(density)
@@ -247,6 +250,18 @@ class LinearizedAirplane(BaseAircraft):
         self._Cl_ref = engine_CM[0]/self._bw
         self._Cm_ref = engine_CM[1]/self._cw
         self._Cn_ref = engine_CM[2]/self._bw
+
+        # Set initial state
+        trim = param_dict.get("trim", False)
+        initial_state = param_dict.get("initial_state", False)
+        if trim and initial_state:
+            raise IOError("Both a trim condition and an initial state may not be specified.")
+        elif trim:
+            self._trim()
+        elif initial_state:
+            self._set_initial_state()
+        else:
+            raise IOError("An initial condition was not specified!")
 
 
     def _initialize_density(self, density):
@@ -296,7 +311,56 @@ class LinearizedAirplane(BaseAircraft):
         self._Cl_r = self._input_dict["coefficients"]["Cl,r"]
         self._Cn_r = self._input_dict["coefficients"]["Cn,r"]
 
-        # Parse control derivatives
+        # Parse control derivatives and reference control settings
+        self._control_derivs = {}
+        self._control_ref = {}
+        for name in self._control_names:
+
+            # Get derivatives
+            self._control_derivs[name] = {}
+            derivs = self._input_dict["coefficients"].get(name, {})
+            self._control_derivs[name]["CL"] = derivs.get("CL", 0.0)
+            self._control_derivs[name]["CD"] = derivs.get("CD", 0.0)
+            self._control_derivs[name]["Cm"] = derivs.get("Cm", 0.0)
+            self._control_derivs[name]["CY"] = derivs.get("CY", 0.0)
+            self._control_derivs[name]["Cl"] = derivs.get("Cl", 0.0)
+            self._control_derivs[name]["Cn"] = derivs.get("Cn", 0.0)
+
+            # Get reference setting
+            self._control_ref[name] = self._input_dict["reference"].get("controls", {}).get(name, 0.0)
+
+
+    def _trim(self):
+        # Trims the aircraft according to the input conditions
+        pass
+
+
+    def _set_initial_state(self):
+        # Sets the initial state of the aircraft according to the input
+
+        # Get state dict
+        state_dict = self._input_dict.get("initial_state")
+
+        # Set values
+        self.y[:3] = import_value("velocity", state_dict, self._units, None)
+        self.y[3:6] = import_value("angular_rates", state_dict, self._units, [0.0, 0.0, 0.0])
+        self.y[6:9] = import_value("position", state_dict, self._units, None)
+        orientation = import_value("orientation", state_dict, self._units, [1.0, 0.0, 0.0, 0.0])
+        if len(orientation) == 3: # Euler angles
+            self.y[9:] = Euler2Quat(orientation)
+        else:
+            self.y[9:] = orientation
+
+        # Set controls
+        for name in self._control_names:
+            self._controls[name] = state_dict.get("control_state", {}).get(name, 0.0)
+
+
+    def get_FM(self, t):
+        """Returns the aerodynamic forces and moments."""
+
+        # Get control state
+        self._controls = self._controller.get_control(self.y, self._controls)
 
 
 
@@ -312,8 +376,8 @@ class MachUpXAirplane(BaseAircraft):
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, state_output, units):
-        super().__init__(name, input_dict, density, state_output, units)
+    def __init__(self, name, input_dict, density, units, param_dict):
+        super().__init__(name, input_dict, density, units, param_dict)
 
 
 class Engine:
