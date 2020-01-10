@@ -142,7 +142,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>If specified, the simulator will write the 13 element state vector of the aircraft to this file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Defaults to no output.
 >>
 >>**"controller" : string**
->>>Specifies how the aircraft is to be controlled. Basic, Real-time, direct user control is chosen by specifying "joystick" or "keyboard". This implements a basic 4-channel aircraft control with aileron, elevator, rudder, and throttle control. For more information on this, see [User Interface](user_interface).
+>>>Specifies how the aircraft is to be controlled. Basic, Real-time, direct user control is chosen by specifying "joystick" or "keyboard". This allows for basic 4-channel control where the user selects the mapping between the input axes and the controls. For more information on this, see [User Interface](user_interface).
 >>>
 >>>The aircraft can also be controlled using a pre-defined control sequence. This sequence should be stored in a text file, the name of which is given here. The controls should be formatted in columns where the first column is the time index and each successive column corresponds the control settings. The order of the columns is determined by the "input_index" key in the "controls" object within the "aircraft" object. For example, if the aircraft has a control called "flaps" which was given the "input_index" of 1, then the second column in the text file given here will be used as the "flaps" control setting.
 >>>
@@ -211,7 +211,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Control deflection at trim reference state. This should be repeated for each aerodynamic control used to trim the aircraft at the reference state. Defaults to 0.0.
 >
 >**"controls" : dict, optional**
->>Defines the control inputs of the aircraft. If the joystick or keyboard are selected for user input, at most "aileron", "elevator", and "rudder" may be listed here. Any other controls listed will not be affected by input from the user. For information on using the joystick/keyboard, see [User Interface](user_interface).
+>>Defines the control inputs of the aircraft. If the joystick or keyboard are selected for user input, at most 4 controls may be listed here. For information on using the joystick/keyboard, see [User Interface](user_interface).
 >>
 >>If a user-defined controller or time-sequence control file are being used, the number and names of inputs are arbitrary and may be specified by the user. A simple aircraft, such as a chuck glider may have no controls, whereas a more complex aircraft may have controls for aileron, elevator, rudder, and multiple flaps. Defining the controls here can be thought of as deciding which control knobs/switches/sticks you want to make available to the pilot. 
 >>
@@ -221,7 +221,22 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Specifies whether this control causes symmetric or asymmetric control surface deflections (e.g. for a typical aircraft, the elevator control causes symmetric deflections whereas the aileron causes asymmetric deflections). This is only required when MachUpX is used as the aerodynamic model.
 >>>
 >>>**"max_deflection" : float, optional**
->>>>Specifies the maximum control deflection in degrees. Only required if the keyboard or joystick are being used as input.
+>>>>Specifies the maximum control deflection in degrees. Only required if the keyboard or joystick are being used as input. If this is not specified, the control is assumed to vary from 0.0 to 1.0, as with a throttle control.
+>>>
+>>>**"input_axis" : int, optional**
+>>>>Specifies which input axis maps to this control. The input axes are as follows
+>>>>
+>>>>>| Index    | Joystick  | Keyboard      |
+>>>>>|----------|-----------|---------------|
+>>>>>| 0        | roll      | LEFT-RIGHT    |
+>>>>>| 1        | pitch     | UP-DOWN       |
+>>>>>| 2        | yaw       | A-D           |
+>>>>>| 3        | throttle  | W-S           |
+>>>>
+>>>>Only required if the keyboard or joystick are being used as input.
+>>>
+>>>**"column_index" : int, optional**
+>>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is the time index. Only required if a time sequence control input is used.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated.

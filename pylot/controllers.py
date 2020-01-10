@@ -11,8 +11,11 @@ class BaseController:
     """
 
     def __init__(self):
-        pass
+        self._controls = []
 
+
+    def get_control_names(self):
+        return self._controls
     
     @abstractmethod
     def get_control(self, state_vec, prev_controls):
@@ -41,14 +44,12 @@ class JoystickAircraftController(BaseController):
 
     Parameters
     ----------
-    control_limits : dict, optional
-        A dictionary containing the deflection limits for each control. Defaults to 20 deg for each.
-
-    control_responsiveness : float, optional
-        Amount to increment the controls each time step if using the keyboard.
+    control_dict : dict
+        A dictionary of control names and specifications.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, control_dict):
+        super().__init__()
 
         # Initialize pygame
         pygame.init()
@@ -62,16 +63,33 @@ class JoystickAircraftController(BaseController):
         else:
             raise IOError("No joystick detected.")
 
-        # Get deflection limits
-        limits = kwargs.get("control_limits", {})
-        self._da_max = radians(limits.get("aileron", 20.0))
-        self._de_max = radians(limits.get("elevator", 20.0))
-        self._dr_max = radians(limits.get("rudder", 20.0))
+        # Get mapping and limits
+        self._control_mapping = {}
+        self._control_limits = {}
+        self._angular_control = {} # True for angular deflection, False for 0 to 1.
+        for key, value in control_dict.items():
+
+            # See if limits have been defined
+            limits = value.get("max_deflection", None)
+            if limits is not None: # The limits are defined
+                self._control_limits[key] = limits
+                self._angular_control[key] = True
+            else:
+                self._angular_control = False
+            
+            # Get the mapping
+            self._control_mapping[key] = value["input_axis"]
+
+            # Store control names
+            self._controls.append(key)
 
         # Set variable for knowing if the user has perturbed from the trim state yet
         self._perturbed = False
-        self._throttle_perturbed = False
-        self._init_thr_pos = self._joy.get_axis(3)
+        self._joy_init = np.zeros(4)
+        self._joy_init[0] = self._joy.get_axis(0)
+        self._joy_init[1] = self._joy.get_axis(1)
+        self._joy_init[2] = self._joy.get_axis(2)
+        self._joy_init[3] = self._joy.get_axis(3)
 
 
     def get_control(self, state_vec, prev_controls):
@@ -98,52 +116,22 @@ class JoystickAircraftController(BaseController):
         joy_def[2] = self._joy.get_axis(2)
         joy_def[3] = self._joy.get_axis(3)
 
-        # Erase trim
-        if self._joy.get_button(3):
-            self._joy_trim = np.zeros(3)
-
         # Check if we're perturbed from the start control set
-        if not self._perturbed and (joy_def[:3] != 0.0).any():
-            self._perturbed = True
-
-        # Check if the throttle has been moved
-        if not self._throttle_perturbed and joy_def[3] != self._init_thr_pos:
-            self._throttle_perturbed = True
-
-        # Store trim
-        if not self._trimming and self._joy.get_button(2):
-            self._trimming = True
-            self._joy_trim = self._joy_trim+joy_def[:3]
-
-        # Check if the user has released the joystick after setting trim
-        if self._trimming and (joy_def[:3] == 0.0).all():
-            self._trimming = False
-
-        # Don't apply the trim until the user releases the joystick
-        if self._trimming:
-            controls = {
-                "aileron": (joy_def[0]**3)*-self._da_max,
-                "elevator": (joy_def[1]**3)*-self._de_max,
-                "rudder": (joy_def[2]**3)*-self._dr_max
-            }
-        else:
-            controls = {
-                "aileron": (joy_def[0]+self._joy_trim[0])**3*-self._da_max,
-                "elevator": (joy_def[1]+self._joy_trim[1])**3*-self._de_max,
-                "rudder": (joy_def[2]+self._joy_trim[2])**3*-self._dr_max
-            }
-
-        # Don't apply new throttle until it's been moved
-        if self._throttle_perturbed:
-            controls["throttle"] = (-joy_def[3]+1.)*0.5
-        else:
-            controls["throttle"] = prev_controls["throttle"]
-
-        # Check if we've been perturbed from the trim state
         if not self._perturbed:
-            return prev_controls
-        else:
-            return controls
+            if (joy_def != self._joy_init).any():
+                self._perturbed = True
+            else:
+                return prev_controls # No point in parsing things if nothing's changed
+
+        # Parse new controls
+        control_state = {}
+        for name in self._controls:
+            if self._angular_control[name]:
+                control_state[name] = (joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
+            else:
+                control_state[name] = (-joy_def[self._control_mapping[name]]+1.)*0.5
+
+        return control_state
 
 
 class KeyboardAircraftController(BaseController):
