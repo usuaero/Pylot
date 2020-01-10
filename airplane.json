@@ -22,13 +22,19 @@
     },
     "controls" : {
         "aileron" : {
-            "max_deflection" : 20.0
+            "max_deflection" : 20.0,
+            "input_axis" : 0
         },
         "elevator" : {
-            "max_deflection" : 20.0
+            "max_deflection" : 20.0,
+            "input_axis" : 1
         },
         "rudder" : {
-            "max_deflection" : 20.0
+            "max_deflection" : 20.0,
+            "input_axis" : 2
+        },
+        "throttle" : {
+            "input_axis" : 3
         }
     },
     "engines" : {
