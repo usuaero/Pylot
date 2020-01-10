@@ -327,7 +327,7 @@ class LinearizedAirplane(BaseAircraft):
             self._control_derivs[name]["Cn"] = derivs.get("Cn", 0.0)
 
             # Get reference setting
-            self._control_ref[name] = self._input_dict["reference"].get("controls", {}).get(name, 0.0)
+            self._control_ref[name] = m.radians(self._input_dict["reference"].get("controls", {}).get(name, 0.0))
 
 
     def _trim(self):
@@ -362,6 +362,65 @@ class LinearizedAirplane(BaseAircraft):
         # Get control state
         self._controls = self._controller.get_control(self.y, self._controls)
 
+        # Declare force and moment vector
+        FM = np.zeros(6)
+
+        # Get states
+        rho = self._get_density(-self.y[8])
+        u = self.y[0]
+        v = self.y[1]
+        w = self.y[2]
+        p = self.y[3]
+        q = self.y[4]
+        r = self.y[5]
+        V = m.sqrt(u*u+v*v+w*w)
+        V_inv = 1.0/V
+        a = m.atan2(w,u)
+        B = m.atan2(v,u)
+        const = 0.5/V
+        p_bar = self._bw*p*const
+        q_bar = self._cw*q*const
+        r_bar = self._bw*r*const
+
+        # Get redimensionalizer
+        redim = 0.5*rho*V*V*self._Sw
+
+        # Determine coefficients without knowing final values for CL and CS
+        CL = self._CL_ref+self._CL_a*a+self._CL_q*q_bar
+        CS = self._CY_b*B+self._CY_p*p_bar+self._CY_r*r_bar
+        CD = self._CD0+self._CD_q*q_bar
+        Cl = self._Cl_ref+self._Cl_b*B+self._Cl_p*p_bar
+        Cm = self._Cm_ref+self._Cm_q*q_bar
+        Cn = self._Cn_ref+self._Cn_r*r_bar
+
+        # Determine influence of controls
+        for key, value in self._controls:
+            CL += (value-self._control_ref[key])*self._control_derivs[key]["CL"]
+            CD += (value-self._control_ref[key])*self._control_derivs[key]["CD"]
+            CS += (value-self._control_ref[key])*self._control_derivs[key]["CY"]
+            Cl += (value-self._control_ref[key])*self._control_derivs[key]["Cl"]
+            Cm += (value-self._control_ref[key])*self._control_derivs[key]["Cm"]
+            Cn += (value-self._control_ref[key])*self._control_derivs[key]["Cn"]
+
+        # Factor in terms involving CL and CS
+        CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
+        Cl += (self._Cl_r/self._CL_ref)*CL*r_bar
+        Cm += (self._Cm_a/self._CL_a)*(CL*u*V_inv-self._CL_ref+CD*w*V_inv)
+        Cn += (self._Cn_b/self._CY_b)*(CS*u*V_inv-CD*v*V_inv)+(self._Cn_p/self._CL_ref)*CL*p_bar
+
+        # Apply aerodynamic angles and dimensionalize
+        FM[0] = redim*(CL*m.sin(a)-CS*m.sin(B)-CD*u*V_inv)
+        FM[1] = redim*(CS*cos(B)-CD*v*V_inv)
+        FM[2] = redim*(-CL*cos(a)-CD*w*V_inv)
+        FM[3] = redim*Cl*self._bw
+        FM[4] = redim*Cm*self._cw
+        FM[5] = redim*Cn*self._bw
+
+        # Get effect of engines
+        for engine in self._engines:
+            FM += engine.get_thrust_FM(self._controls, rho, V)
+
+        return FM
 
 
 class MachUpXAirplane(BaseAircraft):
