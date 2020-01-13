@@ -65,7 +65,7 @@ class BaseAircraft:
         self._I_diff_xy = self._I_xx-self._I_yy
 
         # Set angular momentums
-        self._hx, self._hy, self._hz = self._input_dict.get("angular_momentum", [0.0, 0.0, 0.0])
+        self._hx, self._hy, self._hz = import_value("angular_momentum", self._input_dict, self._units, [0.0, 0.0, 0.0])
 
         # Load engines
         self._engines = []
@@ -333,7 +333,7 @@ class LinearizedAirplane(BaseAircraft):
             self._control_derivs[name]["Cl"] = derivs.get("Cl", 0.0)
             self._control_derivs[name]["Cn"] = derivs.get("Cn", 0.0)
 
-            # Get reference setting
+            # Get reference control deflections
             self._control_ref[name] = self._input_dict["reference"].get("controls", {}).get(name, 0.0)
 
 
