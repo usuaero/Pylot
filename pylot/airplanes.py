@@ -292,9 +292,9 @@ class LinearizedAirplane(BaseAircraft):
         for engine in self._engines:
             engine_CM += engine.get_unit_thrust_moment()*engine_CT
 
-        self._Cl_ref = engine_CM[0]/self._bw
-        self._Cm_ref = engine_CM[1]/self._cw
-        self._Cn_ref = engine_CM[2]/self._bw
+        self._Cl_ref = -engine_CM[0]/self._bw
+        self._Cm_ref = -engine_CM[1]/self._cw
+        self._Cn_ref = -engine_CM[2]/self._bw
 
 
     def _import_coefficients(self):
