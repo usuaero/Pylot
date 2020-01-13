@@ -33,7 +33,20 @@ class BaseController:
 
 
 class NoController(BaseController):
-    """A controller that implements no control."""
+    """A controller that holds constant the initial controls.
+
+    Parameters
+    ----------
+    control_dict : dict
+        A dictionary of control names and specifications.
+    """
+
+    def __init__(self, control_dict):
+        super().__init__()
+
+        # Get control names
+        for key, value in control_dict.items():
+            self._controls.append(key)
 
     def get_control(self, state_vec, prev_controls):
         return prev_controls

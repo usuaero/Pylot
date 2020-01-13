@@ -84,7 +84,7 @@ class BaseAircraft:
 
         # No control input
         if control_type is None:
-            self._controller = NoController()
+            self._controller = NoController(self._input_dict.get("controls", {}))
 
         # Joystick
         elif control_type == "joystick":
@@ -211,45 +211,11 @@ class LinearizedAirplane(BaseAircraft):
         # Initialize density
         self._get_density = self._initialize_density(density)
 
-        # Import reference params
-        self._Sw = self._input_dict["reference"].get("area", None)
-        self._bw = self._input_dict["reference"].get("lateral_length", None)
-        self._cw = self._input_dict["reference"].get("longitudinal_length", None)
-
-        # Check we have all the reference lengths we need
-        if self._Sw is not None and self._bw is not None and self._cw is None:
-            self._cw = self._Sw/self._bw
-        elif self._Sw is None and self._bw is not None and self._cw is not None:
-            self._Sw = self._cw*self._bw
-        elif self._Sw is not None and self._bw is None and self._cw is not None:
-            self._bw = self._Sw/self._cw
-        elif not (self._Sw is not None and self._bw is not None and self._cw is not None):
-            raise IOError("At least two of area, lateral length, or longitudinal length must be specified.")
-
         # Read in coefficients
         self._import_coefficients()
 
-        # Parse the reference state
-        rho_ref = import_value("density", self._input_dict["reference"], self._units, None)
-        V_ref = import_value("airspeed", self._input_dict["reference"], self._units, None)
-        self._CL_ref = self._W/(0.5*rho_ref*V_ref*V_ref*self._Sw)
-        self._ref_controls = self._input_dict["reference"].get("controls", {})
-
-        # Determine drag polar
-        self._CD2 = self._CD_a2/(2*self._CL_a*self._CL_a)
-        self._CD1 = self._CD_a/self._CL_a-2*self._CD2*self._CL_ref
-        self._CD0 = self._CD-self._CD1*self._CL_ref-self._CD2*self._CL_ref*self._CL_ref
-
-        # Determine reference aerodynamic moments
-        # This assumes thrust is evenly distributed among all engines
-        engine_CT = self._CD/self._num_engines
-        engine_CM = np.zeros(3)
-        for engine in self._engines:
-            engine_CM += engine.get_unit_thrust_moment()*engine_CT
-
-        self._Cl_ref = engine_CM[0]/self._bw
-        self._Cm_ref = engine_CM[1]/self._cw
-        self._Cn_ref = engine_CM[2]/self._bw
+        # Import reference params
+        self._import_reference_state()
 
         # Set initial state
         trim = param_dict.get("trim", False)
@@ -259,7 +225,7 @@ class LinearizedAirplane(BaseAircraft):
         elif trim:
             self._trim()
         elif initial_state:
-            self._set_initial_state()
+            self._set_initial_state(initial_state)
         else:
             raise IOError("An initial condition was not specified!")
 
@@ -288,6 +254,47 @@ class LinearizedAirplane(BaseAircraft):
             raise IOError("{0} is not a valid density specification.".format(density))
 
         return density_getter
+
+
+    def _import_reference_state(self):
+        # Parses the reference state from the input file
+
+        # Get reference lengths and area
+        self._Sw = self._input_dict["reference"].get("area", None)
+        self._bw = self._input_dict["reference"].get("lateral_length", None)
+        self._cw = self._input_dict["reference"].get("longitudinal_length", None)
+
+        # Check we have all the reference lengths we need
+        if self._Sw is not None and self._bw is not None and self._cw is None:
+            self._cw = self._Sw/self._bw
+        elif self._Sw is None and self._bw is not None and self._cw is not None:
+            self._Sw = self._cw*self._bw
+        elif self._Sw is not None and self._bw is None and self._cw is not None:
+            self._bw = self._Sw/self._cw
+        elif not (self._Sw is not None and self._bw is not None and self._cw is not None):
+            raise IOError("At least two of area, lateral length, or longitudinal length must be specified.")
+
+        # Parse the reference state
+        rho_ref = import_value("density", self._input_dict["reference"], self._units, None)
+        V_ref = import_value("airspeed", self._input_dict["reference"], self._units, None)
+        L_ref = import_value("lift", self._input_dict["reference"], self._units, None)
+        self._CL_ref = L_ref/(0.5*rho_ref*V_ref*V_ref*self._Sw)
+
+        # Determine drag polar
+        self._CD2 = self._CD_a2/(2*self._CL_a*self._CL_a)
+        self._CD1 = self._CD_a/self._CL_a-2*self._CD2*self._CL_ref
+        self._CD0 = self._CD-self._CD1*self._CL_ref-self._CD2*self._CL_ref*self._CL_ref
+
+        # Determine reference aerodynamic moments
+        # This assumes thrust is evenly distributed among all engines
+        engine_CT = self._CD/self._num_engines
+        engine_CM = np.zeros(3)
+        for engine in self._engines:
+            engine_CM += engine.get_unit_thrust_moment()*engine_CT
+
+        self._Cl_ref = engine_CM[0]/self._bw
+        self._Cm_ref = engine_CM[1]/self._cw
+        self._Cn_ref = engine_CM[2]/self._bw
 
 
     def _import_coefficients(self):
@@ -327,7 +334,7 @@ class LinearizedAirplane(BaseAircraft):
             self._control_derivs[name]["Cn"] = derivs.get("Cn", 0.0)
 
             # Get reference setting
-            self._control_ref[name] = m.radians(self._input_dict["reference"].get("controls", {}).get(name, 0.0))
+            self._control_ref[name] = self._input_dict["reference"].get("controls", {}).get(name, 0.0)
 
 
     def _trim(self):
@@ -335,11 +342,8 @@ class LinearizedAirplane(BaseAircraft):
         pass
 
 
-    def _set_initial_state(self):
+    def _set_initial_state(self, state_dict):
         # Sets the initial state of the aircraft according to the input
-
-        # Get state dict
-        state_dict = self._input_dict.get("initial_state")
 
         # Set values
         self.y[:3] = import_value("velocity", state_dict, self._units, None)
@@ -377,7 +381,7 @@ class LinearizedAirplane(BaseAircraft):
         V_inv = 1.0/V
         a = m.atan2(w,u)
         B = m.atan2(v,u)
-        const = 0.5/V
+        const = 0.5*V_inv
         p_bar = self._bw*p*const
         q_bar = self._cw*q*const
         r_bar = self._bw*r*const
@@ -394,13 +398,14 @@ class LinearizedAirplane(BaseAircraft):
         Cn = self._Cn_ref+self._Cn_r*r_bar
 
         # Determine influence of controls
-        for key, value in self._controls:
-            CL += (value-self._control_ref[key])*self._control_derivs[key]["CL"]
-            CD += (value-self._control_ref[key])*self._control_derivs[key]["CD"]
-            CS += (value-self._control_ref[key])*self._control_derivs[key]["CY"]
-            Cl += (value-self._control_ref[key])*self._control_derivs[key]["Cl"]
-            Cm += (value-self._control_ref[key])*self._control_derivs[key]["Cm"]
-            Cn += (value-self._control_ref[key])*self._control_derivs[key]["Cn"]
+        for key, value in self._controls.items():
+            control_deriv = self._control_derivs[key]
+            CL += m.radians(value-self._control_ref[key])*control_deriv["CL"]
+            CD += m.radians(value-self._control_ref[key])*control_deriv["CD"]
+            CS += m.radians(value-self._control_ref[key])*control_deriv["CY"]
+            Cl += m.radians(value-self._control_ref[key])*control_deriv["Cl"]
+            Cm += m.radians(value-self._control_ref[key])*control_deriv["Cm"]
+            Cn += m.radians(value-self._control_ref[key])*control_deriv["Cn"]
 
         # Factor in terms involving CL and CS
         CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
@@ -471,7 +476,7 @@ class Engine:
         self._name = name
         self._units = kwargs.get("units")
         self._offset = import_value("offset", kwargs, self._units, [0.0, 0.0, 0.0])
-        self._direction = import_value("direction", kwargs, self._units, [-1.0, 0.0, 0.0])
+        self._direction = import_value("direction", kwargs, self._units, [1.0, 0.0, 0.0])
         self._T0 = import_value("T0", kwargs, self._units, None)
         self._T1 = import_value("T1", kwargs, self._units, None)
         self._T2 = import_value("T2", kwargs, self._units, None)
