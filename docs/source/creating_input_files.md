@@ -252,7 +252,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
 >>>
 >>>**"direction" : vector, optional**
->>>>Direction of the thrust vector produced by the engine in body-fixed coordinates. Defaults to [-1.0, 0.0, 0.0].
+>>>>Direction of the thrust force vector exerted by the engine on the aircraft in body-fixed coordinates. Defaults to [1.0, 0.0, 0.0].
 >>>
 >>>**"T0" : float**
 >>>>Corresponds to T0 in the above thrust equation. Represents full-throttle, static thrust.
