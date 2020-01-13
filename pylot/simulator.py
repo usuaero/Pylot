@@ -67,6 +67,8 @@ class Simulator:
             t1 = time.time()
             self._dt = t1-t0
             t0 = t1
+        else:
+            self._aircraft.output_state(self._t0)
 
         t = copy.copy(self._t0)
 
@@ -79,15 +81,15 @@ class Simulator:
             # Normalize
             self._aircraft.normalize()
 
-            # Output
-            self._aircraft.output_state(t)
-
             # Step in time
             if self._real_time:
                 t1 = time.time()
                 self._dt = t1-t0
                 t0 = t1
             t += self._dt
+
+            # Output
+            self._aircraft.output_state(t)
 
             # Pass information to graphics
             if self._render_graphics:

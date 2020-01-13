@@ -1,0 +1,31 @@
+{
+    "tag" : "Example of flight simulator input.",
+    "simulation" : {
+        "real_time" : false,
+        "dt" : 0.05,
+        "start_time" : 0.0,
+        "final_time" : 10.0,
+        "enable_graphics" : false
+    },
+    "units" : "English",
+    "atmosphere" : {
+        "density" : 0.0023769
+    },
+    "aircraft" : {
+        "name" : "my_airplane",
+        "file" : "airplane.json",
+        "initial_state" : {
+            "velocity" : [1.749999647e+02, -2.456972764e-02, 1.083402783e-01],
+            "angular_rates" : [-5.872134175e-03, 2.281571912e-02, 6.268567309e-02],
+            "position" : [0.0, 0.0, -500.0],
+            "orientation" : [9.83858935e-01, 1.734808755e-01, 4.321927380e-02, -7.620724057e-03],
+            "control_state" : {
+                "throttle" : 0.67569112434773837,
+                "aileron" : -5.8397423714855227e-02,
+                "elevator" : 4.4083056979333755,
+                "rudder" : -0.54199836594454420
+            }
+        },
+        "state_output" : "states.txt"
+    }
+}
