@@ -213,7 +213,6 @@ class Simulator:
 
                 # Update graphics
                 self._update_graphics()
-                pass
 
         else: # Just wait for the physics to finish
             self._physics_process.join()
@@ -257,4 +256,4 @@ class Simulator:
         k3 = aircraft.dy_dt(t+dt)
 
         # Calculate y
-        aircraft.y = y0+0.166666666666666666667*(k0+2*k1+2*k2+k3)*dt
+        aircraft.y = y0+0.16666666666666666666667*(k0+2*k1+2*k2+k3)*dt
