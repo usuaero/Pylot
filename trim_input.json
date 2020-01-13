@@ -20,7 +20,8 @@
             "climb_angle" : 20.0,
             "bank_angle" : 30.0,
             "heading" : 0.0,
-            "verbose" : true
+            "verbose" : true,
+            "controls" : ["throttle", "aileron", "elevator", "rudder"]
         },
         "state_output" : "states.txt",
         "controller" : "joystick"
