@@ -85,7 +85,7 @@ class JoystickAircraftController(BaseController):
             # See if limits have been defined
             limits = value.get("max_deflection", None)
             if limits is not None: # The limits are defined
-                self._control_limits[key] = radians(limits)
+                self._control_limits[key] = limits
                 self._angular_control[key] = True
             else:
                 self._angular_control = False
@@ -140,7 +140,7 @@ class JoystickAircraftController(BaseController):
         control_state = {}
         for name in self._controls:
             if self._angular_control[name]:
-                control_state[name] = (joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
+                control_state[name] = (joy_def[self._control_mapping[name]]**0.33333333)*-self._control_limits[name]
             else:
                 control_state[name] = (-joy_def[self._control_mapping[name]]+1.)*0.5
 
