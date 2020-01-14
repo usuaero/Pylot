@@ -7,6 +7,7 @@ from abc import abstractmethod
 from .helpers import *
 from .std_atmos import *
 from .controllers import *
+from .engine import *
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
@@ -345,9 +346,10 @@ class LinearizedAirplane(BaseAircraft):
         self.y[6:9] = trim_dict["position"]
         climb = m.radians(trim_dict["climb_angle"])
         bank = m.radians(trim_dict["bank_angle"])
-        heading = trim_dict["heading"]
+        heading = m.radians(trim_dict["heading"])
         verbose = trim_dict["verbose"]
-        avail_controls = trim_dict["controls"]
+        avail_controls = trim_dict.get("trim_controls", list(self._controls.keys()))
+        fixed_controls = trim_dict.get("fixed_controls", {})
         if len(avail_controls) != 4:
             raise IOError("Exactly 4 controls may be used to trim the aircraft. Got {0}.".format(len(avail_controls)))
 
@@ -366,8 +368,10 @@ class LinearizedAirplane(BaseAircraft):
             thrust_derivs[control] = np.zeros(3)
             thrust_moment_derivs[control] = np.zeros(3)
             for engine in self._engines:
-                thrust_derivs[control] += engine.get_thrust_deriv(control, rho, V0)
-                thrust_moment_derivs[control] += engine.get_thrust_moment_deriv(control, rho, V0)
+                # These derivatives must be converted to degrees because all controls are handled
+                # in radians for the trim algorithm, regardless of whether they're actually angular.
+                thrust_derivs[control] += np.degrees(engine.get_thrust_deriv(control, rho, V0))
+                thrust_moment_derivs[control] += np.degrees(engine.get_thrust_moment_deriv(control, rho, V0))
 
         # Initial guess
         alpha = 0.0
@@ -375,9 +379,7 @@ class LinearizedAirplane(BaseAircraft):
         theta = self._get_elevation(alpha, beta, bank, climb)
         A = np.zeros((6,6))
         B = np.zeros(6)
-        old_trim_vals = np.zeros(6)
-        for i, name in enumerate(avail_controls): # Set controls to reference settings
-            old_trim_vals[i+2] = m.radians(self._control_ref[name])
+        old_trim_vals = np.zeros(6) # These are deviations from the reference setting
 
         # Initialize output
         if verbose:
@@ -390,14 +392,12 @@ class LinearizedAirplane(BaseAircraft):
 
         # Iterate until trim values converge
         approx_error = 1
+        iterations = 0
         while approx_error > 1e-22:
 
             # Extract trim values
-            alpha = old_trim_vals[1]
-            beta = old_trim_vals[2]
-            de = old_trim_vals[3]
-            da = old_trim_vals[4]
-            dr = old_trim_vals[5]
+            alpha = old_trim_vals[0]
+            beta = old_trim_vals[1]
             theta = self._get_elevation(alpha, beta, bank, climb)
 
             # Calulate trig values
@@ -429,15 +429,127 @@ class LinearizedAirplane(BaseAircraft):
             q_bar = self._cw*const*q
             r_bar = self._bw*const*r
 
+            # Calculate aerodynamic coefficients
+            CL = self._CL_ref+self._CL_a*alpha+self._CL_q*q_bar
+            CS = self._CY_b*beta+self._CY_p*p_bar+self._CY_r*r_bar
+            CD = self._CD0+self._CD_q*q_bar
+
+            # Determine influence of trim controls
+            for i,name in enumerate(avail_controls):
+                control_deriv = self._control_derivs[name]
+                CL += old_trim_vals[2+i]*control_deriv["CL"]
+                CD += old_trim_vals[2+i]*control_deriv["CD"]
+                CS += old_trim_vals[2+i]*control_deriv["CY"]
+
+            # Determine influence of fixed controls
+            for key,value in fixed_controls.items():
+                control_deriv = self._control_derivs[key]
+                CL += m.radians(value-self._control_ref[key])*control_deriv["CL"]
+                CD += m.radians(value-self._control_ref[key])*control_deriv["CD"]
+                CS += m.radians(value-self._control_ref[key])*control_deriv["CS"]
+
+            # Factor in terms involving CL and CS
+            CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
+
+            # Populate A matrix
+            # Terms dependent on alpha
+            A[2,0] = -self._CL_a*C_a
+
+            # Terms dependent on beta
+            A[1,1] = self._CY_b*C_B
+            A[3,1] = self._bw*self._Cl_b
+
+            # Now loop through trim controls
+            for i,name in enumerate(avail_controls):
+                A[0,2+i] = redim_inv*thrust_derivs[name][0]-self._control_derivs[name]["CD"]*u*V0_inv
+                A[1,2+i] = redim_inv*thrust_derivs[name][1]+self._control_derivs[name]["CY"]*C_B
+                A[2,2+i] = redim_inv*thrust_derivs[name][2]-self._control_derivs[name]["CL"]*C_a
+                A[3,2+i] = redim_inv*thrust_moment_derivs[name][0]+self._control_derivs[name]["Cl"]*self._bw
+                A[4,2+i] = redim_inv*thrust_moment_derivs[name][1]+self._control_derivs[name]["Cm"]*self._cw
+                A[5,2+i] = redim_inv*thrust_moment_derivs[name][2]+self._control_derivs[name]["Cn"]*self._bw
+
+            # Populate B vector
+            # Aerodynamic contributions
+            B[0] = -CL*S_a+CS*S_B+(self._CD0+self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS+self._CD_q*q_bar)*u*V0_inv
+            B[1] = (-self._CY_p*p_bar-self._CY_r*r_bar)*C_B+CD*v*V0_inv
+            B[2] = (self._CL_ref+self._CL_q*q_bar)*C_a+CD*w*V0_inv
+            B[3] = -self._bw*(self._Cl_ref+self._Cl_p*p_bar+(self._Cl_r/self._CL_ref)*CL*r_bar)
+            B[4] = -self._cw*(self._Cm_ref+(self._Cm_a/self._CL_a)*(CL*u*V0_inv-self._CL_ref+CD*w*V0_inv)+self._Cm_q*q_bar)
+            B[5] = -self._bw*(self._Cn_ref+(self._Cn_b/self._CY_b)*(CS*u*V0_inv-CD*v*V0_inv)+(self._Cn_p/self._CL_ref)*CL*p_bar+self._Cn_r*r_bar)
+
+            # Contributions of fixed controls
+            for key, value in fixed_controls.items():
+                control_deriv = self._control_derivs[key]
+                delta_control = m.radians(value-self._control_ref[key])
+                B[0] += delta_control*control_deriv["CD"]*u*V0_inv
+                B[1] += -delta_control*control_deriv["CY"]*C_B
+                B[2] += delta_control*control_deriv["CL"]*C_a
+                B[3] += -self._bw*control_deriv["Cl"]*delta_control
+                B[4] += -self._cw*control_deriv["Cm"]*delta_control
+                B[5] += -self._bw*control_deriv["Cn"]*delta_control
+
+            # Inertial and gyroscopic contributions
+            B[0] += CW*(S_theta-(r*v-q*w)/g)
+            B[1] += CW*(-S_phi*C_theta-(p*w-r*u)/g)
+            B[2] += CW*(-C_phi*C_theta-(q*u-p*v)/g)
+            B[3] += redim_inv*( self._hz*q-self._hy*r-self._I_diff_yz*qr-self._I_yz*(q2-r2)-self._I_xz*pq+self._I_xy*pr)
+            B[4] += redim_inv*(-self._hz*p+self._hx*r-self._I_diff_zx*pr-self._I_xz*(r2-p2)-self._I_xy*qr+self._I_yz*pq)
+            B[5] += redim_inv*( self._hy*p-self._hx*q-self._I_diff_xy*pq-self._I_xy*(p2-q2)-self._I_yz*pr+self._I_xz*qr)
+
+            # Solve
+            trim_vals = np.linalg.solve(A,B)
+
+            # Update for next iteration
+            alpha = trim_vals[0]
+            beta = trim_vals[1]
+            approx_error = np.max(np.abs(trim_vals-old_trim_vals))
+            theta = self._get_elevation(alpha, beta, bank, climb)
+            old_trim_vals = np.copy(trim_vals)
+
             # Output
             if verbose:
                 output = ["{0:>20.10f}{1:>20.10f}".format(degrees(alpha), degrees(beta))]
                 for i, name in enumerate(avail_controls):
-                    output.append("{0:>20.10f}".format(old_trim_vals[i+2]+self._control_ref[name]))
+                    output.append("{0:>20.10f}".format(m.degrees(old_trim_vals[i+2]+m.radians(self._control_ref[name]))))
                 output.append("{0:>20.10f}".format(m.degrees(theta)))
                 print("".join(output))
 
-            approx_error = 0.0
+            # Check for non-convergence
+            iterations += 1
+            if iterations > 100:
+                if verbose:
+                    print("Unable to trim at the desired attitude.")
+                break
+
+        # Apply trim state
+        alpha = trim_vals[0]
+        beta = trim_vals[1]
+        theta = self._get_elevation(alpha, beta, bank, climb)
+        C_theta = cos(theta)
+        S_theta = sin(theta)
+        C_phi = cos(bank)
+        S_phi = sin(bank)
+        C_a = cos(alpha)
+        S_a = sin(alpha)
+        C_B = cos(beta)
+        S_B = sin(beta)
+        D = sqrt(1-S_a*S_a*S_B*S_B)
+        u = V0*C_a*C_B/D
+        v = V0*C_a*S_B/D
+        w = V0*S_a*C_B/D
+        self.y[0] = u
+        self.y[1] = v
+        self.y[2] = w
+        self.y[3:6] = self._get_rotation_rates(C_phi, S_phi, C_theta, S_theta, g, u, w)
+        self.y[9:] = Euler2Quat([bank, theta, heading])
+
+        # Apply trim controls
+        # Variable
+        for i,name in enumerate(avail_controls):
+            self._controls[name] = m.degrees(trim_vals[i+2]+m.radians(self._control_ref[name]))
+        # Fixed
+        for key, value in fixed_controls:
+            self._controls[key] = value
 
 
     def _get_elevation(self, alpha, beta, phi, gamma):
@@ -579,113 +691,3 @@ class MachUpXAirplane(BaseAircraft):
 
     def __init__(self, name, input_dict, density, units, param_dict):
         super().__init__(name, input_dict, density, units, param_dict)
-
-
-class Engine:
-    """An engine for a simulated aircraft.
-
-    Parameters
-    ----------
-    name : str
-        Name of the engine.
-
-    offset : vector
-        Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
-
-    T0 : float
-    
-    T1 : float
-
-    T2 : float
-    
-    a : float
-
-    control : str
-        Name of the control that sets the throttle for this engine. Defaults to "throttle".
-
-    units : str
-        Unit system used for the engine.
-    """
-
-    def __init__(self, name, **kwargs):
-
-        # Store parameters
-        self._name = name
-        self._units = kwargs.get("units")
-        self._offset = import_value("offset", kwargs, self._units, [0.0, 0.0, 0.0])
-        self._direction = import_value("direction", kwargs, self._units, [1.0, 0.0, 0.0])
-        self._T0 = import_value("T0", kwargs, self._units, None)
-        self._T1 = import_value("T1", kwargs, self._units, None)
-        self._T2 = import_value("T2", kwargs, self._units, None)
-        self._a = import_value("a", kwargs, self._units, None)
-        self._control = kwargs.get("control", "throttle")
-
-        # Normalize direction vector
-        self._direction /= np.linalg.norm(self._direction)
-
-        # Determine air density at sea level
-        if self._units == "English":
-            self._rho0 = statee(0)[-1]
-        else:
-            self._rho0 = statsi(0)[-1]
-
-
-    def get_thrust_FM(self, controls, rho, V):
-        """Returns the forces and moments due to thrust from this engine.
-
-        Parameters
-        ----------
-        controls : dict
-            Dictionary of control settings.
-
-        rho : float
-            Air density.
-
-        V : float
-            Airspeed.
-
-        Returns
-        -------
-        FM : vector
-            Forces and moments due to thrust.
-        """
-
-        FM = np.zeros(6)
-
-        # Get throttle setting
-        tau = controls.get(self._control, 0.0)
-
-        # Calculate thrust magnitude
-        T = tau*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V)
-
-        # Set thrust vector
-        FM[:3] = T*self._direction
-
-        # Set moments
-        FM[3:] = np.cross(self._offset, FM[:3])
-
-        return FM
-
-
-    def get_unit_thrust_moment(self):
-        """Returns the thrust moment vector assuming a thrust magnitude of unity.
-        """
-        return np.cross(self._offset, self._direction)
-
-
-    def get_thrust_deriv(self, control, rho, V):
-        """Returns the derivative of the thrust vector with respect to the given control.
-        """
-        if control == self._control:
-            return self._direction*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V)
-        else:
-            return np.zeros(3)
-
-
-    def get_thrust_moment_deriv(self, control, rho, V):
-        """Returns the derivative of the thrust moment with respect to the given control.
-        """
-        if control == self._control:
-            return np.cross(self._offset, self._direction*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V))
-        else:
-            return np.zeros(3)

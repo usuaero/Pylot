@@ -114,6 +114,15 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>**"heading" : float, optional**
 >>>>Initial heading in degrees. Defaults to 0.0.
 >>>
+>>>**"trim_controls" : list, optional**
+>>>>Names of the controls used to trim the aircraft. Exactly 4 controls must be specified here. If the aircraft only has 4 controls, this is optional. If the aircraft has fewer than 4 controls, trim will not be possible. If the aircraft has more than 4 controls, the remaining controls are assumed to remain at a fixed value, given in "fixed_controls".
+>>>
+>>>**"fixed_controls" : dict, optional**
+>>>>Specifies the fixed values of the controls not used to trim the aircraft.
+>>>>
+>>>>**"<CONTROL_NAME>" : float, optional**
+>>>>>Trim setting of this specific control. Defaults to 0.0.
+>>>
 >>>**"verbose" : boolean, optional**
 >>>>Whether to output intermediate guesses at each step of the iterative trim algorithm. Helps inform the user as to the progress/convergence of trim. Defaults to false.
 >>
@@ -208,7 +217,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>Lists the control deflections required to trim the aircraft at the reference state. Required only for linearized model.
 >>>
 >>>**"<CONTROL_NAME>" : float, optional**
->>>>Control deflection at trim reference state. This should be repeated for each aerodynamic control used to trim the aircraft at the reference state. Defaults to 0.0.
+>>>>Control deflection at trim reference state in degrees. This should be repeated for each *aerodynamic* control used to trim the aircraft at the reference state. Engine controls should not be listed. Defaults to 0.0.
 >
 >**"controls" : dict, optional**
 >>Defines the control inputs of the aircraft. If the joystick or keyboard are selected for user input, at most 4 controls may be listed here. For information on using the joystick/keyboard, see [User Interface](user_interface).
