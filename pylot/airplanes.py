@@ -190,7 +190,7 @@ class BaseAircraft:
 
 
     @abstractmethod
-    def get_graphics_obj(self):
+    def get_graphics_info(self):
         pass
 
 
