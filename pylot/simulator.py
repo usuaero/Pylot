@@ -40,6 +40,8 @@ class Simulator:
         # Initialize inter-process communication
         manager = mp.Manager()
         self._state_manager = manager.list()
+        self._graphics_ready = manager.Value('i', 0)
+        self._aircraft_graphics_info = manager.dict()
 
         # Kick off physics process
         self._physics_process = mp.Process(target=self._run_physics, args=())
@@ -56,7 +58,15 @@ class Simulator:
         # Load aircraft
         self._load_aircraft()
 
-        # TODO: Atmospheric properties
+        # Pass airplane graphics information to parent process
+        if self._render_graphics:
+            aircraft_graphics_info = self._aircraft.get_graphics_info()
+            for key, value in aircraft_graphics_info:
+                self._aircraft_graphics_info[key] = value
+
+            # Wait fo graphics to load
+            while not self._graphics_ready.value:
+                pass
 
         # Get an initial guess for how long each sim step is going to take
         t0 = time.time()
@@ -206,11 +216,20 @@ class Simulator:
         # Initialize storage of velocities for determining g's
         self._prev_vels = [0.0, 0.0, 0.0]
 
-        # TODO : Import aircraft object
-        ## Initialize graphics for aircraft
-        #self._aircraft_graphics = self._aircraft.get_graphics_obj()
-        #self._aircraft_graphics.set_orientation(self._aircraft.y[9:])
-        #self._aircraft_graphics.set_position(self._aircraft.y[6:9])
+        # Wait for physics to initialize then import aircraft object
+        while True:
+            try:
+                obj_path = self._aircraft_graphics_info["obj_path"]
+                v_shader_path = self._aircraft_graphics_info["v_shader_path"]
+                f_shader_path = self._aircraft_graphics_info["f_shader_path"]
+                texture_path = self._aircraft_graphics_info["texture_path"]
+                self._aircraft_graphics = Mesh(obj_path, v_shader_path, f_shader_path, texture_path, width, height)
+                self._aircraft_graphics.set_position(self._aircraft_graphics_info["position"])
+                self._aircraft_graphics.set_orientation(self._aircraft_graphics_info["orientation"])
+                break
+
+            except KeyError: # If it's not there, just keep waiting
+                continue
 
 
     def run_sim(self):
