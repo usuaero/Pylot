@@ -6,6 +6,7 @@ from pyrr import matrix44, vector3,Vector4
 from math import atan2, asin
 import pygame
 from pygame.locals import *
+import os
 
 from PIL import Image
 
@@ -319,42 +320,70 @@ class FlightData:
         self.text.draw(-0.6,-0.75,"Physics Time Step: " +str(round(flight_data["Physics Time Step"],6))+" sec")
 
 class HeadsUp:
-    def __init__(self,width, height):
+    def __init__(self,width, height, res_path, shaders_path):
         #initialize HUD objects
         self.view = np.identity(4)
 
         #initialize pitch ladder
-        self.ladder = Mesh("gsim/res/ladder.obj","gsim/shaders/HUD.vs","gsim/shaders/HUD.fs","gsim/res/HUD_texture.jpg",width,height)
+        self.ladder = Mesh(os.path.join(res_path, "ladder.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
 
         #initialize flight path indicator
-        self.flightPath = Mesh("gsim/res/flightPath.obj", "gsim/shaders/HUD.vs", "gsim/shaders/HUD.fs", "gsim/res/HUD_texture.jpg",width,height)
+        self.flightPath = Mesh(os.path.join(res_path, "flightPath.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
 
         #initialize crosshair
-        self.crosshair = Mesh("gsim/res/crosshair.obj","gsim/shaders/HUD.vs","gsim/shaders/HUD.fs","gsim/res/HUD_texture.jpg",width,height)
+        self.crosshair = Mesh(os.path.join(res_path, "crosshair.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
         self.crosshair.set_position([0.,0.,-0.5])
         self.crosshair.set_view(self.view)
 
         #initialize bank angle indicator
-        self.bank = Mesh("gsim/res/bank.obj","gsim/shaders/HUD.vs","gsim/shaders/HUD.fs","gsim/res/HUD_texture.jpg",width,height)
+        self.bank = Mesh(os.path.join(res_path, "bank.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
         self.bank.set_position([0.,-0.205,-0.075])
         self.bank.set_view(self.view)
 
         #initialize compass
-        self.compass = Mesh("gsim/res/compass.obj","gsim/shaders/HUD.vs","gsim/shaders/HUD.fs","gsim/res/HUD_texture.jpg",width,height)
+        self.compass = Mesh(os.path.join(res_path, "compass.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
         self.compass.set_view(self.view)
 
         #initialize speedometer
-        self.speed = Mesh("gsim/res/speedometer.obj","gsim/shaders/HUD.vs","gsim/shaders/HUD.fs","gsim/res/HUD_texture.jpg",width,height)
+        self.speed = Mesh(os.path.join(res_path, "speedometer.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
         self.speed.set_view(self.view)
 
         #initialize altimeter
-        self.alt = Mesh("gsim/res/altimeter.obj","gsim/shaders/HUD.vs","gsim/shaders/HUD.fs","gsim/res/HUD_texture.jpg",width,height)
+        self.alt = Mesh(os.path.join(res_path, "altimeter.obj"),
+            os.path.join(shaders_path, "HUD.vs"),
+            os.path.join(shaders_path, "HUD.fs"),
+            os.path.join(res_path, "HUD_texture.jpg"),
+            width,height)
         self.alt.set_view(self.view)
 
         #initialize viewports for HUD objects
-        self.viewport = Frame(0.75,0.75,width,height,[0.,0.,-1.])
-        self.speed_viewport = Frame(1.25,0.3,width,height,[0.,0.,-1.])
-        self.bank_viewport = Frame(0.5,0.125,width, height,[0.,0.26,-1.])
+        self.viewport = Frame(0.75,0.75,width,height,[0.,0.,-1.], shaders_path)
+        self.speed_viewport = Frame(1.25,0.3,width,height,[0.,0.,-1.], shaders_path)
+        self.bank_viewport = Frame(0.5,0.125,width, height,[0.,0.26,-1.], shaders_path)
 
 
         #change HUD matrices to fit in center_viewport
@@ -419,7 +448,7 @@ class HeadsUp:
 
 
 class Frame:
-    def __init__(self,x,y,width,height,position):
+    def __init__(self,x,y,width,height,position,shaders_path):
 
         self.plane = [-0.5*x, -0.5*y, 0.0, 0.0, 0.0,
                        0.5*x, -0.5*y, 0.0, 1.0, 0.0,
@@ -433,7 +462,7 @@ class Frame:
         self.external_aspect_ratio = x/y
 
         aspect_ratio = float(width/height)
-        self.shader = compile_shader("gsim/shaders/blank.vs", "gsim/shaders/blank.fs")
+        self.shader = compile_shader(os.path.join(shaders_path, "blank.vs"), os.path.join(shaders_path, "blank.fs"))
         self.model_loc = glGetUniformLocation(self.shader, "model")
         self.proj_loc = glGetUniformLocation(self.shader, "proj")
         self.projection = matrix44.create_perspective_projection_matrix(45.0, aspect_ratio, 0.1, 100.0)

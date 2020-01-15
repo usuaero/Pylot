@@ -13,6 +13,7 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from .graphics import *
+import os
 
 class Simulator:
     """A class for flight simulation using RK4 integration.
@@ -31,10 +32,10 @@ class Simulator:
 
         # Get simulation parameters
         self._real_time = self._input_dict["simulation"].get("real_time", True)
+        self._t0 = self._input_dict["simulation"].get("start_time", 0.0)
+        self._tf = self._input_dict["simulation"].get("final_time", np.inf)
         if not self._real_time:
             self._dt = self._input_dict["simulation"].get("dt", 0.01)
-            self._t0 = self._input_dict["simulation"].get("start_time", 0.0)
-            self._tf = self._input_dict["simulation"].get("final_time", np.inf)
 
         # Initialize inter-process communication
         manager = mp.Manager()
@@ -42,7 +43,7 @@ class Simulator:
         self._graphics_conn, self._physics_conn = mp.Pipe()
 
         # Kick off physics process
-        self._physics_process = mp.Process(target=self._run_physics, args=())
+        self._physics_process = mp.Process(target=self._run_physics, args=(self._state_manager))
 
         # Initialize graphics
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
@@ -50,7 +51,7 @@ class Simulator:
             self._initialize_graphics()
 
 
-    def _run_physics(self):
+    def _run_physics(self, state_manager):
         # Handles physics on a separate process
 
         # Load aircraft
@@ -93,7 +94,7 @@ class Simulator:
 
             # Pass information to graphics
             if self._render_graphics:
-                self._state_manager = list(self._aircraft.y)
+                state_manager = list(self._aircraft.y)
 
             # Check for exit condition
 
@@ -127,14 +128,21 @@ class Simulator:
     def _initialize_graphics(self):
         # Initializes the graphics
 
+        # Get path to graphics objects
+        self._pylot_path = os.path.dirname(__file__)
+        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
+        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
+        self._res_path = os.path.join(self._graphics_path, "res")
+        self._shaders_path = os.path.join(self._graphics_path, "shaders")
+
         # Initialize pygame module
         pygame.init()
 
         # Setup window size
         width, height = 1800,900
-        pygame.display.set_icon(pygame.image.load('gsim/res/gameicon.jpg'))
-        _ = pygame.display.set_mode((width,height), HWSURFACE|OPENGL|DOUBLEBUF)
-        pygame.display.set_caption("GSim")
+        pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
+        screen = pygame.display.set_mode((width,height), HWSURFACE|OPENGL|DOUBLEBUF)
+        pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
         glViewport(0,0,width,height)
         glEnable(GL_DEPTH_TEST)
         
@@ -158,13 +166,8 @@ class Simulator:
         # Initialize game over screen
         self._gameover = Text(150)
 
-        # Initialize graphics for aircraft
-        self._aircraft_graphics = self._aircraft.get_graphics_obj()
-        self._aircraft_graphics.set_orientation(self._aircraft.y[9:])
-        self._aircraft_graphics.set_position(self._aircraft.y[6:9])
-
         # Initialize HUD
-        self._HUD = HeadsUp(width, height)
+        self._HUD = HeadsUp(width, height, self._res_path, self._shaders_path)
 
         # Initialize flight data overlay
         self._data = FlightData()
@@ -182,7 +185,13 @@ class Simulator:
                                [0., 0., 1., 0.],
                                [0., 1., 0., 0.]] # I'm not storing these because they don't change
         for i in range(4):
-            self._ground_quad.append(Mesh("gsim/res/field.obj","gsim/shaders/field.vs","gsim/shaders/field.fs","gsim/res/field_texture.jpg",width,height))
+            self._ground_quad.append(Mesh(
+                os.path.join(self._res_path, "field.obj"),
+                os.path.join(self._shaders_path, "field.vs"),
+                os.path.join(self._shaders_path, "field.fs"),
+                os.path.join(self._res_path, "field_texture.jpg"),
+                width,
+                height))
             self._ground_quad[i].set_position(self._ground_positions[i])
             self._ground_quad[i].set_orientation(ground_orientations[i])
 
@@ -197,7 +206,12 @@ class Simulator:
 
         # Initialize storage of velocities for determining g's
         self._prev_vels = [0.0, 0.0, 0.0]
-        
+
+        # TODO : Import aircraft object
+        ## Initialize graphics for aircraft
+        #self._aircraft_graphics = self._aircraft.get_graphics_obj()
+        #self._aircraft_graphics.set_orientation(self._aircraft.y[9:])
+        #self._aircraft_graphics.set_position(self._aircraft.y[6:9])
 
 
     def run_sim(self):
@@ -220,7 +234,7 @@ class Simulator:
 
     def _update_graphics(self):
         # Does a step in graphics
-        pass
+        print(self._state_manager)
 
 
     def _RK4(self, aircraft, t, dt):
