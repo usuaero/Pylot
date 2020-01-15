@@ -40,10 +40,9 @@ class Simulator:
         # Initialize inter-process communication
         manager = mp.Manager()
         self._state_manager = manager.list()
-        self._graphics_conn, self._physics_conn = mp.Pipe()
 
         # Kick off physics process
-        self._physics_process = mp.Process(target=self._run_physics, args=(self._state_manager))
+        self._physics_process = mp.Process(target=self._run_physics, args=())
 
         # Initialize graphics
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
@@ -51,7 +50,7 @@ class Simulator:
             self._initialize_graphics()
 
 
-    def _run_physics(self, state_manager):
+    def _run_physics(self):
         # Handles physics on a separate process
 
         # Load aircraft
@@ -94,7 +93,7 @@ class Simulator:
 
             # Pass information to graphics
             if self._render_graphics:
-                state_manager = list(self._aircraft.y)
+                self._state_manager[:] = self._aircraft.y[:]
 
             # Check for exit condition
 
