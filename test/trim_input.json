@@ -1,11 +1,8 @@
 {
     "tag" : "Example of flight simulator input.",
     "simulation" : {
-        "real_time" : false,
-        "dt" : 0.05,
-        "start_time" : 0.0,
-        "final_time" : 10.0,
-        "enable_graphics" : false
+        "real_time" : true,
+        "enable_graphics" : true
     },
     "units" : "English",
     "atmosphere" : {
@@ -13,7 +10,7 @@
     },
     "aircraft" : {
         "name" : "my_airplane",
-        "file" : "airplane.json",
+        "file" : "test/airplane.json",
         "trim" : {
             "airspeed" : 175,
             "position" : [0.0, 0.0, -500.0],
