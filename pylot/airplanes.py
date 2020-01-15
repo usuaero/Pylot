@@ -348,17 +348,25 @@ class LinearizedAirplane(BaseAircraft):
         bank = m.radians(trim_dict["bank_angle"])
         heading = m.radians(trim_dict["heading"])
         verbose = trim_dict["verbose"]
+
+        # Parse controls
         avail_controls = trim_dict.get("trim_controls", list(self._controls.keys()))
         fixed_controls = trim_dict.get("fixed_controls", {})
+        for name in self._control_names:
+            if name in avail_controls:
+                continue
+            fixed_controls[name] = fixed_controls.get(name, 0.0)
+
         if len(avail_controls) != 4:
-            raise IOError("Exactly 4 controls may be used to trim the aircraft. Got {0}.".format(len(avail_controls)))
+            raise IOError("Exactly 4 controls must be used to trim the aircraft. Got {0}.".format(len(avail_controls)))
 
         # Reference parameters
         V0_inv = 1.0/V0
+        const = 0.5*V0_inv
         g = self._g
         rho = self._get_density(-self.y[8])
         redim = 0.5*rho*V0*V0*self._Sw
-        redim_inv = 1/redim
+        redim_inv = 1.0/redim
         CW = self._W*redim_inv
 
         # Get thrust and thrust moment derivatives
@@ -380,6 +388,9 @@ class LinearizedAirplane(BaseAircraft):
         A = np.zeros((6,6))
         B = np.zeros(6)
         old_trim_vals = np.zeros(6) # These are deviations from the reference setting
+        old_trim_vals[4] = m.radians(-5.0) # For comparing with Troy
+        C_phi = cos(bank)
+        S_phi = sin(bank)
 
         # Initialize output
         if verbose:
@@ -393,18 +404,17 @@ class LinearizedAirplane(BaseAircraft):
         # Iterate until trim values converge
         approx_error = 1
         iterations = 0
-        while approx_error > 1e-22:
+        while approx_error > 1e-25:
 
             # Extract trim values
             alpha = old_trim_vals[0]
             beta = old_trim_vals[1]
             theta = self._get_elevation(alpha, beta, bank, climb)
+            print(theta)
 
             # Calulate trig values
             C_theta = cos(theta)
             S_theta = sin(theta)
-            C_phi = cos(bank)
-            S_phi = sin(bank)
             C_a = cos(alpha)
             S_a = sin(alpha)
             C_B = cos(beta)
@@ -424,10 +434,12 @@ class LinearizedAirplane(BaseAircraft):
             p2 = p*p
             q2 = q*q
             r2 = r*r
-            const = 0.5*V0_inv
             p_bar = self._bw*const*p
             q_bar = self._cw*const*q
             r_bar = self._bw*const*r
+            print("p",p)
+            print("q",q)
+            print("r",r)
 
             # Calculate aerodynamic coefficients
             CL = self._CL_ref+self._CL_a*alpha+self._CL_q*q_bar
@@ -437,19 +449,23 @@ class LinearizedAirplane(BaseAircraft):
             # Determine influence of trim controls
             for i,name in enumerate(avail_controls):
                 control_deriv = self._control_derivs[name]
-                CL += old_trim_vals[2+i]*control_deriv["CL"]
-                CD += old_trim_vals[2+i]*control_deriv["CD"]
-                CS += old_trim_vals[2+i]*control_deriv["CY"]
+                deflection = old_trim_vals[2+i]
+                CL += deflection*control_deriv["CL"]
+                CD += deflection*control_deriv["CD"]
+                CS += deflection*control_deriv["CY"]
 
             # Determine influence of fixed controls
             for key,value in fixed_controls.items():
                 control_deriv = self._control_derivs[key]
                 CL += m.radians(value-self._control_ref[key])*control_deriv["CL"]
                 CD += m.radians(value-self._control_ref[key])*control_deriv["CD"]
-                CS += m.radians(value-self._control_ref[key])*control_deriv["CS"]
+                CS += m.radians(value-self._control_ref[key])*control_deriv["CY"]
 
             # Factor in terms involving CL and CS
             CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
+            print("CL", CL)
+            print("CD", CD)
+            print("CS", CS)
 
             # Populate A matrix
             # Terms dependent on alpha
@@ -481,9 +497,13 @@ class LinearizedAirplane(BaseAircraft):
             for key, value in fixed_controls.items():
                 control_deriv = self._control_derivs[key]
                 delta_control = m.radians(value-self._control_ref[key])
-                B[0] += delta_control*control_deriv["CD"]*u*V0_inv
-                B[1] += -delta_control*control_deriv["CY"]*C_B
-                B[2] += delta_control*control_deriv["CL"]*C_a
+                # TODO: Add CL, CD, and CY to all these equations
+                CD_control = delta_control*control_deriv["CD"]
+                CL_control = delta_control*control_deriv["CL"]
+                CY_control = delta_control*control_deriv["CY"]
+                B[0] += -CL_control*S_a+CY_control*S_B+CD_control*u*V0_inv
+                B[1] += -CY_control*C_B+CD_control*v*V0_inv
+                B[2] +=  CL_control*C_a+CD_control*w*V0_inv
                 B[3] += -self._bw*control_deriv["Cl"]*delta_control
                 B[4] += -self._cw*control_deriv["Cm"]*delta_control
                 B[5] += -self._bw*control_deriv["Cn"]*delta_control
@@ -496,8 +516,12 @@ class LinearizedAirplane(BaseAircraft):
             B[4] += redim_inv*(-self._hz*p+self._hx*r-self._I_diff_zx*pr-self._I_xz*(r2-p2)-self._I_xy*qr+self._I_yz*pq)
             B[5] += redim_inv*( self._hy*p-self._hx*q-self._I_diff_xy*pq-self._I_xy*(p2-q2)-self._I_yz*pr+self._I_xz*qr)
 
+            print(A)
+            print(B)
+
             # Solve
             trim_vals = np.linalg.solve(A,B)
+            print(trim_vals)
 
             # Update for next iteration
             alpha = trim_vals[0]
@@ -572,10 +596,12 @@ class LinearizedAirplane(BaseAircraft):
 
         # Get two possibilities
         A = C_aB*D*S_gamma
-        B = E*sqrt(C_aB2-D*S_gamma+E2)
+        B = E*sqrt(C_aB2-D*D*S_gamma*S_gamma+E2)
         C = C_aB2+E2
         theta1 = asin((A+B)/C)
         theta2 = asin((A-B)/C)
+        print(theta1)
+        print(theta2)
 
         # Check which one is closest
         if abs(D*S_gamma+sin(theta1)*C_aB-cos(theta1)*E) < abs(D*S_gamma+sin(theta2)*C_aB-cos(theta2)*E):
