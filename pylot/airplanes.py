@@ -391,6 +391,7 @@ class LinearizedAirplane(BaseAircraft):
         old_trim_vals[4] = m.radians(-5.0) # For comparing with Troy
         C_phi = cos(bank)
         S_phi = sin(bank)
+        theta = self._get_elevation(0.0, 0.0, bank, climb)
 
         # Initialize output
         if verbose:
@@ -409,8 +410,6 @@ class LinearizedAirplane(BaseAircraft):
             # Extract trim values
             alpha = old_trim_vals[0]
             beta = old_trim_vals[1]
-            theta = self._get_elevation(alpha, beta, bank, climb)
-            print(theta)
 
             # Calulate trig values
             C_theta = cos(theta)
@@ -437,9 +436,6 @@ class LinearizedAirplane(BaseAircraft):
             p_bar = self._bw*const*p
             q_bar = self._cw*const*q
             r_bar = self._bw*const*r
-            print("p",p)
-            print("q",q)
-            print("r",r)
 
             # Calculate aerodynamic coefficients
             CL = self._CL_ref+self._CL_a*alpha+self._CL_q*q_bar
@@ -463,9 +459,6 @@ class LinearizedAirplane(BaseAircraft):
 
             # Factor in terms involving CL and CS
             CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
-            print("CL", CL)
-            print("CD", CD)
-            print("CS", CS)
 
             # Populate A matrix
             # Terms dependent on alpha
@@ -495,12 +488,16 @@ class LinearizedAirplane(BaseAircraft):
 
             # Contributions of fixed controls
             for key, value in fixed_controls.items():
+                # Control-specific information
                 control_deriv = self._control_derivs[key]
                 delta_control = m.radians(value-self._control_ref[key])
-                # TODO: Add CL, CD, and CY to all these equations
+
+                # Change in aerodynamics due to controls
                 CD_control = delta_control*control_deriv["CD"]
                 CL_control = delta_control*control_deriv["CL"]
                 CY_control = delta_control*control_deriv["CY"]
+
+                # Apply to B vector
                 B[0] += -CL_control*S_a+CY_control*S_B+CD_control*u*V0_inv
                 B[1] += -CY_control*C_B+CD_control*v*V0_inv
                 B[2] +=  CL_control*C_a+CD_control*w*V0_inv
@@ -516,18 +513,14 @@ class LinearizedAirplane(BaseAircraft):
             B[4] += redim_inv*(-self._hz*p+self._hx*r-self._I_diff_zx*pr-self._I_xz*(r2-p2)-self._I_xy*qr+self._I_yz*pq)
             B[5] += redim_inv*( self._hy*p-self._hx*q-self._I_diff_xy*pq-self._I_xy*(p2-q2)-self._I_yz*pr+self._I_xz*qr)
 
-            print(A)
-            print(B)
-
             # Solve
             trim_vals = np.linalg.solve(A,B)
-            print(trim_vals)
 
             # Update for next iteration
             alpha = trim_vals[0]
             beta = trim_vals[1]
-            approx_error = np.max(np.abs(trim_vals-old_trim_vals))
             theta = self._get_elevation(alpha, beta, bank, climb)
+            approx_error = np.max(np.abs(trim_vals-old_trim_vals))
             old_trim_vals = np.copy(trim_vals)
 
             # Output
@@ -588,23 +581,24 @@ class LinearizedAirplane(BaseAircraft):
         S_phi = sin(phi)
         S_gamma = sin(gamma)
 
+        # More constants
         D = sqrt(1-S_a*S_a*S_B*S_B)
-        E = S_phi*C_a*S_B+C_phi*S_a*C_B
+        A = S_a*C_B/D
+        B = C_a*S_B/D
+        C = C_a*C_B/D
+        E = B*S_phi+A*C_phi
         E2 = E*E
-        C_aB = C_a*C_B
-        C_aB2 = C_aB*C_aB
+        C2 = C*C
 
-        # Get two possibilities
-        A = C_aB*D*S_gamma
-        B = E*sqrt(C_aB2-D*D*S_gamma*S_gamma+E2)
-        C = C_aB2+E2
-        theta1 = asin((A+B)/C)
-        theta2 = asin((A-B)/C)
-        print(theta1)
-        print(theta2)
+        # Get two solutions
+        first = C*S_gamma
+        second = E*sqrt(C2+E2-S_gamma*S_gamma)
+        denom = C2+E2
+        theta1 = asin((first+second)/denom)
+        theta2 = asin((first-second)/denom)
 
-        # Check which one is closest
-        if abs(D*S_gamma+sin(theta1)*C_aB-cos(theta1)*E) < abs(D*S_gamma+sin(theta2)*C_aB-cos(theta2)*E):
+        # Check which one is closer
+        if abs(C*sin(theta1)-E*cos(theta1)-S_gamma) < abs(C*sin(theta2)-E*cos(theta2)-S_gamma):
             return theta1
         else:
             return theta2
