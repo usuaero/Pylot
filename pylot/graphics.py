@@ -557,8 +557,8 @@ class Camera:
         Notes
         -----
         This function does several conversions between (e0,ex,ey,ez) and (x,y,z,w) forms of quaternions. It should not be altered.
-
         """
+
         #third person camera view of plane
         quat_orientation = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
         graphics_aircraft_to_camera = Body2Fixed(offset, quat_orientation)
@@ -570,7 +570,7 @@ class Camera:
         self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
 
-        # latency. stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
+        # Latency. Stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
         # An average is taken to smooth out the camera position
         delay = 5
 	
