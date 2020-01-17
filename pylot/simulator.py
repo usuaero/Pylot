@@ -248,8 +248,10 @@ class Simulator:
         # Ticks clock before starting game loop
         self._clock.tick_busy_loop()
 
-        # Initialize storage of velocities for determining g's
-        self._prev_vels = [0.0, 0.0, 0.0]
+        # Store previous positions for position filtering
+        self._p0 = np.zeros(3)
+        self._p1 = np.zeros(3)
+        self._p2 = np.zeros(3)
 
 
     def run_sim(self):
@@ -271,6 +273,9 @@ class Simulator:
                     texture_path = self._aircraft_graphics_info["texture_file"]
                     self._aircraft_graphics = Mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._width, self._height)
                     self._aircraft_graphics.set_position(self._aircraft_graphics_info["position"])
+                    self._p0 = copy.copy(self._aircraft_graphics_info["position"])
+                    self._p1 = copy.copy(self._p0)
+                    self._p2 = copy.copy(self._p0)
                     self._aircraft_graphics.set_orientation(self._aircraft_graphics_info["orientation"])
                     break
 
@@ -304,19 +309,51 @@ class Simulator:
 
         # Get state from state manager
         y = np.array(self._state_manager[:13])
+        if (y == 0.0).all():
+            return False # The physics haven't finished their first loop yet
         dt_physics = self._state_manager[13]
         t_physics = self._state_manager[14]
 
-        #timestep for simulation is based on framerate
+        # Timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
+
+        # Perform position filtering using linear 3rd order autoregressive model
+        p = y[6:9]
+        dp2 = p-self._p2
+        dp1 = p-self._p1
+        dp0 = p-self._p0
+
+        # Specify gains to give higher weighting to measurements which more closely follow a linear trend
+        avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
+        ddp2 = abs(dp2-avg_dp)
+        ddp1 = abs(dp1-avg_dp)
+        ddp0 = abs(dp0-avg_dp)
+        sum_ddp = ddp2+ddp1+ddp0
+        np.seterr(invalid='ignore')
+        k1 = np.where(sum_ddp == 0.0, 0.0, ddp1/sum_ddp) # How much we trust the last two positions
+        k2 = np.where(sum_ddp == 0.0, 0.0, ddp0/sum_ddp) # How much we trust the last two positions
+        k3 = np.where(sum_ddp == 0.0, 1.0, ddp2/sum_ddp) # How much we trust the last two positions
+        np.seterr()
+
+        # Calculate AR model coefficients
+        a1 = -k1-k1*dt_graphics
+        a2 = k1*dt_graphics-k2-k2*dt_graphics
+        a3 = k2*dt_graphics
+        b0 = k3
+
+        # Calculate filtered position
+        filtered_position = -a1*self._p2-a2*self._p1-a3*self._p0+b0*p
+        self._p0 = self._p1
+        self._p1 = self._p2
+        self._p2 = filtered_position
 
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
-        self._aircraft_graphics.set_position(y[6:9])
+        self._aircraft_graphics.set_position(filtered_position)#y[6:9])
 
         # Parse state of aircraft
         aircraft_condition = {
-            "Position" : y[6:9],
+            "Position" : filtered_position,#y[6:9],
             "Orientation" : y[9:],
             "Velocity" : y[:3]
         }

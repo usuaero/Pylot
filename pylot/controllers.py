@@ -44,11 +44,11 @@ class BaseController:
                 elif event.key == pygame.K_SPACE:
                     inputs["fpv"] = True
 
-                else:
-                    pygame.event.post(event)
+            #    else:
+            #        pygame.event.post(event)
 
-            elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
-                pygame.event.post(event)
+            #elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
+            #    pygame.event.post(event)
 
         return inputs
 
