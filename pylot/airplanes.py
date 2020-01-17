@@ -96,7 +96,7 @@ class BaseAircraft:
 
         # Keyboard
         elif control_type == "keyboard":
-            pass
+            self._controller = KeyboardAircraftController(self._input_dict.get("controls", {}))
 
         # User-defined
         elif control_type == "user-defined":
