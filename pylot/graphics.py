@@ -567,10 +567,11 @@ class Camera:
         rotated_cam_up = Body2Fixed(cam_up,quat_orientation)
 
         self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
-        self.up_storage.append(rotated_cam_up)
+        self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
 
-        #latency. stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
+        # latency. stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
+        # An average is taken to smooth out the camera position
         delay = 5
 	
         if len(self.pos_storage)<=delay:
@@ -579,9 +580,9 @@ class Camera:
             self.target = self.target_storage[0]
 
         else:
-            self.camera_pos = self.pos_storage.pop(0)
-            self.camera_up = self.up_storage.pop(0)
-            self.target = self.target_storage.pop(0)
+            self.camera_pos = 0.25*(self.pos_storage.pop(0)+self.pos_storage[0]+self.pos_storage[1]+self.pos_storage[2])
+            self.camera_up = 0.25*(self.up_storage.pop(0)+self.up_storage[0]+self.up_storage[1]+self.up_storage[2])
+            self.target = 0.25*(self.target_storage.pop(0)+self.target_storage[0]+self.target_storage[1]+self.target_storage[2])
 
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
 
