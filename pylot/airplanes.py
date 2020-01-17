@@ -29,14 +29,6 @@ class BaseAircraft:
         # Initialize state
         self.y = np.zeros(13)
 
-        # Setup output
-        state_output = param_dict.get("state_output", None)
-        self._output_state = state_output is not None
-        if self._output_state:
-            self._output_handle = open(state_output, 'w')
-            header = "   Time              u                 v                 w                 p                 q                 r                 x                 y                 z                 eo                e1                e2                e3"
-            print(header, file=self._output_handle)
-
         # Determine units and set gravity
         self._units = units
         if self._units == "English":
@@ -45,6 +37,17 @@ class BaseAircraft:
             self._g = 9.81
         else:
             raise IOError("{0} is not a valid units specification.".format(self._units))
+
+        # Setup output
+        state_output = param_dict.get("state_output", None)
+        self._output_state = state_output is not None
+        if self._output_state:
+            self._output_handle = open(state_output, 'w')
+            if self._units == "English":
+                header = "   Time[s]           u[ft/s]           v[ft/s]           w[ft/s]           p[rad/s]          q[rad/s]          r[rad/s]          x[ft]             y[ft]             z[ft]             eo                e1                e2                e3"
+            else:
+                header = "   Time[s]           u[m/s]            v[m/s]            w[m/s]            p[rad/s]          q[rad/s]          r[rad/s]          x[m]              y[m]              z[m]              eo                e1                e2                e3"
+            print(header, file=self._output_handle)
 
         # Set mass properties
         self._W = import_value("weight", self._input_dict, self._units, None)
