@@ -89,7 +89,7 @@ class NoController(BaseController):
 
 
 class JoystickAircraftController(BaseController):
-    """A controller for controlling an aircraft with ailerons, elevators, and rudder, and a throttle using a standard joystick.
+    """A controller for controlling a 4-channel aircraft using a standard joystick.
 
     Parameters
     ----------
