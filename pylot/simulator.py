@@ -375,7 +375,7 @@ class Simulator:
         else:
             # Third person view
             if not self._fpv.value:
-                view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -30])
+                view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -10])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
