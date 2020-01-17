@@ -43,14 +43,11 @@ class BaseController:
                 # Switch view
                 elif event.key == pygame.K_SPACE:
                     inputs["fpv"] = True
-                    #self._cam.pos_storage.clear()
-                    #self._cam.up_storage.clear()
-                    #self._cam.target_storage.clear()
 
                 else:
                     pygame.event.post(event)
 
-            else: #if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
+            elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
                 pygame.event.post(event)
 
         return inputs
