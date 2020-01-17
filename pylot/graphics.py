@@ -4,8 +4,8 @@ from OpenGL.GLU import *
 import OpenGL.GL.shaders
 from pyrr import matrix44, vector3,Vector4
 from math import atan2, asin
-import pygame
-from pygame.locals import *
+import pygame.image
+import pygame.font
 import os
 
 from PIL import Image
