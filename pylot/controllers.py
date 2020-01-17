@@ -188,20 +188,17 @@ class KeyboardAircraftController(BaseController):
 
     Parameters
     ----------
-    control_limits : dict, optional
-        A dictionary containing the deflection limits for each control. Defaults to 20 deg for each.
-
-    control_responsiveness : float, optional
-        Amount to increment the controls each time step if using the keyboard.
+    control_dict : dict
+        A dictionary of control names and specifications.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, control_dict):
+        super().__init__()
 
         # Initialize pygame
         pygame.init()
 
         # Initialize user inputs
-        self._KEYBOARD = True
         self._thr = 0.
         self._UP = False
         self._DOWN = False
@@ -213,17 +210,33 @@ class KeyboardAircraftController(BaseController):
         self._DD = False
         self._RESET= False
 
-        # Get deflection limits
-        limits = kwargs.get("control_limits", {})
-        self._da_max = radians(limits.get("aileron", 20.0))
-        self._de_max = radians(limits.get("elevator", 20.0))
-        self._dr_max = radians(limits.get("rudder", 20.0))
-        self._responsiveness = 0.001
+        # Get mapping and limits
+        self._control_mapping = {}
+        self._control_limits = {}
+        self._angular_control = {} # True for angular deflection, False for 0 to 1.
+        for key, value in control_dict.items():
+
+            # See if limits have been defined
+            limits = value.get("max_deflection", None)
+            if limits is not None: # The limits are defined
+                self._control_limits[key] = limits
+                self._angular_control[key] = True
+            else:
+                self._angular_control[key] = False
+            
+            # Get the mapping
+            self._control_mapping[key] = value["input_axis"]
+            
+            # Store reverse mapping
+            self._control_reverse_mapping = [0]*4
+            for key, value in self._control_mapping.items():
+                self._control_reverse_mapping[value] = key
+
+            # Store control names
+            self._controls.append(key)
 
         # Set variable for knowing if the user has perturbed from the trim state yet
         self._perturbed = False
-        self._throttle_perturbed = False
-        self._init_thr_pos = self._joy.get_axis(3)
 
 
     def get_control(self, state_vec, prev_controls):
@@ -295,49 +308,45 @@ class KeyboardAircraftController(BaseController):
         if not self._perturbed and (self._RIGHT or self._LEFT or self._UP or self._DOWN or self._WW or self._SS or self._DD or self._AA):
             self._perturbed = True
 
-        # Apply controls
         if self._perturbed:
+            # Parse new controls
+            control_state = {}
+            for i in range(4):
+                name = self._control_reverse_mapping[i]
+                defl = 0.0
 
-            # Elevator
-            if self._UP == True and self._DOWN == False and prev_controls["elevator"] < self._de_max:
-                ele = 1.
-            elif self._UP == False and self._DOWN == True and prev_controls["elevator"] > -self._de_max:
-                ele = -1.
-            else:
-                ele = 0.
+                # Get axis input
+                if i == 0: # Input roll axis
+                    if self._LEFT and not self._RIGHT:
+                        defl = 1.0
+                    elif not self._LEFT and self._RIGHT:
+                        defl = -1.0
 
-            # Aileron
-            if self._LEFT == True and self._RIGHT == False and prev_controls["aileron"] < self._da_max:
-                ail = 1.
-            elif self._LEFT == False and self._RIGHT == True and prev_controls["aileron"] > -self._da_max:
-                ail = -1.
-            else:
-                ail = 0.
+                elif i == 1: # Input pitch axis
+                    if self._UP and not self._DOWN:
+                        defl = 1.0
+                    elif not self._UP and self._DOWN:
+                        defl = -1.0
 
-            # Rudder
-            if self._AA == True and self._DD == False and prev_controls["rudder"] < self._dr_max:
-                rud = 1.
-            elif self._AA == False and self._DD == True and prev_controls["rudder"] > -self._dr_max:
-                rud = -1.
-            else:
-                rud = 0.
+                elif i == 2: # Input yaw axis
+                    if self._AA and not self._DD:
+                        defl = 1.0
+                    elif not self._AA and self._DD:
+                        defl = -1.0
 
-            # Elevator
-            thr = prev_controls["throttle"]
-            if self._WW == True and self._SS == False and thr<=1.0-self._responsiveness:
-                thr += self._responsiveness*5
-            elif self._WW == False and self._SS == True and thr>=0.0+self._responsiveness:
-                thr -= self._responsiveness*5
+                else: # Input throttle axis
+                    if self._WW and not self._SS:
+                        defl = 1.0
+                    elif not self._WW and self._SS:
+                        defl = -1.0
 
-            controls = {
-                "aileron" : prev_controls["aileron"]+self._responsiveness*ail,
-                "elevator" : prev_controls["elevator"]+self._responsiveness*ele,
-                "rudder" : prev_controls["rudder"]+self._responsiveness*rud,
-                "throttle" : thr
-            }
+                # Apply deflection
+                if self._angular_control[name]:
+                    control_state[name] = min(self._control_limits[name], max(prev_controls[name]+0.01*defl, -self._control_limits[name]))
+                else:
+                    control_state[name] = min(1.0, max(prev_controls[name]+defl*0.01, 0.0))
 
-        # Check if we've been perturbed from the trim state
-        if not self._perturbed:
+            return control_state
+
+        else: # Otherwise, send back the previous controls
             return prev_controls
-        else:
-            return controls
