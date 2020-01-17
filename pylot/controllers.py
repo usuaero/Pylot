@@ -1,8 +1,8 @@
 """Classes defining controllers for simulated aircraft."""
 
 from abc import abstractmethod
-import pygame
-from pygame.locals import *
+import pygame.event
+import pygame.joystick
 from math import degrees, radians
 import numpy as np
 
@@ -16,6 +16,45 @@ class BaseController:
 
     def get_control_names(self):
         return self._controls
+
+
+    def get_input(self):
+        """Returns a dictionary of inputs from the user for controlling pause, view, etc."""
+
+        inputs= {}
+
+        # Check events
+        for event in pygame.event.get():
+
+            if event.type == pygame.KEYDOWN:
+
+                # Toggle flight data display
+                if event.key == pygame.K_i:
+                    inputs["data"] = True
+
+                # Pause simulation
+                elif event.key == pygame.K_p:
+                    inputs["pause"] = True
+
+                # Quit game
+                elif event.key == pygame.K_q:
+                    inputs["quit"] = True
+
+                # Switch view
+                elif event.key == pygame.K_SPACE:
+                    inputs["fpv"] = True
+                    #self._cam.pos_storage.clear()
+                    #self._cam.up_storage.clear()
+                    #self._cam.target_storage.clear()
+
+                else:
+                    pygame.event.post(event)
+
+            else: #if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
+                pygame.event.post(event)
+
+        return inputs
+
     
     @abstractmethod
     def get_control(self, state_vec, prev_controls):

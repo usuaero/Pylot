@@ -8,8 +8,9 @@ from .airplanes import *
 import json
 import copy
 import time
-import pygame
-from pygame.locals import *
+import pygame.display
+import pygame.image
+from pygame.locals import HWSURFACE, OPENGL, DOUBLEBUF
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from .graphics import *
@@ -40,8 +41,12 @@ class Simulator:
         # Initialize inter-process communication
         manager = mp.Manager()
         self._state_manager = manager.list()
-        self._state_manager[:] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self._state_manager[:] = [0.0]*15
         self._graphics_ready = manager.Value('i', 0)
+        self._quit = manager.Value('i', 0)
+        self._pause = manager.Value('i', 0)
+        self._fpv = manager.Value('i', 1)
+        self._flight_data = manager.Value('i', 1)
         self._aircraft_graphics_info = manager.dict()
 
         # Kick off physics process
@@ -56,6 +61,9 @@ class Simulator:
     def _run_physics(self):
         # Handles physics on a separate process
 
+        # Initialize pause flag
+        self._paused = False
+
         # Load aircraft
         self._load_aircraft()
 
@@ -69,7 +77,7 @@ class Simulator:
             self._aircraft_graphics_info["position"] = self._aircraft.y[6:9]
             self._aircraft_graphics_info["orientation"] = self._aircraft.y[9:]
 
-            # Wait fo graphics to load
+            # Wait for graphics to load
             while not self._graphics_ready.value:
                 continue
 
@@ -88,7 +96,7 @@ class Simulator:
         t = copy.copy(self._t0)
 
         # Simulation loop
-        while t <= self._tf:
+        while t <= self._tf and not self._quit.value:
 
             # Integrate
             self._RK4(self._aircraft, t, self._dt)
@@ -103,15 +111,40 @@ class Simulator:
                 t0 = t1
             t += self._dt
 
-            # Output
-            self._aircraft.output_state(t)
-
-            # Pass information to graphics
+            # Handle graphics only things
             if self._render_graphics:
+
+                while True:
+                    # Parse inputs
+                    inputs = self._aircraft._controller.get_input()
+                    if inputs.get("pause", False):
+                        self._pause.value = not self._pause.value
+                    if inputs.get("data", False):
+                        self._flight_data.value = not self._flight_data.value
+                    if inputs.get("quit", False):
+                        self._quit.value = not self._quit.value
+                    if inputs.get("fpv", False):
+                        self._fpv.value = not self._fpv.value
+
+                    # Pause
+                    if self._pause.value:
+                        if not self._paused:
+                            self._paused = True
+
+                    # Break out of pause
+                    else:
+                        if self._paused:
+                            self._paused = False
+                            t0 = time.time() # So as to not throw off the integration
+                        break
+
+                # Pass information to graphics
                 self._state_manager[:13] = self._aircraft.y[:]
                 self._state_manager[13] = self._dt
+                self._state_manager[14] = t
 
-            # Check for exit condition
+            # Write output
+            self._aircraft.output_state(t)
 
 
     def _load_aircraft(self):
@@ -150,7 +183,7 @@ class Simulator:
         self._res_path = os.path.join(self._graphics_path, "res")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
 
-        # Initialize pygame module
+        # Initialize pygame modules
         pygame.init()
 
         # Setup window size
@@ -161,12 +194,6 @@ class Simulator:
         glViewport(0,0,self._width,self._height)
         glEnable(GL_DEPTH_TEST)
         
-        # Boolean variables for camera view, lose screen, and pause
-        self._FPV = True
-        self._LOSE = False
-        self._PAUSE = False
-        self._DATA = True
-
         # SIMULATION FRAMERATE
         self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
 
@@ -252,18 +279,22 @@ class Simulator:
             self._graphics_ready.value = 1
 
             # Run graphics loop
-            self._start_time = time.time()
             while True:
 
                 # Update graphics
-                self._update_graphics()
+                if self._update_graphics():
+                    break
 
-        else: # Just wait for the physics to finish
-            self._physics_process.join()
+        # Just wait for the physics to finish
+        self._physics_process.join()
 
 
     def _update_graphics(self):
         # Does a step in graphics
+
+        # Check for quitting
+        if self._quit.value:
+            return True
 
         #set default background color for sky
         glClearColor(0.65,1.0,1.0,1.0)
@@ -272,6 +303,7 @@ class Simulator:
         # Get state from state manager
         y = np.array(self._state_manager[:13])
         dt_physics = self._state_manager[13]
+        t_physics = self._state_manager[14]
 
         #timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
@@ -280,11 +312,7 @@ class Simulator:
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
         self._aircraft_graphics.set_position(y[6:9])
 
-        # Check for crashing into the ground
-        if y[8] > 0.0:
-            self._LOSE = True
-
-        # Parse state of pilot aircraft
+        # Parse state of aircraft
         aircraft_condition = {
             "Position" : y[6:9],
             "Orientation" : y[9:],
@@ -309,7 +337,7 @@ class Simulator:
             "Altitude" : -y[8],
             "Latitude" : y[6]/131479714.0*360.0,
             "Longitude" : y[7]/131259396.0*360.0,
-            "Time" : time.time()-self._start_time,
+            "Time" : t_physics,
             "Bank" : E[0],
             "Elevation" : E[1],
             "Heading" : E[2],
@@ -332,25 +360,29 @@ class Simulator:
         # Store veloties
         self._prev_vels = V_f
 
-        # If you get a game over, display lose screen
-        if self._LOSE == True:
+        # Check for crashing into the ground
+        if y[8] > 0.0:
             glClearColor(0,0,0,1.0)
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
+            # Display Game Over screen and quit physics
             self._gameover.draw(-0.2,-0.05,"Game Over",(0,255,0,1))
-            self._PAUSE = True
+            self._quit.value = 1
 	
         # Otherwise, render graphics
         else:
-            if not self._FPV: # Third person view
+            # Third person view
+            if not self._fpv.value:
                 view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -30])
+                self._aircraft_graphics.set_view(view)
+                self._aircraft_graphics.render()
 	
             # Cockpit view
             else:
                 view = self._cam.cockpit_view(self._aircraft_graphics)
                 self._HUD.render(aircraft_condition,view)
 
-            # Determine pilot displacement in quad widths
+            # Determine aircraft displacement in quad widths
             x_pos = y[6]
             y_pos = y[7]
             if x_pos > 0.0:
@@ -401,22 +433,19 @@ class Simulator:
                 quad.set_view(view)
                 quad.render()
 
-            # Update airplanes
-            if not self._FPV: # Don't render the pilot aircraft in HUD mode
-                self._aircraft_graphics.set_view(view)
-                self._aircraft_graphics.render()
-
             # Check for MachUp falling apart
             if np.isnan(u):
                 error_msg = Text(100)
-                error_msg.draw(-1.0, 0.5, "MachUpX error: invalid flight regime.", color=(255,0,0,1))
+                error_msg.draw(-1.0, 0.5, "Pylot encountered a physics error...", color=(255,0,0,1))
 
             # Display flight data
-            elif self._DATA:
+            elif self._flight_data.value:
                 self._data.render(flight_data)
 
         # Update screen display
         pygame.display.flip()
+
+        return False # Don't quit yet
 
 
     def _RK4(self, aircraft, t, dt):
