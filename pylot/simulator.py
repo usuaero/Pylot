@@ -146,6 +146,8 @@ class Simulator:
             # Write output
             self._aircraft.output_state(t)
 
+        return
+
 
     def _load_aircraft(self):
         # Loads the aircraft from the input file
