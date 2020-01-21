@@ -24,6 +24,7 @@ class BaseAircraft:
     def __init__(self, name, input_dict, density, units, param_dict):
 
         # Store input
+        self.name = name
         self._input_dict = input_dict
 
         # Initialize state
@@ -735,3 +736,128 @@ class MachUpXAirplane(BaseAircraft):
 
     def __init__(self, name, input_dict, density, units, param_dict):
         super().__init__(name, input_dict, density, units, param_dict)
+
+        # Create MachUpX scene
+        import machupX as mx
+        scene_dict = {
+            "solver" : {
+                "type" : self._input_dict["aero_model"].get("solver", "linear"),
+            },
+            "units" : units,
+            "scene" : {
+                "atmosphere" : {
+                    "density" : density
+                },
+                "aircraft" : {
+                    name : {
+                        "file" : param_dict["file"],
+                        "state" : {
+                            "type" : "aerodynamic",
+                            "position" : [0.0, 0.0, 0.0],
+                            "velocity" : 100
+                        }
+                    }
+                }
+            }
+        }
+        self._mx_scene = mx.Scene(scene_dict)
+
+        # Get reference params
+        self._Sw, self._cw, self._bw = self._mx_scene.get_aircraft_reference_geometry(name)
+
+        # Set initial state
+        trim = param_dict.get("trim", False)
+        initial_state = param_dict.get("initial_state", False)
+        if trim and initial_state:
+            raise IOError("Both an initial state and trim parameters cannot be specified.")
+        elif trim:
+            self._trim(trim)
+        elif initial_state:
+            self._set_initial_state(initial_state)
+        else:
+            raise IOError("An initial condition must be specified.")
+
+        # Initialize controls
+        for name in self._control_names:
+            self._controls[name] = 0.0
+
+
+    def _trim(self, trim_dict):
+        # Trims the aircraft at the given condition
+
+        # Get params
+        V0 = trim_dict["airspeed"]
+        self.y[6:9] = trim_dict["position"]
+        climb = radians(trim_dict.get("climb_angle", 0.0))
+        bank = radians(trim_dict.get("bank_angle", 0.0))
+        heading = radians(trim_dict.get("heading", 0.0))
+
+
+    def _set_initial_state(self, initial_state):
+        # Sets the initial state of the aircraft without trimming
+
+        # Store controls
+        for name in self._control_names:
+            self._controls[name] = initial_state["control_state"].get(name, 0.0)
+
+        # Store state
+        self.y[0:3] = import_value("velocity", initial_state, self._units, None)
+        self.y[3:6] = import_value("angular_rates", initial_state, self._units, [0.0, 0.0, 0.0])
+        self.y[6:9] = import_value("position", initial_state, self._units, None)
+        self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
+
+
+    def get_FM(self, t):
+
+        FM = np.zeros(6)
+
+        # Set MachUpX state
+        mx_state = {
+            "type" : "aerodynamic",
+            "position" : [0.0, 0.0, self.y[8]],
+            "velocity" : list(self.y[0:3]),
+            "orientation" : list(self.y[9:]),
+            "angular_rates" : list(self.y[3:6])
+        }
+        self._mx_scene.set_aircraft_state(state=mx_state, aircraft_name=self.name)
+
+        # Update controls
+        self._controls = self._controller.get_control(self.y, self._controls)
+        self._mx_scene.set_aircraft_control_state(control_state=self._controls, aircraft_name=self.name)
+
+        # Get redimensionalizer
+        rho = self._mx_scene._get_density(self.y[6:9])
+        u = self.y[0]
+        v = self.y[1]
+        w = self.y[2]
+        a = m.atan2(w,u)
+        B = m.atan2(v,u)
+        S_a = m.sin(a)
+        S_B = m.sin(B)
+        C_a = m.cos(a)
+        C_B = m.cos(B)
+        V = m.sqrt(u*u+v*v+w*w)
+        redim = 0.5*rho*V*V*self._Sw
+
+        # Get MachUpX predicted coefficients
+        coef_dict = self._mx_scene.solve_forces(dimensional=False)[self.name]["total"]
+        CL = coef_dict["CL"]
+        CS = coef_dict["CS"]
+        CD = coef_dict["CD"]
+        Cl = coef_dict["Cl"]
+        Cm = coef_dict["Cm"]
+        Cn = coef_dict["Cn"]
+
+        # Get forces
+        FM[0] = redim*(CL*S_a-CS*S_B-CD*u/V)
+        FM[1] = redim*(CS*C_B-CD*v/V)
+        FM[2] = redim*(-CL*C_a-CD*w/V)
+        FM[3] = redim*Cl*self._bw
+        FM[4] = redim*Cm*self._cw
+        FM[5] = redim*Cn*self._bw
+
+        # Get effect of engines
+        for engine in self._engines:
+            FM += engine.get_thrust_FM(self._controls, rho, V)
+
+        return FM
