@@ -395,6 +395,7 @@ class HeadsUp:
 
 
     def render(self, aircraft_condition, world_view):
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
         velocity_b = aircraft_condition["Velocity"]
         orientation_b = aircraft_condition["Orientation"]
