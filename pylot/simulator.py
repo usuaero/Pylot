@@ -248,11 +248,6 @@ class Simulator:
         # Ticks clock before starting game loop
         self._clock.tick_busy_loop()
 
-        # Store previous positions for position filtering
-        self._p0 = np.zeros(3)
-        self._p1 = np.zeros(3)
-        self._p2 = np.zeros(3)
-
 
     def run_sim(self):
         """Runs the simulation according to the defined inputs.
@@ -299,13 +294,13 @@ class Simulator:
     def _update_graphics(self):
         # Does a step in graphics
 
-        # Check for quitting
-        if self._quit.value:
-            return True
-
         #set default background color for sky
         glClearColor(0.65,1.0,1.0,1.0)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+
+        # Check for quitting
+        if self._quit.value:
+            return True
 
         # Get state from state manager
         y = np.array(self._state_manager[:13])

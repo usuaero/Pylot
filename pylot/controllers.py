@@ -47,7 +47,8 @@ class BaseController:
                 else:
                     pygame.event.post(event)
 
-            elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
+            # Put keyup events back on the queue
+            elif event.type == pygame.KEYUP:
                 pygame.event.post(event)
 
         return inputs
