@@ -8,6 +8,7 @@ from .helpers import *
 from .std_atmos import *
 from .controllers import *
 from .engine import *
+import scipy.optimize as opt
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
@@ -176,6 +177,48 @@ class BaseAircraft:
         dy[12] = 0.5*(-qy*p+qx*q+q0*r)
 
         return dy
+
+
+    def _get_elevation(self, alpha, beta, phi, gamma):
+        # Calculates the elevation angle, theta, based on the other known angles
+
+        # Calculate constants
+        C_a = cos(alpha)
+        S_a = sin(alpha)
+        C_B = cos(beta)
+        S_B = sin(beta)
+        C_phi = cos(phi)
+        S_phi = sin(phi)
+        S_gamma = sin(gamma)
+
+        # More constants
+        D = sqrt(1-S_a*S_a*S_B*S_B)
+        A = S_a*C_B/D
+        B = C_a*S_B/D
+        C = C_a*C_B/D
+        E = B*S_phi+A*C_phi
+        E2 = E*E
+        C2 = C*C
+
+        # Get two solutions
+        first = C*S_gamma
+        second = E*sqrt(C2+E2-S_gamma*S_gamma)
+        denom = C2+E2
+        theta1 = asin((first+second)/denom)
+        theta2 = asin((first-second)/denom)
+
+        # Check which one is closer
+        if abs(C*sin(theta1)-E*cos(theta1)-S_gamma) < abs(C*sin(theta2)-E*cos(theta2)-S_gamma):
+            return theta1
+        else:
+            return theta2
+
+
+    def _get_rotation_rates(self, C_phi, S_phi, C_theta, S_theta, g, u, w):
+        # Returns the rotation rates in a steady, coordinated turn
+
+        omega = g*S_phi*C_theta/(S_theta*w+C_phi*C_theta*u)
+        return -S_theta*omega, S_phi*C_theta*omega, C_phi*C_theta*omega
 
 
     def normalize(self):
@@ -573,48 +616,6 @@ class LinearizedAirplane(BaseAircraft):
             self._controls[key] = value
 
 
-    def _get_elevation(self, alpha, beta, phi, gamma):
-        # Calculates the elevation angle, theta, based on the other known angles
-
-        # Calculate constants
-        C_a = cos(alpha)
-        S_a = sin(alpha)
-        C_B = cos(beta)
-        S_B = sin(beta)
-        C_phi = cos(phi)
-        S_phi = sin(phi)
-        S_gamma = sin(gamma)
-
-        # More constants
-        D = sqrt(1-S_a*S_a*S_B*S_B)
-        A = S_a*C_B/D
-        B = C_a*S_B/D
-        C = C_a*C_B/D
-        E = B*S_phi+A*C_phi
-        E2 = E*E
-        C2 = C*C
-
-        # Get two solutions
-        first = C*S_gamma
-        second = E*sqrt(C2+E2-S_gamma*S_gamma)
-        denom = C2+E2
-        theta1 = asin((first+second)/denom)
-        theta2 = asin((first-second)/denom)
-
-        # Check which one is closer
-        if abs(C*sin(theta1)-E*cos(theta1)-S_gamma) < abs(C*sin(theta2)-E*cos(theta2)-S_gamma):
-            return theta1
-        else:
-            return theta2
-
-
-    def _get_rotation_rates(self, C_phi, S_phi, C_theta, S_theta, g, u, w):
-        # Returns the rotation rates in a steady, coordinated turn
-
-        omega = g*S_phi*C_theta/(S_theta*w+C_phi*C_theta*u)
-        return -S_theta*omega, S_phi*C_theta*omega, C_phi*C_theta*omega
-
-
     def _set_initial_state(self, state_dict):
         # Sets the initial state of the aircraft according to the input
 
@@ -786,11 +787,117 @@ class MachUpXAirplane(BaseAircraft):
         # Trims the aircraft at the given condition
 
         # Get params
-        V0 = trim_dict["airspeed"]
+        self._V0 = trim_dict["airspeed"]
         self.y[6:9] = trim_dict["position"]
-        climb = radians(trim_dict.get("climb_angle", 0.0))
-        bank = radians(trim_dict.get("bank_angle", 0.0))
-        heading = radians(trim_dict.get("heading", 0.0))
+        self._climb = radians(trim_dict.get("climb_angle", 0.0))
+        self._bank = radians(trim_dict.get("bank_angle", 0.0))
+        self._heading = radians(trim_dict.get("heading", 0.0))
+        self._trim_verbose = trim_dict.get("verbose", False)
+
+        # Parse controls
+        self._avail_controls = trim_dict.get("trim_controls", list(self._controls.keys()))
+        self._fixed_controls = trim_dict.get("fixed_controls", {})
+        for name in self._control_names:
+            if name in self._avail_controls:
+                continue
+            self._fixed_controls[name] = self._fixed_controls.get(name, 0.0)
+
+        if len(self._avail_controls) != 4:
+            raise IOError("Exactly 4 controls must be used to trim the aircraft. Got {0}.".format(len(self._avail_controls)))
+
+        # Initialize output
+        if self._trim_verbose:
+            print("Trimming at {0} deg bank and {1} deg climb...".format(degrees(self._bank), degrees(self._climb)))
+            header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
+            for name in self._avail_controls:
+                header.append("{0:>20}".format(name))
+            header.append("{0:>20}".format("Elevation [deg]"))
+            print("".join(header))
+
+        # Optimizer options
+        trim_val_guess = np.zeros(6)
+        control_lims = self._controller.get_limits()
+        if control_lims is not None:
+            bounds = [(-np.inf, np.inf), (-np.inf, np.inf)]
+            for name in self._avail_controls:
+                bounds.append(control_lims[name])
+            bounds = tuple(bounds)
+        else:
+            bounds = None
+        opt_method = "L-BFGS-B"
+        optimizer_options = {
+            "ftol" : 1e-16
+        }
+
+        # Optimize
+        result = opt.minimize(self._trim_minimizer_function, trim_val_guess, method=opt_method, bounds=bounds, options=optimizer_options)
+        trim_settings = result.x
+
+        # Parse trimmed state
+        alpha = trim_settings[0]
+        beta = trim_settings[1]
+        controls = copy.deepcopy(self._fixed_controls)
+        for i, name in enumerate(self._avail_controls):
+            controls[name] = trim_settings[i+2]
+
+        # Set state
+        self._set_state_in_coordinated_turn(alpha, beta, controls)
+
+        # Output results of trim
+        if self._trim_verbose:
+            print("\nFinal trim residuals: {0}".format(self.dy_dt(0.0)[:6]))
+            print("\nFinal trim scalar: {0}".format(result.fun))
+
+
+    def _trim_minimizer_function(self, trim_vals):
+        # Returns the trim residuals as a function of the control inputs
+
+        # Unpack args
+        alpha = trim_vals[0]
+        beta = trim_vals[1]
+        controls = copy.deepcopy(self._fixed_controls)
+        for i, name in enumerate(self._avail_controls):
+            controls[name] = trim_vals[i+2]
+
+        # Calculate elevation angle
+        theta = self._get_elevation(alpha, beta, self._bank, self._climb)
+
+        # Output
+        if self._trim_verbose:
+            print("{0:>20.10f}{1:>20.10f}{2:>20.10f}{3:>20.10f}{4:>20.10f}{5:>20.10f}{6:>20.10f}".format(degrees(alpha), degrees(beta), *trim_vals[2:], degrees(theta)))
+
+        # Set state
+        self._set_state_in_coordinated_turn(alpha, beta, controls)
+
+        # Get residuals
+        dy_dt = self.dy_dt(0.0)
+        return np.sum(dy_dt[:6]*dy_dt[:6])
+
+
+    def _set_state_in_coordinated_turn(self, alpha, beta, controls):
+
+        # Set state
+        theta = self._get_elevation(alpha, beta, self._bank, self._climb)
+        C_theta = cos(theta)
+        S_theta = sin(theta)
+        C_phi = cos(self._bank)
+        S_phi = sin(self._bank)
+        C_a = cos(alpha)
+        S_a = sin(alpha)
+        C_B = cos(beta)
+        S_B = sin(beta)
+        D = sqrt(1-S_a*S_a*S_B*S_B)
+        u = self._V0*C_a*C_B/D
+        v = self._V0*C_a*S_B/D
+        w = self._V0*S_a*C_B/D
+        self.y[0] = u
+        self.y[1] = v
+        self.y[2] = w
+        self.y[3:6] = self._get_rotation_rates(C_phi, S_phi, C_theta, S_theta, self._g, u, w)
+        self.y[9:] = Euler2Quat([self._bank, theta, self._heading])
+
+        # Set controls
+        self._controls = controls
 
 
     def _set_initial_state(self, initial_state):

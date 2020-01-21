@@ -69,6 +69,28 @@ class BaseController:
         pass
 
 
+    def get_limits(self):
+        """Returns the control limits for this controller."""
+
+        # This will only work if the limits are defined
+        try:
+            limits = {}
+            for name in self._controls:
+                
+                # Get max deflections for angular controls
+                if self._angular_control[name]:
+                    limits[name] = (-self._control_limits[name], self._control_limits[name])
+
+                # Other controls just go between 0.0 and 1.0
+                else:
+                    limits[name] = (0.0, 1.0)
+
+            return limits
+
+        except:
+            return None
+
+
 class NoController(BaseController):
     """A controller that holds constant the initial controls.
 
