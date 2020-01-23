@@ -11,10 +11,13 @@ class BaseController:
     """
 
     def __init__(self):
+
+        # Initialize controls
         self._controls = []
 
 
     def get_control_names(self):
+        """Returns the names of the controls handled by this controller."""
         return self._controls
 
 
@@ -26,6 +29,7 @@ class BaseController:
         # Check events
         for event in pygame.event.get():
 
+            # Check for key down events
             if event.type == pygame.KEYDOWN:
 
                 # Toggle flight data display
@@ -43,14 +47,13 @@ class BaseController:
                 # Switch view
                 elif event.key == pygame.K_SPACE:
                     inputs["fpv"] = True
-                    #self._cam.pos_storage.clear()
-                    #self._cam.up_storage.clear()
-                    #self._cam.target_storage.clear()
 
+                # If it's not used here, put it back on the queue
                 else:
                     pygame.event.post(event)
 
-            else: #if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP: # Only put key events back on the queue
+            # Put other key events back on the queue
+            elif event.type == pygame.KEYUP:
                 pygame.event.post(event)
 
         return inputs
@@ -103,9 +106,6 @@ class JoystickAircraftController(BaseController):
     def __init__(self, control_dict):
         super().__init__()
 
-        # Initialize pygame
-        pygame.init()
-
         # Initialize user inputs
         if pygame.joystick.get_count()>0.:
             self._joy = pygame.joystick.Joystick(0)
@@ -127,7 +127,7 @@ class JoystickAircraftController(BaseController):
                 self._control_limits[key] = limits
                 self._angular_control[key] = True
             else:
-                self._angular_control = False
+                self._angular_control[key] = False
             
             # Get the mapping
             self._control_mapping[key] = value["input_axis"]
@@ -179,7 +179,7 @@ class JoystickAircraftController(BaseController):
         control_state = {}
         for name in self._controls:
             if self._angular_control[name]:
-                control_state[name] = (joy_def[self._control_mapping[name]]**0.33333333)*-self._control_limits[name]
+                control_state[name] = (joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
             else:
                 control_state[name] = (-joy_def[self._control_mapping[name]]+1.)*0.5
 
@@ -199,9 +199,6 @@ class KeyboardAircraftController(BaseController):
     """
 
     def __init__(self, **kwargs):
-
-        # Initialize pygame
-        pygame.init()
 
         # Initialize user inputs
         self._KEYBOARD = True
