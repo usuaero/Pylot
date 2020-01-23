@@ -128,6 +128,9 @@ class JoystickAircraftController(BaseController):
     def __init__(self, control_dict):
         super().__init__()
 
+        # Initialize pygame
+        pygame.init()
+
         # Initialize user inputs
         if pygame.joystick.get_count()>0.:
             self._joy = pygame.joystick.Joystick(0)
@@ -219,6 +222,9 @@ class KeyboardAircraftController(BaseController):
 
     def __init__(self, control_dict):
         super().__init__()
+
+        # Initialize pygame
+        pygame.init()
 
         # Initialize user inputs
         self._thr = 0.
