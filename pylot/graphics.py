@@ -395,6 +395,7 @@ class HeadsUp:
 
 
     def render(self, aircraft_condition, world_view):
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
         velocity_b = aircraft_condition["Velocity"]
         orientation_b = aircraft_condition["Orientation"]
@@ -557,8 +558,8 @@ class Camera:
         Notes
         -----
         This function does several conversions between (e0,ex,ey,ez) and (x,y,z,w) forms of quaternions. It should not be altered.
-
         """
+
         #third person camera view of plane
         quat_orientation = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
         graphics_aircraft_to_camera = Body2Fixed(offset, quat_orientation)
@@ -567,10 +568,11 @@ class Camera:
         rotated_cam_up = Body2Fixed(cam_up,quat_orientation)
 
         self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
-        self.up_storage.append(rotated_cam_up)
+        self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
 
-        #latency. stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
+        # Latency. Stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
+        # An average is taken to smooth out the camera position
         delay = 5
 	
         if len(self.pos_storage)<=delay:
@@ -579,9 +581,9 @@ class Camera:
             self.target = self.target_storage[0]
 
         else:
-            self.camera_pos = self.pos_storage.pop(0)
-            self.camera_up = self.up_storage.pop(0)
-            self.target = self.target_storage.pop(0)
+            self.camera_pos = 0.25*(self.pos_storage.pop(0)+self.pos_storage[0]+self.pos_storage[1]+self.pos_storage[2])
+            self.camera_up = 0.25*(self.up_storage.pop(0)+self.up_storage[0]+self.up_storage[1]+self.up_storage[2])
+            self.target = 0.25*(self.target_storage.pop(0)+self.target_storage[0]+self.target_storage[1]+self.target_storage[2])
 
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
 

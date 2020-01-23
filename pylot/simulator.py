@@ -223,6 +223,8 @@ class Simulator:
             # Write output
             self._aircraft.output_state(t)
 
+        return
+
 
     def _load_aircraft(self):
         # Loads the aircraft from the input file
@@ -245,6 +247,80 @@ class Simulator:
             self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
 
 
+    def _initialize_graphics(self):
+        # Initializes the graphics
+
+        # Get path to graphics objects
+        self._pylot_path = os.path.dirname(__file__)
+        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
+        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
+        self._res_path = os.path.join(self._graphics_path, "res")
+        self._shaders_path = os.path.join(self._graphics_path, "shaders")
+
+        # Initialize pygame modules
+        pygame.init()
+
+        # Setup window size
+        self._width, self._height = 1800,900
+        pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
+        screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
+        pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
+        glViewport(0,0,self._width,self._height)
+        glEnable(GL_DEPTH_TEST)
+        
+        # SIMULATION FRAMERATE
+        self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
+
+        # Initialize graphics objects
+        # Loading screen is rendered and displayed while the rest of the objects are read and prepared
+        glClearColor(0.,0.,0.,1.0)
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        loading = Text(150)
+        loading.draw(-0.2,-0.05,"Loading...",(0,255,0,1))
+        pygame.display.flip()
+
+        # Initialize game over screen
+        self._gameover = Text(150)
+
+        # Initialize HUD
+        self._HUD = HeadsUp(self._width, self._height, self._res_path, self._shaders_path)
+
+        # Initialize flight data overlay
+        self._data = FlightData()
+        self._stall_warning = Text(100)
+
+        # Initialize ground
+        self._ground_quad = []
+        self._quad_size = 20000
+        self._ground_positions = [[0., 0., 0.],
+                                  [0., self._quad_size, 0.],
+                                  [self._quad_size, 0., 0.],
+                                  [self._quad_size, self._quad_size, 0.]]
+        ground_orientations = [[1., 0., 0., 0.],
+                               [0., 0., 0., 1.],
+                               [0., 0., 1., 0.],
+                               [0., 1., 0., 0.]] # I'm not storing these because they don't change
+        for i in range(4):
+            self._ground_quad.append(Mesh(
+                os.path.join(self._res_path, "field.obj"),
+                os.path.join(self._shaders_path, "field.vs"),
+                os.path.join(self._shaders_path, "field.fs"),
+                os.path.join(self._res_path, "field_texture.jpg"),
+                self._width,
+                self._height))
+            self._ground_quad[i].set_position(self._ground_positions[i])
+            self._ground_quad[i].set_orientation(ground_orientations[i])
+
+        # Initialize camera object
+        self._cam = Camera()
+
+        # Clock object for tracking frames and timestep
+        self._clock = pygame.time.Clock()
+
+        # Ticks clock before starting game loop
+        self._clock.tick_busy_loop()
+
+
     def run_sim(self):
         """Runs the simulation according to the defined inputs.
         """
@@ -264,6 +340,9 @@ class Simulator:
                     texture_path = self._aircraft_graphics_info["texture_file"]
                     self._aircraft_graphics = Mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._width, self._height)
                     self._aircraft_graphics.set_position(self._aircraft_graphics_info["position"])
+                    self._p0 = copy.copy(self._aircraft_graphics_info["position"])
+                    self._p1 = copy.copy(self._p0)
+                    self._p2 = copy.copy(self._p0)
                     self._aircraft_graphics.set_orientation(self._aircraft_graphics_info["orientation"])
                     break
 
@@ -297,21 +376,57 @@ class Simulator:
         glClearColor(0.65,1.0,1.0,1.0)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
 
+        # Check for quitting
+        if self._quit.value:
+            return True
+
         # Get state from state manager
         y = np.array(self._state_manager[:13])
+        if (y == 0.0).all():
+            return False # The physics haven't finished their first loop yet
         dt_physics = self._state_manager[13]
         t_physics = self._state_manager[14]
 
-        #timestep for simulation is based on framerate
+        # Timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
+
+        # Perform position filtering using linear 3rd order autoregressive model
+        p = y[6:9]
+        dp2 = p-self._p2
+        dp1 = p-self._p1
+        dp0 = p-self._p0
+
+        # Specify gains to give higher weighting to measurements which more closely follow a linear trend
+        avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
+        ddp2 = abs(dp2-avg_dp)
+        ddp1 = abs(dp1-avg_dp)
+        ddp0 = abs(dp0-avg_dp)
+        sum_ddp = ddp2+ddp1+ddp0
+        np.seterr(invalid='ignore')
+        k1 = np.where(sum_ddp == 0.0, 0.0, ddp1/sum_ddp) # How much we trust the last two positions
+        k2 = np.where(sum_ddp == 0.0, 0.0, ddp0/sum_ddp) # How much we trust the last two positions
+        k3 = np.where(sum_ddp == 0.0, 1.0, ddp2/sum_ddp) # How much we trust the last two positions
+        np.seterr()
+
+        # Calculate AR model coefficients
+        a1 = -k1-k1*dt_graphics
+        a2 = k1*dt_graphics-k2-k2*dt_graphics
+        a3 = k2*dt_graphics
+        b0 = k3
+
+        # Calculate filtered position
+        filtered_position = -a1*self._p2-a2*self._p1-a3*self._p0+b0*p
+        self._p0 = self._p1
+        self._p1 = self._p2
+        self._p2 = filtered_position
 
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
-        self._aircraft_graphics.set_position(y[6:9])
+        self._aircraft_graphics.set_position(filtered_position)#y[6:9])
 
         # Parse state of aircraft
         aircraft_condition = {
-            "Position" : y[6:9],
+            "Position" : filtered_position,#y[6:9],
             "Orientation" : y[9:],
             "Velocity" : y[:3]
         }
@@ -370,7 +485,7 @@ class Simulator:
         else:
             # Third person view
             if not self._fpv.value:
-                view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -30])
+                view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -10])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
