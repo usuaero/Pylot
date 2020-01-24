@@ -11,8 +11,8 @@ import time
 import pygame.display
 import pygame.image
 from pygame.locals import HWSURFACE, OPENGL, DOUBLEBUF
-from OpenGL.GL import *
-from OpenGL.GLU import *
+from OpenGL.GL import glClear, glClearColor
+#from OpenGL.GLU import *
 from .graphics import *
 import os
 
@@ -80,7 +80,7 @@ class Simulator:
         # Setup window size
         self._width, self._height = 1800,900
         pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
-        screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
+        _ = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
         pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
         glViewport(0,0,self._width,self._height)
         glEnable(GL_DEPTH_TEST)
@@ -309,10 +309,11 @@ class Simulator:
                         self._state_manager[13] = 0.0 # The physics isn't stepping...
 
                     # Break out of pause
-                    if not self._pause.value and self._paused:
-                        self._paused = False
-                        if self._real_time:
-                            t0 = time.time() # So as to not throw off the integration
+                    if not self._pause.value:
+                        if self._paused:
+                            self._paused = False
+                            if self._real_time:
+                                t0 = time.time() # So as to not throw off the integration
                         break
 
                 # Pass information to graphics
