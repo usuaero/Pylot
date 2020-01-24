@@ -1,10 +1,10 @@
 {
     "tag" : "Example of flight simulator input.",
     "simulation" : {
-        "real_time" : false,
+        "real_time" : true,
         "dt" : 0.05,
         "final_time" : 10.0,
-        "enable_graphics" : false
+        "enable_graphics" : true
     },
     "units" : "English",
     "atmosphere" : {

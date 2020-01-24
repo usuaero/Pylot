@@ -109,7 +109,7 @@ class NoController(BaseController):
         super().__init__()
 
         # Get control names
-        for key, value in control_dict.items():
+        for key in list(control_dict.keys()):
             self._controls.append(key)
 
     def get_control(self, state_vec, prev_controls):
@@ -128,10 +128,8 @@ class JoystickAircraftController(BaseController):
     def __init__(self, control_dict):
         super().__init__()
 
-        # Initialize pygame
-        pygame.init()
-
         # Initialize user inputs
+        pygame.joystick.init()
         if pygame.joystick.get_count()>0.:
             self._joy = pygame.joystick.Joystick(0)
             self._joy.init()
@@ -222,9 +220,6 @@ class KeyboardAircraftController(BaseController):
 
     def __init__(self, control_dict):
         super().__init__()
-
-        # Initialize pygame
-        pygame.init()
 
         # Initialize user inputs
         self._thr = 0.
