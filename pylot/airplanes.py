@@ -968,3 +968,24 @@ class MachUpXAirplane(BaseAircraft):
             FM += engine.get_thrust_FM(self._controls, rho, V)
 
         return FM
+
+
+    def get_graphics_info(self):
+        """Returns the .obj, .vs, .fs, and texture .jpg files for the aircraft."""
+
+        # Get path to graphics objects
+        self._pylot_path = os.path.dirname(__file__)
+        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
+        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
+        self._res_path = os.path.join(self._graphics_path, "res")
+        self._shaders_path = os.path.join(self._graphics_path, "shaders")
+
+        # Load
+        graphics_dict = self._input_dict.get("graphics", {})
+        info = {}
+        info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
+        info["v_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        info["texture_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+
+        return info

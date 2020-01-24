@@ -27,6 +27,12 @@ class Simulator:
 
     def __init__(self, input_dict):
 
+        # Print welcome
+        print("--------------------------------------------------")
+        print("              Welcome to Pylot!                   ")
+        print("                 USU AeroLab                      ")
+        print("--------------------------------------------------")
+
         # Store input
         self._input_dict = input_dict
         self._units = self._input_dict.get("units", "English")
@@ -52,6 +58,9 @@ class Simulator:
         # Kick off physics process
         self._physics_process = mp.Process(target=self._run_physics, args=())
 
+        # Initialize pygame modules
+        pygame.init()
+
         # Initialize graphics
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
         if self._render_graphics:
@@ -68,9 +77,6 @@ class Simulator:
         self._res_path = os.path.join(self._graphics_path, "res")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
 
-        # Initialize pygame modules
-        pygame.init()
-
         # Setup window size
         self._width, self._height = 1800,900
         pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
@@ -79,11 +85,10 @@ class Simulator:
         glViewport(0,0,self._width,self._height)
         glEnable(GL_DEPTH_TEST)
         
-        # SIMULATION FRAMERATE
+        # Get target framerate
         self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
 
-        # Initialize graphics objects
-        # Loading screen is rendered and displayed while the rest of the objects are read and prepared
+        # Render loading screen
         glClearColor(0.,0.,0.,1.0)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         loading = Text(150)
@@ -133,6 +138,101 @@ class Simulator:
 
         # Initialize storage of velocities for determining g's
         self._prev_vels = [0.0, 0.0, 0.0]
+
+
+    def _load_aircraft(self):
+        # Loads the aircraft from the input file
+
+        # Read in aircraft input
+        aircraft_name = self._input_dict["aircraft"]["name"]
+        aircraft_file = self._input_dict["aircraft"]["file"]
+        with open(aircraft_file, 'r') as aircraft_file_handle:
+            aircraft_dict = json.load(aircraft_file_handle)
+
+        # Get density model, controller, and output file
+        density = import_value("density", self._input_dict.get("atmosphere", {}), self._units, [0.0023769, "slug/ft^3"])
+
+        # Linear aircraft
+        if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
+            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
+        
+        # MachUpX aircraft
+        else:
+            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
+
+
+    def _initialize_graphics(self):
+        # Initializes the graphics
+
+        # Get path to graphics objects
+        self._pylot_path = os.path.dirname(__file__)
+        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
+        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
+        self._res_path = os.path.join(self._graphics_path, "res")
+        self._shaders_path = os.path.join(self._graphics_path, "shaders")
+
+        # Initialize pygame modules
+        pygame.display.init()
+        pygame.font.init()
+
+        # Setup window size
+        self._width, self._height = 1800,900
+        pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
+        _ = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
+        pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
+        glViewport(0,0,self._width,self._height)
+        glEnable(GL_DEPTH_TEST)
+        
+        # Target framerate
+        self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
+
+        # Render loading screen
+        glClearColor(0.,0.,0.,1.0)
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        loading = Text(150)
+        loading.draw(-0.2,-0.05,"Loading...",(0,255,0,1))
+        pygame.display.flip()
+
+        # Initialize game over screen
+        self._gameover = Text(150)
+
+        # Initialize HUD
+        self._HUD = HeadsUp(self._width, self._height, self._res_path, self._shaders_path)
+
+        # Initialize flight data overlay
+        self._data = FlightData()
+        self._stall_warning = Text(100)
+
+        # Initialize ground
+        self._ground_quad = []
+        self._quad_size = 20000
+        self._ground_positions = [[0., 0., 0.],
+                                  [0., self._quad_size, 0.],
+                                  [self._quad_size, 0., 0.],
+                                  [self._quad_size, self._quad_size, 0.]]
+        ground_orientations = [[1., 0., 0., 0.],
+                               [0., 0., 0., 1.],
+                               [0., 0., 1., 0.],
+                               [0., 1., 0., 0.]] # I'm not storing these because they don't change
+        for i in range(4):
+            self._ground_quad.append(Mesh(
+                os.path.join(self._res_path, "field.obj"),
+                os.path.join(self._shaders_path, "field.vs"),
+                os.path.join(self._shaders_path, "field.fs"),
+                os.path.join(self._res_path, "field_texture.jpg"),
+                self._width,
+                self._height))
+            self._ground_quad[i].set_position(self._ground_positions[i])
+            self._ground_quad[i].set_orientation(ground_orientations[i])
+
+        # Initialize camera object
+        self._cam = Camera()
+
+        # Clock object for tracking frames and timestep
+        self._clock = pygame.time.Clock()
+
+        # Ticks clock before starting game loop
+        self._clock.tick_busy_loop()
 
 
     def _run_physics(self):
@@ -204,14 +304,14 @@ class Simulator:
                         self._fpv.value = not self._fpv.value
 
                     # Pause
-                    if self._pause.value:
-                        if not self._paused:
-                            self._paused = True
+                    if self._pause.value and not self._paused:
+                        self._paused = True
+                        self._state_manager[13] = 0.0 # The physics isn't stepping...
 
                     # Break out of pause
-                    else:
-                        if self._paused:
-                            self._paused = False
+                    if not self._pause.value and self._paused:
+                        self._paused = False
+                        if self._real_time:
                             t0 = time.time() # So as to not throw off the integration
                         break
 
@@ -223,102 +323,8 @@ class Simulator:
             # Write output
             self._aircraft.output_state(t)
 
-        return
-
-
-    def _load_aircraft(self):
-        # Loads the aircraft from the input file
-
-        # Read in aircraft input
-        aircraft_name = self._input_dict["aircraft"]["name"]
-        aircraft_file = self._input_dict["aircraft"]["file"]
-        with open(aircraft_file, 'r') as aircraft_file_handle:
-            aircraft_dict = json.load(aircraft_file_handle)
-
-        # Get density model, controller, and output file
-        density = import_value("density", self._input_dict.get("atmosphere", {}), self._units, [0.0023769, "slug/ft^3"])
-
-        # Linear aircraft
-        if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
-        
-        # MachUpX aircraft
-        else:
-            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
-
-
-    def _initialize_graphics(self):
-        # Initializes the graphics
-
-        # Get path to graphics objects
-        self._pylot_path = os.path.dirname(__file__)
-        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
-        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
-        self._res_path = os.path.join(self._graphics_path, "res")
-        self._shaders_path = os.path.join(self._graphics_path, "shaders")
-
-        # Initialize pygame modules
-        pygame.init()
-
-        # Setup window size
-        self._width, self._height = 1800,900
-        pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
-        screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
-        pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
-        glViewport(0,0,self._width,self._height)
-        glEnable(GL_DEPTH_TEST)
-        
-        # SIMULATION FRAMERATE
-        self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
-
-        # Initialize graphics objects
-        # Loading screen is rendered and displayed while the rest of the objects are read and prepared
-        glClearColor(0.,0.,0.,1.0)
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-        loading = Text(150)
-        loading.draw(-0.2,-0.05,"Loading...",(0,255,0,1))
-        pygame.display.flip()
-
-        # Initialize game over screen
-        self._gameover = Text(150)
-
-        # Initialize HUD
-        self._HUD = HeadsUp(self._width, self._height, self._res_path, self._shaders_path)
-
-        # Initialize flight data overlay
-        self._data = FlightData()
-        self._stall_warning = Text(100)
-
-        # Initialize ground
-        self._ground_quad = []
-        self._quad_size = 20000
-        self._ground_positions = [[0., 0., 0.],
-                                  [0., self._quad_size, 0.],
-                                  [self._quad_size, 0., 0.],
-                                  [self._quad_size, self._quad_size, 0.]]
-        ground_orientations = [[1., 0., 0., 0.],
-                               [0., 0., 0., 1.],
-                               [0., 0., 1., 0.],
-                               [0., 1., 0., 0.]] # I'm not storing these because they don't change
-        for i in range(4):
-            self._ground_quad.append(Mesh(
-                os.path.join(self._res_path, "field.obj"),
-                os.path.join(self._shaders_path, "field.vs"),
-                os.path.join(self._shaders_path, "field.fs"),
-                os.path.join(self._res_path, "field_texture.jpg"),
-                self._width,
-                self._height))
-            self._ground_quad[i].set_position(self._ground_positions[i])
-            self._ground_quad[i].set_orientation(ground_orientations[i])
-
-        # Initialize camera object
-        self._cam = Camera()
-
-        # Clock object for tracking frames and timestep
-        self._clock = pygame.time.Clock()
-
-        # Ticks clock before starting game loop
-        self._clock.tick_busy_loop()
+        # If we exit the loop due to a timeout, let the graphics know we're done
+        self._quit.value = 1
 
 
     def run_sim(self):
@@ -358,15 +364,16 @@ class Simulator:
                 # Update graphics
                 self._update_graphics()
 
-        # Finalize pygame
-        if self._render_graphics:
-            pygame.display.quit()
-        pygame.quit()
-
         # Wait for the physics to finish
         self._physics_process.join()
         self._physics_process.close()
         self._manager.shutdown()
+
+        # Print quit message
+        print("--------------------------------------------------")
+        print("           Pylot exited successfully.             ")
+        print("                  Thank you!                      ")
+        print("--------------------------------------------------")
 
 
     def _update_graphics(self):
@@ -403,9 +410,9 @@ class Simulator:
         ddp0 = abs(dp0-avg_dp)
         sum_ddp = ddp2+ddp1+ddp0
         np.seterr(invalid='ignore')
-        k1 = np.where(sum_ddp == 0.0, 0.0, ddp1/sum_ddp) # How much we trust the last two positions
-        k2 = np.where(sum_ddp == 0.0, 0.0, ddp0/sum_ddp) # How much we trust the last two positions
-        k3 = np.where(sum_ddp == 0.0, 1.0, ddp2/sum_ddp) # How much we trust the last two positions
+        k1 = np.where(sum_ddp == 0.0, 0.0, ddp1/sum_ddp)
+        k2 = np.where(sum_ddp == 0.0, 0.0, ddp0/sum_ddp)
+        k3 = np.where(sum_ddp == 0.0, 1.0, ddp2/sum_ddp)
         np.seterr()
 
         # Calculate AR model coefficients
