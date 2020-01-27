@@ -72,7 +72,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>Whether to render the aircraft in a simulated environment. Defaults to false.
 >>
 >>**"target_framerate" : int, optional**
->>>Desired number of graphics updates per second. Max is 60. The graphics will update no faster than this. Defaults to 30.
+>>>Desired number of graphics updates per second. Max is 60. The graphics will update no faster than the value specified here. Defaults to 30.
 >
 >**"units" : string, optional**
 >>Specifies the unit system to be used for inputs and outputs. Can be "SI" or "English". Any units not explicitly defined for each value in the input objects will be assumed to be the default unit for that measurement in the system specified here. Defaults to "English".

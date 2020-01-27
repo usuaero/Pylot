@@ -638,7 +638,7 @@ class LinearizedAirplane(BaseAircraft):
         """Returns the aerodynamic forces and moments."""
 
         # Get control state
-        self._controls = self._controller.get_control(self.y, self._controls)
+        self._controls = self._controller.get_control(t, self.y, self._controls)
 
         # Declare force and moment vector
         FM = np.zeros(6)
@@ -778,10 +778,6 @@ class MachUpXAirplane(BaseAircraft):
         else:
             raise IOError("An initial condition must be specified.")
 
-        # Initialize controls
-        for name in self._control_names:
-            self._controls[name] = 0.0
-
 
     def _trim(self, trim_dict):
         # Trims the aircraft at the given condition
@@ -802,6 +798,7 @@ class MachUpXAirplane(BaseAircraft):
                 continue
             self._fixed_controls[name] = self._fixed_controls.get(name, 0.0)
 
+        # Check we have enough
         if len(self._avail_controls) != 4:
             raise IOError("Exactly 4 controls must be used to trim the aircraft. Got {0}.".format(len(self._avail_controls)))
 
@@ -840,13 +837,13 @@ class MachUpXAirplane(BaseAircraft):
         for i, name in enumerate(self._avail_controls):
             controls[name] = trim_settings[i+2]
 
-        # Set state
-        self._set_state_in_coordinated_turn(alpha, beta, controls)
-
         # Output results of trim
         if self._trim_verbose:
             print("\nFinal trim residuals: {0}".format(self.dy_dt(0.0)[:6]))
             print("\nFinal trim scalar: {0}".format(result.fun))
+
+        # Set state
+        self._set_state_in_coordinated_turn(alpha, beta, controls)
 
 
     def _trim_minimizer_function(self, trim_vals):
@@ -914,9 +911,8 @@ class MachUpXAirplane(BaseAircraft):
         self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
 
 
-    def get_FM(self, t):
-
-        FM = np.zeros(6)
+    def _update_machupx_state(self):
+        # Passes the sim object state to MachUpX
 
         # Set MachUpX state
         mx_state = {
@@ -929,8 +925,15 @@ class MachUpXAirplane(BaseAircraft):
         self._mx_scene.set_aircraft_state(state=mx_state, aircraft_name=self.name)
 
         # Update controls
-        self._controls = self._controller.get_control(self.y, self._controls)
         self._mx_scene.set_aircraft_control_state(control_state=self._controls, aircraft_name=self.name)
+
+
+    def get_FM(self, t):
+
+        # Initialize
+        FM = np.zeros(6)
+        self._controls = self._controller.get_control(t, self.y, self._controls)
+        self._update_machupx_state()
 
         # Get redimensionalizer
         rho = self._mx_scene._get_density(self.y[6:9])
