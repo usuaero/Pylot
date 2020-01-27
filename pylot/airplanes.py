@@ -823,7 +823,7 @@ class MachUpXAirplane(BaseAircraft):
             bounds = None
         opt_method = "L-BFGS-B"
         optimizer_options = {
-            "ftol" : 1e-16
+            "ftol" : 1e-22
         }
 
         # Optimize

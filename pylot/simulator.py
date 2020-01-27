@@ -324,29 +324,42 @@ class Simulator:
         # Perform position filtering using linear 3rd order autoregressive model
         p = y[6:9]
         dp2 = p-self._p2
-        dp1 = p-self._p1
-        dp0 = p-self._p0
+        dp1 = self._p2-self._p1
+        dp0 = self._p1-self._p0
 
-        # Specify gains to give higher weighting to measurements which more closely follow a linear trend
-        avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
-        ddp2 = abs(dp2-avg_dp)
-        ddp1 = abs(dp1-avg_dp)
-        ddp0 = abs(dp0-avg_dp)
-        sum_ddp = ddp2+ddp1+ddp0
-        np.seterr(invalid='ignore')
-        k1 = np.where(sum_ddp == 0.0, 0.0, ddp1/sum_ddp)
-        k2 = np.where(sum_ddp == 0.0, 0.0, ddp0/sum_ddp)
-        k3 = np.where(sum_ddp == 0.0, 1.0, ddp2/sum_ddp)
-        np.seterr()
+        # Check if we have enough position history
+        if (dp2 == 0).all() or (dp1 == 0).all() or (dp0 == 0).all():
+            filtered_position = p
 
-        # Calculate AR model coefficients
-        a1 = -k1-k1*dt_graphics
-        a2 = k1*dt_graphics-k2-k2*dt_graphics
-        a3 = k2*dt_graphics
-        b0 = k3
+        else:
+            # Specify gains to give higher weighting to measurements which more closely follow a linear trend
+            avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
+            ddp2 = abs(dp2-avg_dp)
+            ddp1 = abs(dp1-avg_dp)
+            ddp0 = abs(dp0-avg_dp)
+            # It should be that if ^ these values are small, we want k3 to be large
+            np.seterr(invalid='ignore')
+            k1 = np.where(ddp1 == 0.0, 0.0, 1/ddp1)
+            k2 = np.where(ddp0 == 0.0, 0.0, 1/ddp0)
+            k3 = np.where(ddp2 == 0.0, 1.0, 1/ddp2)
+            np.seterr()
+            norm = k1+k2+k3
+            k1 /= norm
+            k2 /= norm
+            k3 /= norm
 
-        # Calculate filtered position
-        filtered_position = -a1*self._p2-a2*self._p1-a3*self._p0+b0*p
+            # Calculate AR model coefficients
+            a1 = -(1+dt_graphics)*k1
+            a2 = k1*dt_graphics-k2*(1+2*dt_graphics)
+            a3 = 2*k2*dt_graphics
+            print(k1, k2, k3)
+            print(a1, a2, a3)
+            b0 = k3
+
+            # Calculate filtered position
+            filtered_position = -a1*self._p2-a2*self._p1-a3*self._p0+b0*p
+
+        # Update for next timestep
         self._p0 = self._p1
         self._p1 = self._p2
         self._p2 = filtered_position
@@ -354,6 +367,7 @@ class Simulator:
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
         self._aircraft_graphics.set_position(filtered_position)#y[6:9])
+        print("Position error: {0}".format(filtered_position-y[6:9]))
 
         # Parse state of aircraft
         aircraft_condition = {

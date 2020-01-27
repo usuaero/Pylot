@@ -577,18 +577,19 @@ class Camera:
         self.target_storage.append(graphics_aircraft.position)
 
         # Latency. Stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
-        # An average is taken to smooth out the camera position
         delay = 5
 	
+        # If we don't have enough history, just pull the oldest
         if len(self.pos_storage)<=delay:
             self.camera_pos = self.pos_storage[0]
             self.camera_up = self.up_storage[0]
             self.target = self.target_storage[0]
 
+        # Otherwise, pop the oldest
         else:
-            self.camera_pos = 0.25*(self.pos_storage.pop(0)+self.pos_storage[0]+self.pos_storage[1]+self.pos_storage[2])
-            self.camera_up = 0.25*(self.up_storage.pop(0)+self.up_storage[0]+self.up_storage[1]+self.up_storage[2])
-            self.target = 0.25*(self.target_storage.pop(0)+self.target_storage[0]+self.target_storage[1]+self.target_storage[2])
+            self.camera_pos = self.pos_storage.pop(0)
+            self.camera_up = self.up_storage.pop(0)
+            self.target = self.target_storage.pop(0)
 
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
 
