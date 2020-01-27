@@ -14,8 +14,8 @@
         "trim" : {
             "airspeed" : 200,
             "position" : [0.0, 0.0, -500.0],
-            "climb_angle" : 20.0,
-            "bank_angle" : 30.0,
+            "climb_angle" : 0.0,
+            "bank_angle" : 0.0,
             "heading" : 0.0,
             "verbose" : true,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
