@@ -1,11 +1,13 @@
 import numpy as np
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
 import OpenGL.GL.shaders
 from pyrr import matrix44, vector3,Vector4
 from math import atan2, asin
 import pygame.image
 import pygame.font
+import pygame.draw
 import os
 
 from PIL import Image
@@ -244,9 +246,9 @@ class Text:
 
     def draw(self, x, y, text, color = None):                                                
         position = (x, y, 0)  
-        if color:        
+        if color:
             textSurface = self.font.render(text, True, color)   
-        else:                                             
+        else:
             textSurface = self.font.render(text, True, (0,0,0,1))                                     
         textData = pygame.image.tostring(textSurface, "RGBA", True) 
 
@@ -320,9 +322,12 @@ class FlightData:
         self.text.draw(-0.6,-0.75,"Physics Time Step: " +str(round(flight_data["Physics Time Step"],6))+" sec")
 
 class HeadsUp:
-    def __init__(self,width, height, res_path, shaders_path):
+    def __init__(self,width, height, res_path, shaders_path, screen):
         #initialize HUD objects
         self.view = np.identity(4)
+        self.screen = screen
+        self.width = width
+        self.height = height
 
         #initialize pitch ladder
         self.ladder = Mesh(os.path.join(res_path, "ladder.obj"),
@@ -419,29 +424,29 @@ class HeadsUp:
         self.alt.set_position([0.35,position_f[2]*0.002,-0.25])
         self.bank.set_orientation_z(euler[2])
 
-
         #render ladder
         self.ladder.set_view(world_view)
         self.flightPath.set_view(world_view)
         self.ladder.render()
         self.flightPath.render()
 
-
-
         #altimeter and airspeed indicator viewframe
         self.speed_viewport.start_draw_to_frame(0.)
         self.speed.render()
         self.alt.render()
         self.speed_viewport.end_draw_to_frame()
+
         #crosshair and compass viewframe
         self.viewport.start_draw_to_frame(0.)
         self.crosshair.render()
         self.compass.render()
         self.viewport.end_draw_to_frame()
+
         #bank indicator viewport
         self.bank_viewport.start_draw_to_frame(0.)
         self.bank.render()
         self.bank_viewport.end_draw_to_frame()
+
         #render viewports
         self.speed_viewport.draw_frame()
         self.viewport.draw_frame()

@@ -60,11 +60,14 @@ class BaseController:
 
     
     @abstractmethod
-    def get_control(self, state_vec, prev_controls):
+    def get_control(self, t, state_vec, prev_controls):
         """Returns the controls based on the inputted state.
 
         Parameters
         ----------
+        t : float
+            Time index
+
         state_vec : list
             State vector of the entity being controlled.
 
@@ -112,7 +115,7 @@ class NoController(BaseController):
         for key in list(control_dict.keys()):
             self._controls.append(key)
 
-    def get_control(self, state_vec, prev_controls):
+    def get_control(self, t, state_vec, prev_controls):
         return prev_controls
 
 
@@ -167,7 +170,7 @@ class JoystickAircraftController(BaseController):
         self._joy_init[3] = self._joy.get_axis(3)
 
 
-    def get_control(self, state_vec, prev_controls):
+    def get_control(self, t, state_vec, prev_controls):
         """Returns the controls based on the inputted state and keyboard/joystick inputs.
 
         Parameters
@@ -262,7 +265,7 @@ class KeyboardAircraftController(BaseController):
         self._perturbed = False
 
 
-    def get_control(self, state_vec, prev_controls):
+    def get_control(self, t, state_vec, prev_controls):
         """Returns the controls based on the inputted state and keyboard/joystick inputs.
 
         Parameters
