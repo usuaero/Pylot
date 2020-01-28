@@ -399,12 +399,12 @@ class HeadsUp:
         self.alt.change_projection_matrix(60,self.speed_viewport.external_aspect_ratio,0.1,10)
 
 
-    def render(self, aircraft_condition, world_view):
+    def render(self, velocity, graphics_aircraft, world_view):
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
-        velocity_b = aircraft_condition["Velocity"]
-        orientation_b = aircraft_condition["Orientation"]
-        position_f = aircraft_condition["Position"]
+        velocity_b = velocity
+        orientation_b = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
+        position_f = graphics_aircraft.position
 
         Vo = np.sqrt(velocity_b[0]**2+velocity_b[1]**2+velocity_b[2]**2)
 
