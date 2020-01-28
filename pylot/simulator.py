@@ -324,7 +324,7 @@ class Simulator:
         # Timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
 
-        # Perform position filtering using 3rd order AR filter
+        # Perform position filtering using 3rd order MA filter
         p = y[6:9]
         dp2 = p-self._p2
         dp1 = self._p2-self._p1
@@ -338,34 +338,30 @@ class Simulator:
             # See how far off our latest update is from the average
             avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
             ddp2 = abs((dp2-avg_dp)/avg_dp)
+            ddp1 = abs((dp1-avg_dp)/avg_dp)
+            ddp0 = abs((dp0-avg_dp)/avg_dp)
 
-            # Trust the update if it's close to the average
-            if (ddp2 < 0.1).all():
-                k1 = 0.0
-                k2 = 0.0
-                k3 = 1.0
-            else:
-                k1 = 0.5
-                k2 = 0.5
-                k3 = 0.0
+            k1 = 1.0/3.0
+            k2 = 1.0/3.0
+            k3 = 1.0/3.0
 
             # Calculate AR model coefficients
-            a1 = -(1+dt_graphics)*k1
-            a2 = k1*dt_graphics-k2*(1+2*dt_graphics)
-            a3 = 2*k2*dt_graphics
             b0 = k3
+            b1 = (1+dt_graphics)*k1
+            b2 = -k1*dt_graphics+k2*(1+2*dt_graphics)
+            b3 = -2*k2*dt_graphics
 
             # Calculate filtered position
-            filtered_position = -a1*self._p2-a2*self._p1-a3*self._p0+b0*p
+            filtered_position = b0*p+b1*self._p2+b2*self._p1+b3*self._p0
 
         # Update for next timestep
         self._p0 = self._p1
         self._p1 = self._p2
-        self._p2 = filtered_position
+        self._p2 = p
 
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
-        self._aircraft_graphics.set_position(y[6:9])
+        self._aircraft_graphics.set_position(filtered_position)#y[6:9])
         print("Filtered position error: {0}".format(filtered_position-y[6:9]))
 
         # Parse state of aircraft
@@ -434,12 +430,7 @@ class Simulator:
                 self._cam.up_storage.clear()
                 self._cam.target_storage.clear()
                 view = self._cam.cockpit_view(self._aircraft_graphics)
-                aircraft_condition = {
-                    "Position" : y[6:9],
-                    "Orientation" : y[9:],
-                    "Velocity" : y[:3]
-                }
-                self._HUD.render(aircraft_condition,view)
+                self._HUD.render(y[:3], self._aircraft_graphics, view)
 
             # Determine aircraft displacement in quad widths
             x_pos = y[6]
