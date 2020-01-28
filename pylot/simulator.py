@@ -51,7 +51,7 @@ class Simulator:
         self._graphics_ready = self._manager.Value('i', 0)
         self._quit = self._manager.Value('i', 0)
         self._pause = self._manager.Value('i', 0)
-        self._fpv = self._manager.Value('i', 1)
+        self._view = self._manager.Value('i', 1)
         self._flight_data = self._manager.Value('i', 0)
         self._aircraft_graphics_info = self._manager.dict()
 
@@ -65,6 +65,9 @@ class Simulator:
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
         if self._render_graphics:
             self._initialize_graphics()
+
+        # Housekeeping
+        self._num_views = 2
 
 
     def _initialize_graphics(self):
@@ -223,8 +226,8 @@ class Simulator:
                         self._flight_data.value = not self._flight_data.value
                     if inputs.get("quit", False):
                         self._quit.value = not self._quit.value
-                    if inputs.get("fpv", False):
-                        self._fpv.value = not self._fpv.value
+                    if inputs.get("view", False):
+                        self._view.value = (self._view.value+1)%self._num_views
 
                     # Pause
                     if self._pause.value and not self._paused:
@@ -321,39 +324,35 @@ class Simulator:
         # Timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
 
-        # Perform position filtering using linear 3rd order autoregressive model
+        # Perform position filtering using 3rd order AR filter
         p = y[6:9]
         dp2 = p-self._p2
         dp1 = self._p2-self._p1
         dp0 = self._p1-self._p0
 
         # Check if we have enough position history
-        if (dp2 == 0).all() or (dp1 == 0).all() or (dp0 == 0).all():
+        if (self._p2 == 0).all() or (self._p1 == 0).all() or (self._p0 == 0).all():
             filtered_position = p
 
         else:
-            # Specify gains to give higher weighting to measurements which more closely follow a linear trend
+            # See how far off our latest update is from the average
             avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
-            ddp2 = abs(dp2-avg_dp)
-            ddp1 = abs(dp1-avg_dp)
-            ddp0 = abs(dp0-avg_dp)
-            # It should be that if ^ these values are small, we want k3 to be large
-            np.seterr(invalid='ignore')
-            k1 = np.where(ddp1 == 0.0, 0.0, 1/ddp1)
-            k2 = np.where(ddp0 == 0.0, 0.0, 1/ddp0)
-            k3 = np.where(ddp2 == 0.0, 1.0, 1/ddp2)
-            np.seterr()
-            norm = k1+k2+k3
-            k1 /= norm
-            k2 /= norm
-            k3 /= norm
+            ddp2 = abs((dp2-avg_dp)/avg_dp)
+
+            # Trust the update if it's close to the average
+            if (ddp2 < 0.1).all():
+                k1 = 0.0
+                k2 = 0.0
+                k3 = 1.0
+            else:
+                k1 = 0.5
+                k2 = 0.5
+                k3 = 0.0
 
             # Calculate AR model coefficients
             a1 = -(1+dt_graphics)*k1
             a2 = k1*dt_graphics-k2*(1+2*dt_graphics)
             a3 = 2*k2*dt_graphics
-            print(k1, k2, k3)
-            print(a1, a2, a3)
             b0 = k3
 
             # Calculate filtered position
@@ -366,15 +365,10 @@ class Simulator:
 
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
-        self._aircraft_graphics.set_position(filtered_position)#y[6:9])
-        print("Position error: {0}".format(filtered_position-y[6:9]))
+        self._aircraft_graphics.set_position(y[6:9])
+        print("Filtered position error: {0}".format(filtered_position-y[6:9]))
 
         # Parse state of aircraft
-        aircraft_condition = {
-            "Position" : filtered_position,#y[6:9],
-            "Orientation" : y[9:],
-            "Velocity" : y[:3]
-        }
         u = y[0]
         v = y[1]
         w = y[2]
@@ -429,17 +423,22 @@ class Simulator:
         # Otherwise, render graphics
         else:
             # Third person view
-            if not self._fpv.value:
+            if self._view.value == 0:
                 view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -10])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
             # Cockpit view
-            else:
+            elif self._view.value == 1:
                 self._cam.pos_storage.clear()
                 self._cam.up_storage.clear()
                 self._cam.target_storage.clear()
                 view = self._cam.cockpit_view(self._aircraft_graphics)
+                aircraft_condition = {
+                    "Position" : y[6:9],
+                    "Orientation" : y[9:],
+                    "Velocity" : y[:3]
+                }
                 self._HUD.render(aircraft_condition,view)
 
             # Determine aircraft displacement in quad widths

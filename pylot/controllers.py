@@ -46,12 +46,16 @@ class BaseController:
 
                 # Switch view
                 elif event.key == pygame.K_SPACE:
-                    inputs["fpv"] = True
+                    inputs["view"] = True
 
                 # If it's not used here, put it back on the queue
                 else:
                     pygame.event.post(event)
 
+            # Check for general quit condition
+            elif event.type == pygame.QUIT:
+                inputs["quit"] = True
+                
             # Put keyup events back on the queue
             elif event.type == pygame.KEYUP:
                 pygame.event.post(event)
