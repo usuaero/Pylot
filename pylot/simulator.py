@@ -54,6 +54,7 @@ class Simulator:
         self._view = self._manager.Value('i', 1)
         self._flight_data = self._manager.Value('i', 0)
         self._aircraft_graphics_info = self._manager.dict()
+        self._control_settings = self._manager.dict()
 
         # Kick off physics process
         self._physics_process = mp.Process(target=self._run_physics, args=())
@@ -246,6 +247,8 @@ class Simulator:
                 self._state_manager[:13] = self._aircraft.y[:]
                 self._state_manager[13] = self._dt
                 self._state_manager[14] = t
+                for key, value in self._aircraft._controls.items():
+                    self._control_settings[key] = value
 
             # Write output
             self._aircraft.output_state(t)
@@ -315,9 +318,9 @@ class Simulator:
             return True
 
         # Get state from state manager
-        y = np.array(self._state_manager[:13])
-        if (y == 0.0).all():
-            return False # The physics haven't finished their first loop yet
+        y = np.array(copy.deepcopy(self._state_manager[:13]))
+        if (y == 0.0).all(): # The physics haven't finished their first loop yet
+            return False
         dt_physics = self._state_manager[13]
         t_physics = self._state_manager[14]
 
@@ -335,17 +338,21 @@ class Simulator:
             filtered_position = p
 
         else:
-            # See how far off our latest update is from the average
+            # Take a weighted average
             avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
             ddp2 = abs((dp2-avg_dp)/avg_dp)
             ddp1 = abs((dp1-avg_dp)/avg_dp)
             ddp0 = abs((dp0-avg_dp)/avg_dp)
 
-            k1 = 1.0/3.0
-            k2 = 1.0/3.0
-            k3 = 1.0/3.0
+            k1 = 0.3
+            k2 = 0.2
+            k3 = 0.5
+            norm = k1+k2+k3
+            k1 /= norm
+            k2 /= norm
+            k3 /= norm
 
-            # Calculate AR model coefficients
+            # Calculate MA model coefficients
             b0 = k3
             b1 = (1+dt_graphics)*k1
             b2 = -k1*dt_graphics+k2*(1+2*dt_graphics)
@@ -362,7 +369,6 @@ class Simulator:
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
         self._aircraft_graphics.set_position(filtered_position)#y[6:9])
-        print("Filtered position error: {0}".format(filtered_position-y[6:9]))
 
         # Parse state of aircraft
         u = y[0]
@@ -391,11 +397,6 @@ class Simulator:
             "Gnd Speed" : m.sqrt(V_f[0]*V_f[0]+V_f[1]*V_f[1])*0.68181818181818181818,
             "Gnd Track" : E[2],
             "Climb" : -V_f[2]*60,
-            "Throttle" : 0.0,
-            "Elevator" : 0.0,
-            "Ailerons" : 0.0,
-            "Rudder" : 0.0,
-            "Flaps" : 0.0,
             "Axial G-Force" : 0.0,
             "Side G-Force" : 0.0,
             "Normal G-Force" : 0.0,
@@ -490,7 +491,7 @@ class Simulator:
 
             # Display flight data
             elif self._flight_data.value:
-                self._data.render(flight_data)
+                self._data.render(flight_data, self._control_settings)
 
         # Update screen display
         pygame.display.flip()
