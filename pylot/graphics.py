@@ -263,7 +263,7 @@ class FlightData:
     def __init__(self):
         self.text = Text(36)
 
-    def render(self,flight_data):
+    def render(self, flight_data, controls):
         #left side data
         self.text.draw(-0.9,0.90,"Airspeed")
         self.text.draw(-0.9,0.84,str(round(flight_data["Airspeed"],1))+" fps")
@@ -292,30 +292,28 @@ class FlightData:
 
 
         #right side data
-        self.text.draw(0.7,0.90,"Axial G-Force")
-        self.text.draw(0.7,0.84,str(round(flight_data["Axial G-Force"],4))+" g's")
-        self.text.draw(0.7,0.75,"Side G-Force")
-        self.text.draw(0.7,0.69,str(round(flight_data["Side G-Force"],4))+" g's")
-        self.text.draw(0.7,0.60,"Normal G-Force")
-        self.text.draw(0.7,0.54,str(round(flight_data["Normal G-Force"],4))+" g's")
+        #self.text.draw(0.7,0.90,"Axial G-Force")
+        #self.text.draw(0.7,0.84,str(round(flight_data["Axial G-Force"],4))+" g's")
+        #self.text.draw(0.7,0.75,"Side G-Force")
+        #self.text.draw(0.7,0.69,str(round(flight_data["Side G-Force"],4))+" g's")
+        #self.text.draw(0.7,0.60,"Normal G-Force")
+        #self.text.draw(0.7,0.54,str(round(flight_data["Normal G-Force"],4))+" g's")
         self.text.draw(0.7,0.45,"Roll Rate")
         self.text.draw(0.7,0.39,str(round(flight_data["Roll Rate"],2))+" deg/s")
         self.text.draw(0.7,0.30,"Pitch Rate")
         self.text.draw(0.7,0.24,str(round(flight_data["Pitch Rate"],2))+" deg/s")
         self.text.draw(0.7,0.15,"Yaw Rate")
         self.text.draw(0.7,0.09,str(round(flight_data["Yaw Rate"],2))+" deg/s")
-        self.text.draw(0.7,0.00,"Throttle")
-        self.text.draw(0.7,-0.06,str(round(flight_data["Throttle"],0))+" %")
-        self.text.draw(0.7,-0.15,"Elevator")
-        self.text.draw(0.7,-0.21,str(round(flight_data["Elevator"],1))+" deg")
-        self.text.draw(0.7,-0.30,"Ailerons")
-        self.text.draw(0.7,-0.36,str(round(flight_data["Ailerons"],1))+" deg")
-        self.text.draw(0.7,-0.45,"Rudder")
-        self.text.draw(0.7,-0.51,str(round(flight_data["Rudder"],1))+" deg")
-        self.text.draw(0.7,-0.60,"Flaps")
-        self.text.draw(0.7,-0.66,str(round(flight_data["Flaps"],1))+" deg")
         self.text.draw(0.7,-0.75,"Time")
         self.text.draw(0.7,-0.81,str(round(flight_data["Time"],1))+" sec")
+
+        # Control settings
+        control_names = list(controls.keys())
+        for i, name in enumerate(control_names):
+            self.text.draw(0.7,0.00-0.15*i,name.title())
+            self.text.draw(0.7,-0.06-0.15*i,str(round(controls[name],4)))
+            if i == 4: # Only room to display 5
+                break
 
         #bottom data
         self.text.draw(0.1,-0.75,"Graphics Time Step: " +str(flight_data["Graphics Time Step"])+" sec")
