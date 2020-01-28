@@ -173,6 +173,10 @@ class JoystickAircraftController(BaseController):
         self._joy_init[2] = self._joy.get_axis(2)
         self._joy_init[3] = self._joy.get_axis(3)
 
+        self._store_input = True
+        if self._store_input:
+            self._storage_file = open("control_input.csv", 'w')
+
 
     def get_control(self, t, state_vec, prev_controls):
         """Returns the controls based on the inputted state and keyboard/joystick inputs.
@@ -207,13 +211,25 @@ class JoystickAircraftController(BaseController):
 
         # Parse new controls
         control_state = {}
+        setting_list = []
         for name in self._controls:
             if self._angular_control[name]:
-                control_state[name] = (joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
+                setting = (joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
             else:
-                control_state[name] = (-joy_def[self._control_mapping[name]]+1.)*0.5
+                setting = (-joy_def[self._control_mapping[name]]+1.)*0.5
+            control_state[name] = setting
+            setting_list.append(setting)
+
+        if self._store_input:
+            line = "{0},{1},{2},{3},{4}\n".format(t, *setting_list)
+            self._storage_file.write(line)
 
         return control_state
+
+
+    def __del__(self):
+        if self._store_input:
+            self._storage_file.close()
 
 
 class KeyboardAircraftController(BaseController):
@@ -380,3 +396,52 @@ class KeyboardAircraftController(BaseController):
 
         else: # Otherwise, send back the previous controls
             return prev_controls
+
+
+class TimeSequenceController(BaseController):
+    """A controller for controlling an aircraft with ailerons, elevators, and rudder, and a throttle using a standard keyboard.
+
+    Parameters
+    ----------
+    control_dict : dict
+        A dictionary of control names and specifications.
+    """
+
+
+    def __init__(self, control_dict):
+        super().__init__()
+
+        # Store column mapping
+        self._control_mapping = {}
+        for key, value in control_dict.items():
+            self._controls.append(key)
+            self._control_mapping[key] = value["column_index"]
+
+
+    def set_input(self, control_file):
+        """Reads in a time sequence input file of control settings."""
+        self._control_data = np.genfromtxt(control_file, delimiter=',')
+
+
+    def get_control(self, t, state_vec, prev_controls):
+        """Returns the controls based on the inputted state.
+
+        Parameters
+        ----------
+        t : float
+            Time index
+
+        state_vec : list
+            State vector of the entity being controlled.
+
+        prev_controls : dict
+            Previous control values.
+        """
+
+        # Get control
+        controls = {}
+        for name in self._controls:
+            i = self._control_mapping[name]
+            controls[name] = np.interp(t, self._control_data[:,0], self._control_data[:,i])
+
+        return controls

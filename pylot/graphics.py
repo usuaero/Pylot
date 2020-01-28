@@ -260,10 +260,12 @@ class Text:
 
 
 class FlightData:
-    def __init__(self):
+    def __init__(self, unit_system):
         self.text = Text(36)
+        self._units = unit_system
 
     def render(self, flight_data, controls):
+        #TODO add units
         #left side data
         self.text.draw(-0.9,0.90,"Airspeed")
         self.text.draw(-0.9,0.84,str(round(flight_data["Airspeed"],1))+" fps")

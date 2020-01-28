@@ -4,7 +4,7 @@ import math as m
 import numpy as np
 import multiprocessing as mp
 from .helpers import *
-from .airplanes import *
+from .airplanes import MachUpXAirplane, LinearizedAirplane
 import json
 import copy
 import time
@@ -12,7 +12,6 @@ import pygame.display
 import pygame.image
 from pygame.locals import HWSURFACE, OPENGL, DOUBLEBUF
 from OpenGL.GL import glClear, glClearColor
-#from OpenGL.GLU import *
 from .graphics import *
 import os
 
@@ -106,7 +105,7 @@ class Simulator:
         self._HUD = HeadsUp(self._width, self._height, self._res_path, self._shaders_path, self._screen)
 
         # Initialize flight data overlay
-        self._data = FlightData()
+        self._data = FlightData(self._units)
         self._stall_warning = Text(100)
 
         # Initialize ground
