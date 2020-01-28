@@ -153,7 +153,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>**"controller" : string**
 >>>Specifies how the aircraft is to be controlled. Basic, Real-time, direct user control is chosen by specifying "joystick" or "keyboard". This allows for basic 4-channel control where the user selects the mapping between the input axes and the controls. For more information on this, see [User Interface](user_interface).
 >>>
->>>The aircraft can also be controlled using a pre-defined control sequence. This sequence should be stored in a text file, the name of which is given here. The controls should be formatted in columns where the first column is the time index and each successive column corresponds the control settings. The order of the columns is determined by the "input_index" key in the "controls" object within the "aircraft" object. For example, if the aircraft has a control called "flaps" which was given the "input_index" of 1, then the second column in the text file given here will be used as the "flaps" control setting.
+>>>The aircraft can also be controlled using a pre-defined control sequence. This sequence should be stored in a .csv file, the name of which is given here. Note, the filename given here must include ".csv", otherwise it will not be recognized by Pylot. The controls should be formatted in columns where the first column is the time index and each successive column corresponds the control settings. The order of the columns is determined by the "column_index" key in the "controls" object within the "aircraft" object. For example, if the aircraft has a control called "flaps" which was given the "column_index" of 1, then the second column in the csv file given here will be used as the "flaps" control setting. Angular deflections should be listed in degrees; other control settings should vary from 0.0 to 1.0.
 >>>
 >>>The aircraft can also be controlled using a user-defined controller, allowing for complex control algorithms, more channels, differential thrust, and more! This is done by specifying "user-defined" for this key. Specific details for implementing this type of control can be found under [Building Custom Controllers](building_custom_controllers).
 
@@ -236,7 +236,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Specifies which input axis maps to this control. The input axes are as follows
 >>>>
 >>>>>| Index    | Joystick  | Keyboard      |
->>>>>|----------|-----------|---------------|
+>>>>>| -------- | --------- | ------------- |
 >>>>>| 0        | roll      | LEFT-RIGHT    |
 >>>>>| 1        | pitch     | UP-DOWN       |
 >>>>>| 2        | yaw       | A-D           |
@@ -245,7 +245,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Only required if the keyboard or joystick are being used as input.
 >>>
 >>>**"column_index" : int, optional**
->>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is the time index. Only required if a time sequence control input is used.
+>>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is always the time index (i.e. the first column after the time indices is denoted 1). Only required if a time sequence control input is used.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated.

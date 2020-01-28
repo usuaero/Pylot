@@ -132,3 +132,4 @@ dmypy.json
 from_troy/
 *.txt
 states.txt
+*.csv

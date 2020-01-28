@@ -102,11 +102,16 @@ class BaseAircraft:
 
         # User-defined
         elif control_type == "user-defined":
-            pass
+            from user_defined_controller import UserDefinedController
+            self._controller = UserDefinedController(self._input_dict.get("controls", {}))
 
         # Time sequence file
+        elif ".csv" in control_type:
+            self._controller = TimeSequenceController(self._input_dict.get("controls", {}))
+            self._controller.set_input(control_type)
+
         else:
-            pass
+            raise IOError("{0} is not a valid controller specification.".format(control_type))
 
         # Setup storage
         self._control_names = self._controller.get_control_names()
