@@ -313,8 +313,10 @@ class Simulator:
     def _update_graphics(self):
         # Does a step in graphics
 
-        #set default background color for sky
+        # Set default background color for sky
         glClearColor(0.65,1.0,1.0,1.0)
+
+        # Clear GL buffers
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
 
         # Check for quitting
@@ -386,7 +388,7 @@ class Simulator:
         else:
             # Third person view
             if self._view.value == 0:
-                view = self._cam.third_view(self._aircraft_graphics, offset=[-2*self._bw, 0.0, -2*self._cw])
+                view = self._cam.third_view(self._aircraft_graphics, t_physics, offset=[-2*self._bw, 0.0, -2*self._cw])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
@@ -395,6 +397,7 @@ class Simulator:
                 self._cam.pos_storage.clear()
                 self._cam.up_storage.clear()
                 self._cam.target_storage.clear()
+                self._cam.time_storage.clear()
                 view = self._cam.cockpit_view(self._aircraft_graphics)
                 self._HUD.render(y[:3], self._aircraft_graphics, view)
 

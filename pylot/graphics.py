@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.interpolate as intp
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
@@ -542,11 +543,12 @@ class Camera:
         self.pos_storage = []
         self.up_storage = []
         self.target_storage =[]
+        self.time_storage = []
         self.IDENTITY = np.identity(4)
         self.IDENTITY2 = np.identity(4)
 
 
-    def third_view(self, graphics_aircraft, offset=[-10., 0., -2.]):
+    def third_view(self, graphics_aircraft, t, offset=[-10., 0., -2.]):
         """creates view matrix such that camera is positioned behind and slightly above graphics_aircraft. camera location and orientation is tied to graphics_aircraft
 
         Parameters
@@ -572,24 +574,34 @@ class Camera:
         cam_up = [0.,0.,-1.]
         rotated_cam_up = Body2Fixed(cam_up,quat_orientation)
 
+        # Store position, target, up, and time
         self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
         self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
+        self.time_storage.append(t)
 
-        # Latency. Stores position, target, and up in lists and pulls out and uses old values to create a delayed effect
-        delay = 5
+        # Delay in seconds. The camera will lag behind the aircraft by this time
+        delay = 0.5
+        camera_time = t-delay
 	
         # If we don't have enough history, just pull the oldest
-        if len(self.pos_storage)<=delay:
+        if self.time_storage[0] > camera_time:
             self.camera_pos = self.pos_storage[0]
             self.camera_up = self.up_storage[0]
             self.target = self.target_storage[0]
 
-        # Otherwise, pop the oldest
+        # Otherwise, perform linear interpolation on the times to get position, up, and target
         else:
-            self.camera_pos = self.pos_storage.pop(0)
-            self.camera_up = self.up_storage.pop(0)
-            self.target = self.target_storage.pop(0)
+            self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)
+            self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
+            self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
+
+            # Clean up really old values
+            if self.time_storage[1] < camera_time:
+                self.time_storage.pop(0)
+                self.pos_storage.pop(0)
+                self.up_storage.pop(0)
+                self.target_storage.pop(0)
 
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
 
