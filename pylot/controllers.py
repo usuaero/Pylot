@@ -173,7 +173,8 @@ class JoystickAircraftController(BaseController):
         self._joy_init[2] = self._joy.get_axis(2)
         self._joy_init[3] = self._joy.get_axis(3)
 
-        self._store_input = True
+        # For me to create a control input csv for testing
+        self._store_input = False
         if self._store_input:
             self._storage_file = open("control_input.csv", 'w')
 
@@ -442,6 +443,7 @@ class TimeSequenceController(BaseController):
         controls = {}
         for name in self._controls:
             i = self._control_mapping[name]
-            controls[name] = np.interp(t, self._control_data[:,0], self._control_data[:,i])
+            default = prev_controls[name]
+            controls[name] = np.interp(t, self._control_data[:,0], self._control_data[:,i], left=default, right=default)
 
         return controls

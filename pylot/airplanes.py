@@ -724,6 +724,8 @@ class LinearizedAirplane(BaseAircraft):
         info["v_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.vs"))
         info["f_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.fs"))
         info["texture_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+        info["l_ref_lon"] = self._cw
+        info["l_ref_lat"] = self._bw
 
         return info
 
