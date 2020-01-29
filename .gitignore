@@ -133,3 +133,6 @@ from_troy/
 *.txt
 states.txt
 *.csv
+*.stl
+*.obj
+*.mtl
