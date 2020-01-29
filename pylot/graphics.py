@@ -548,7 +548,7 @@ class Camera:
         self.IDENTITY2 = np.identity(4)
 
 
-    def third_view(self, graphics_aircraft, t, offset=[-10., 0., -2.]):
+    def third_view(self, graphics_aircraft, physics_time, graphics_delay, airspeed, offset=[-10., 0., -2.]):
         """creates view matrix such that camera is positioned behind and slightly above graphics_aircraft. camera location and orientation is tied to graphics_aircraft
 
         Parameters
@@ -578,11 +578,11 @@ class Camera:
         self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
         self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
-        self.time_storage.append(t)
+        self.time_storage.append(physics_time)
 
         # Delay in seconds. The camera will lag behind the aircraft by this time
-        delay = 0.5
-        camera_time = t-delay
+        delay = -4*offset[0]/airspeed
+        camera_time = physics_time-delay
 	
         # If we don't have enough history, just pull the oldest
         if self.time_storage[0] > camera_time:

@@ -27,7 +27,7 @@ class Simulator:
     def __init__(self, input_dict):
 
         # Print welcome
-        print("--------------------------------------------------")
+        print("\n--------------------------------------------------")
         print("              Welcome to Pylot!                   ")
         print("                 USU AeroLab                      ")
         print("--------------------------------------------------")
@@ -46,7 +46,7 @@ class Simulator:
         # Initialize inter-process communication
         self._manager = mp.Manager()
         self._state_manager = self._manager.list()
-        self._state_manager[:] = [0.0]*15
+        self._state_manager[:] = [0.0]*16
         self._graphics_ready = self._manager.Value('i', 0)
         self._quit = self._manager.Value('i', 0)
         self._pause = self._manager.Value('i', 0)
@@ -214,8 +214,19 @@ class Simulator:
                 t0 = t1
             t += self._dt
 
+            # Write output
+            self._aircraft.output_state(t)
+
             # Handle graphics only things
             if self._render_graphics:
+
+                # Pass information to graphics
+                self._state_manager[:13] = self._aircraft.y[:]
+                self._state_manager[13] = self._dt
+                self._state_manager[14] = t
+                self._state_manager[15] = t1
+                for key, value in self._aircraft._controls.items():
+                    self._control_settings[key] = value
 
                 while True:
                     # Parse inputs
@@ -241,16 +252,6 @@ class Simulator:
                             if self._real_time:
                                 t0 = time.time() # So as to not throw off the integration
                         break
-
-                # Pass information to graphics
-                self._state_manager[:13] = self._aircraft.y[:]
-                self._state_manager[13] = self._dt
-                self._state_manager[14] = t
-                for key, value in self._aircraft._controls.items():
-                    self._control_settings[key] = value
-
-            # Write output
-            self._aircraft.output_state(t)
 
         # If we exit the loop due to a timeout, let the graphics know we're done
         self._quit.value = 1
@@ -304,7 +305,7 @@ class Simulator:
         self._manager.shutdown()
 
         # Print quit message
-        print("--------------------------------------------------")
+        print("\n--------------------------------------------------")
         print("           Pylot exited successfully.             ")
         print("                  Thank you!                      ")
         print("--------------------------------------------------")
@@ -329,6 +330,7 @@ class Simulator:
             return False
         dt_physics = self._state_manager[13]
         t_physics = self._state_manager[14]
+        graphics_delay = time.time()-self._state_manager[15] # Included to compensate for the fact that these physics results may be old or brand new
 
         # Timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
@@ -388,7 +390,7 @@ class Simulator:
         else:
             # Third person view
             if self._view.value == 0:
-                view = self._cam.third_view(self._aircraft_graphics, t_physics, offset=[-2*self._bw, 0.0, -2*self._cw])
+                view = self._cam.third_view(self._aircraft_graphics, t_physics, graphics_delay, V, offset=[-self._bw, 0.0, -self._cw])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
