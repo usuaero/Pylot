@@ -269,16 +269,21 @@ class Simulator:
             # Wait for physics to initialize then import aircraft object
             while True:
                 try:
+                    # Get files
                     obj_path = self._aircraft_graphics_info["obj_file"]
                     v_shader_path = self._aircraft_graphics_info["v_shader_file"]
                     f_shader_path = self._aircraft_graphics_info["f_shader_file"]
                     texture_path = self._aircraft_graphics_info["texture_file"]
+
+                    # Initialize graphics object
                     self._aircraft_graphics = Mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._width, self._height)
                     self._aircraft_graphics.set_position(self._aircraft_graphics_info["position"])
-                    self._p0 = copy.copy(self._aircraft_graphics_info["position"])
-                    self._p1 = copy.copy(self._p0)
-                    self._p2 = copy.copy(self._p0)
                     self._aircraft_graphics.set_orientation(self._aircraft_graphics_info["orientation"])
+
+                    # Get reference lengths for setting camera offset
+                    self._bw = self._aircraft_graphics_info["l_ref_lat"]
+                    self._cw = self._aircraft_graphics_info["l_ref_lon"]
+
                     break
 
                 except KeyError: # If it's not there, just keep waiting
@@ -326,48 +331,9 @@ class Simulator:
         # Timestep for simulation is based on framerate
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
 
-        # Perform position filtering using 3rd order MA filter
-        p = y[6:9]
-        dp2 = p-self._p2
-        dp1 = self._p2-self._p1
-        dp0 = self._p1-self._p0
-
-        # Check if we have enough position history
-        if (self._p2 == 0).all() or (self._p1 == 0).all() or (self._p0 == 0).all():
-            filtered_position = p
-
-        else:
-            # Take a weighted average
-            avg_dp = (dp2+dp1+dp0)*0.333333333333333333333333
-            ddp2 = abs((dp2-avg_dp)/avg_dp)
-            ddp1 = abs((dp1-avg_dp)/avg_dp)
-            ddp0 = abs((dp0-avg_dp)/avg_dp)
-
-            k1 = 0.3
-            k2 = 0.2
-            k3 = 0.5
-            norm = k1+k2+k3
-            k1 /= norm
-            k2 /= norm
-            k3 /= norm
-
-            # Calculate MA model coefficients
-            b0 = k3
-            b1 = (1+dt_graphics)*k1
-            b2 = -k1*dt_graphics+k2*(1+2*dt_graphics)
-            b3 = -2*k2*dt_graphics
-
-            # Calculate filtered position
-            filtered_position = b0*p+b1*self._p2+b2*self._p1+b3*self._p0
-
-        # Update for next timestep
-        self._p0 = self._p1
-        self._p1 = self._p2
-        self._p2 = p
-
         # Update graphics for each aircraft
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
-        self._aircraft_graphics.set_position(filtered_position)#y[6:9])
+        self._aircraft_graphics.set_position(y[6:9])
 
         # Parse state of aircraft
         u = y[0]
@@ -420,7 +386,7 @@ class Simulator:
         else:
             # Third person view
             if self._view.value == 0:
-                view = self._cam.third_view(self._aircraft_graphics, offset=[-70, 0., -10])
+                view = self._cam.third_view(self._aircraft_graphics, offset=[-2*self._bw, 0.0, -2*self._cw])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	

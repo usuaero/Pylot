@@ -991,9 +991,25 @@ class MachUpXAirplane(BaseAircraft):
         # Load
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
-        info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
-        info["v_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.vs"))
-        info["f_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.fs"))
-        info["texture_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+        info["obj_file"] = graphics_dict.get("obj_file", None)
+        if info["obj_file"] is None: # Have MachUpX generate the file
+            try:
+                import bpy
+                stl_file = "airplane.stl"
+                obj_file = "airplane.obj"
+                self._mx_scene.export_stl(stl_file, section_resolution=50, aircraft=self.name)
+                bpy.ops.import_mesh.stl(filepath=stl_file, axis_forward="X", axis_up="-Z")
+                bpy.ops.export_scene.obj(filepath=obj_file, axis_forward="X", axis_up="-Z")
+                info["obj_file"] = graphics_dict.get("obj_file", obj_file)
+                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "grey.jpg"))
+
+            except ImportError:
+                info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
+                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+
+        info["v_shader_file"] = graphics_dict.get("v_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("s_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        info["l_ref_lon"] = self._cw
+        info["l_ref_lat"] = self._bw
 
         return info
