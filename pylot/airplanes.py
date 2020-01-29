@@ -990,27 +990,43 @@ class MachUpXAirplane(BaseAircraft):
         self._res_path = os.path.join(self._graphics_path, "res")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
 
-        # Load
+        # Load inputs
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
         info["obj_file"] = graphics_dict.get("obj_file", None)
-        if info["obj_file"] is None: # Have MachUpX generate the file
+        info["v_shader_file"] = graphics_dict.get("v_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("s_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        
+        # Get the obj file from MachUpX
+        if info["obj_file"] is None:
+
+            # The user may not have the FreeCAD modules installed, so we'll need to fail gracefully if so
             try:
-                import bpy
+
+                # Import necessary files
+                import FreeCAD
+                import Mesh
+
+                # Create stl using MachUpX
                 stl_file = "airplane.stl"
                 obj_file = "airplane.obj"
                 self._mx_scene.export_stl(stl_file, section_resolution=50, aircraft=self.name)
-                bpy.ops.import_mesh.stl(filepath=stl_file, axis_forward="X", axis_up="-Z")
-                bpy.ops.export_scene.obj(filepath=obj_file, axis_forward="X", axis_up="-Z")
+                
+                # Convert to obj
+                Mesh.open(stl_file)
+                o = FreeCAD.getDocument("Unnamed").findObjects()[0]
+                Mesh.export([o], obj_file)
+
+                # Save
                 info["obj_file"] = graphics_dict.get("obj_file", obj_file)
                 info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "grey.jpg"))
 
+            # Just render a Cessna... ;)
             except ImportError:
                 info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
                 info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "cessna_texture.jpg"))
 
-        info["v_shader_file"] = graphics_dict.get("v_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
-        info["f_shader_file"] = graphics_dict.get("s_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        # Pass off reference lengths
         info["l_ref_lon"] = self._cw
         info["l_ref_lat"] = self._bw
 
