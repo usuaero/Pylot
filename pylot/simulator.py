@@ -326,56 +326,25 @@ class Simulator:
 
         # Get state from state manager
         y = np.array(copy.deepcopy(self._state_manager[:13]))
-        if (y == 0.0).all(): # The physics haven't finished their first loop yet
+
+        # Check to see if the physics has finished the first loop
+        if (y == 0.0).all():
             return False
+
+        # Get timing information from physics
         dt_physics = self._state_manager[13]
         t_physics = self._state_manager[14]
         graphics_delay = time.time()-self._state_manager[15] # Included to compensate for the fact that these physics results may be old or brand new
 
-        # Timestep for simulation is based on framerate
+        # Graphics timestep
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
 
-        # Update graphics for each aircraft
+        # Update aircraft position and orientation
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
         self._aircraft_graphics.set_position(y[6:9])
 
-        # Parse state of aircraft
-        u = y[0]
-        v = y[1]
-        w = y[2]
-        V = sqrt(u*u+v*v+w*w)
-        E = np.degrees(Quat2Euler(y[9:]))
-        V_f = Body2Fixed(y[:3], y[9:])
-        a = m.atan2(w,u)
-        B = m.atan2(v,u)
-
-        # Store data
-        flight_data = {
-            "Graphics Time Step" : dt_graphics,
-            "Physics Time Step" : dt_physics,
-            "Airspeed" : V,
-            "AoA" : m.degrees(a),
-            "Sideslip" : m.degrees(B),
-            "Altitude" : -y[8],
-            "Latitude" : y[6]/131479714.0*360.0,
-            "Longitude" : y[7]/131259396.0*360.0,
-            "Time" : t_physics,
-            "Bank" : E[0],
-            "Elevation" : E[1],
-            "Heading" : E[2],
-            "Gnd Speed" : m.sqrt(V_f[0]*V_f[0]+V_f[1]*V_f[1])*0.68181818181818181818,
-            "Gnd Track" : E[2],
-            "Climb" : -V_f[2]*60,
-            "Axial G-Force" : 0.0,
-            "Side G-Force" : 0.0,
-            "Normal G-Force" : 0.0,
-            "Roll Rate" : m.degrees(y[3]),
-            "Pitch Rate" : m.degrees(y[4]),
-            "Yaw Rate" : m.degrees(y[5])
-        }
-
-        # Store veloties
-        self._prev_vels = V_f
+        # Get flight data
+        flight_data = self._get_flight_data(y, dt_graphics, dt_physics, t_physics)
 
         # Check for crashing into the ground
         if y[8] > 0.0:
@@ -390,7 +359,7 @@ class Simulator:
         else:
             # Third person view
             if self._view.value == 0:
-                view = self._cam.third_view(self._aircraft_graphics, t_physics, graphics_delay, V, offset=[-self._bw, 0.0, -self._cw])
+                view = self._cam.third_view(self._aircraft_graphics, t_physics, graphics_delay, y[0], offset=[-self._bw, 0.0, -self._cw])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
@@ -454,8 +423,8 @@ class Simulator:
                 quad.set_view(view)
                 quad.render()
 
-            # Check for MachUp falling apart
-            if np.isnan(u):
+            # Check for the aerodynamic model falling apart
+            if np.isnan(y[0]):
                 error_msg = Text(100)
                 error_msg.draw(-1.0, 0.5, "Pylot encountered a physics error...", color=(255,0,0,1))
 
@@ -465,6 +434,45 @@ class Simulator:
 
         # Update screen display
         pygame.display.flip()
+
+
+    def _get_flight_data(self, y, dt_graphics, dt_physics, t_physics):
+        # Parses state of aircraft
+        u = y[0]
+        v = y[1]
+        w = y[2]
+        V = sqrt(u*u+v*v+w*w)
+        E = np.degrees(Quat2Euler(y[9:]))
+        V_f = Body2Fixed(y[:3], y[9:])
+        a = m.atan2(w,u)
+        B = m.atan2(v,u)
+
+        # Store data
+        flight_data = {
+            "Graphics Time Step" : dt_graphics,
+            "Physics Time Step" : dt_physics,
+            "Airspeed" : V,
+            "AoA" : m.degrees(a),
+            "Sideslip" : m.degrees(B),
+            "Altitude" : -y[8],
+            "Latitude" : y[6]/131479714.0*360.0,
+            "Longitude" : y[7]/131259396.0*360.0,
+            "Time" : t_physics,
+            "Bank" : E[0],
+            "Elevation" : E[1],
+            "Heading" : E[2],
+            "Gnd Speed" : m.sqrt(V_f[0]*V_f[0]+V_f[1]*V_f[1])*0.68181818181818181818,
+            "Gnd Track" : E[2],
+            "Climb" : -V_f[2]*60,
+            "Axial G-Force" : 0.0,
+            "Side G-Force" : 0.0,
+            "Normal G-Force" : 0.0,
+            "Roll Rate" : m.degrees(y[3]),
+            "Pitch Rate" : m.degrees(y[4]),
+            "Yaw Rate" : m.degrees(y[5])
+        }
+    
+        return flight_data
 
 
     def _RK4(self, aircraft, t, dt):
