@@ -1,8 +1,10 @@
 {
     "tag" : "Example of flight simulator input.",
     "simulation" : {
-        "real_time" : true,
-        "enable_graphics" : true,
+        "real_time" : false,
+        "dt" : 0.05,
+        "final_time" : 10,
+        "enable_graphics" : false,
         "target_framerate" : 30
     },
     "units" : "English",
@@ -21,7 +23,6 @@
             "verbose" : true,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
         },
-        "state_output" : "states.txt",
-        "controller" : "joystick"
+        "state_output" : "states.txt"
     }
 }
