@@ -40,6 +40,7 @@ class Simulator:
         self._real_time = self._input_dict["simulation"].get("real_time", True)
         self._t0 = self._input_dict["simulation"].get("start_time", 0.0)
         self._tf = self._input_dict["simulation"].get("final_time", np.inf)
+        self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
         if not self._real_time:
             self._dt = self._input_dict["simulation"].get("dt", 0.01)
 
@@ -47,13 +48,14 @@ class Simulator:
         self._manager = mp.Manager()
         self._state_manager = self._manager.list()
         self._state_manager[:] = [0.0]*16
-        self._graphics_ready = self._manager.Value('i', 0)
         self._quit = self._manager.Value('i', 0)
         self._pause = self._manager.Value('i', 0)
-        self._view = self._manager.Value('i', 1)
-        self._flight_data = self._manager.Value('i', 0)
-        self._aircraft_graphics_info = self._manager.dict()
-        self._control_settings = self._manager.dict()
+        if self._render_graphics:
+            self._graphics_ready = self._manager.Value('i', 0)
+            self._view = self._manager.Value('i', 1)
+            self._flight_data = self._manager.Value('i', 0)
+            self._aircraft_graphics_info = self._manager.dict()
+            self._control_settings = self._manager.dict()
 
         # Kick off physics process
         self._physics_process = mp.Process(target=self._run_physics, args=())
@@ -62,11 +64,10 @@ class Simulator:
         pygame.init()
 
         # Initialize graphics
-        self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
         if self._render_graphics:
             self._initialize_graphics()
 
-        # Housekeeping
+        # Number of pilot views available
         self._num_views = 2
 
 
@@ -81,7 +82,8 @@ class Simulator:
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
 
         # Setup window size
-        self._width, self._height = 1800,900
+        display_info = pygame.display.Info()
+        self._width, self._height = display_info.current_w, display_info.current_h
         pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
         self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
         pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
