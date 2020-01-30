@@ -1,19 +1,19 @@
 # Class containing the simulator
 
-import math as m
 import numpy as np
 import multiprocessing as mp
-from .helpers import *
-from .airplanes import MachUpXAirplane, LinearizedAirplane
+import math as m
 import json
 import copy
 import time
 import pygame.display
 import pygame.image
+import os
+from .physics import run_physics, load_aircraft, RK4
+from .helpers import Quat2Euler
 from pygame.locals import HWSURFACE, OPENGL, DOUBLEBUF
 from OpenGL.GL import glClear, glClearColor
 from .graphics import *
-import os
 
 class Simulator:
     """A class for flight simulation using RK4 integration.
@@ -37,12 +37,10 @@ class Simulator:
         self._units = self._input_dict.get("units", "English")
 
         # Get simulation parameters
-        self._real_time = self._input_dict["simulation"].get("real_time", True)
-        self._t0 = self._input_dict["simulation"].get("start_time", 0.0)
-        self._tf = self._input_dict["simulation"].get("final_time", np.inf)
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
-        if not self._real_time:
-            self._dt = self._input_dict["simulation"].get("dt", 0.01)
+
+        # Initialize pygame modules
+        pygame.init()
 
         # Initialize inter-process communication
         self._manager = mp.Manager()
@@ -50,25 +48,31 @@ class Simulator:
         self._state_manager[:] = [0.0]*16
         self._quit = self._manager.Value('i', 0)
         self._pause = self._manager.Value('i', 0)
-        if self._render_graphics:
-            self._graphics_ready = self._manager.Value('i', 0)
-            self._view = self._manager.Value('i', 1)
-            self._flight_data = self._manager.Value('i', 0)
-            self._aircraft_graphics_info = self._manager.dict()
-            self._control_settings = self._manager.dict()
+        self._graphics_ready = self._manager.Value('i', 0)
+        self._view = self._manager.Value('i', 1)
+        self._flight_data = self._manager.Value('i', 0)
+        self._aircraft_graphics_info = self._manager.dict()
+        self._control_settings = self._manager.dict()
+
+        # Number of pilot views available
+        self._num_views = 2
 
         # Kick off physics process
-        self._physics_process = mp.Process(target=self._run_physics, args=())
-
-        # Initialize pygame modules
-        pygame.init()
+        self._physics_process = mp.Process(target=run_physics, args=(self._input_dict,
+                                                                     self._units,
+                                                                     self._aircraft_graphics_info,
+                                                                     self._graphics_ready,
+                                                                     self._quit,
+                                                                     self._view,
+                                                                     self._pause,
+                                                                     self._flight_data,
+                                                                     self._state_manager,
+                                                                     self._control_settings,
+                                                                     self._num_views))
 
         # Initialize graphics
         if self._render_graphics:
             self._initialize_graphics()
-
-        # Number of pilot views available
-        self._num_views = 2
 
 
     def _initialize_graphics(self):
@@ -83,7 +87,8 @@ class Simulator:
 
         # Setup window size
         display_info = pygame.display.Info()
-        self._width, self._height = display_info.current_w, display_info.current_h
+        self._width = display_info.current_w//2
+        self._height = display_info.current_h//2
         pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
         self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
         pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
@@ -140,123 +145,6 @@ class Simulator:
 
         # Ticks clock before starting game loop
         self._clock.tick_busy_loop()
-
-
-    def _load_aircraft(self):
-        # Loads the aircraft from the input file
-
-        # Read in aircraft input
-        aircraft_name = self._input_dict["aircraft"]["name"]
-        aircraft_file = self._input_dict["aircraft"]["file"]
-        with open(aircraft_file, 'r') as aircraft_file_handle:
-            aircraft_dict = json.load(aircraft_file_handle)
-
-        # Get density model, controller, and output file
-        density = import_value("density", self._input_dict.get("atmosphere", {}), self._units, [0.0023769, "slug/ft^3"])
-
-        # Linear aircraft
-        if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-            self._aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
-        
-        # MachUpX aircraft
-        else:
-            self._aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, self._units, self._input_dict["aircraft"])
-
-
-    def _run_physics(self):
-        # Handles physics on a separate process
-
-        # Initialize pause flag
-        self._paused = False
-
-        # Load aircraft
-        self._load_aircraft()
-
-        # Pass airplane graphics information to parent process
-        if self._render_graphics:
-            aircraft_graphics_info = self._aircraft.get_graphics_info()
-            for key, value in aircraft_graphics_info.items():
-                self._aircraft_graphics_info[key] = value
-
-            # Give initial state to graphics
-            self._aircraft_graphics_info["position"] = self._aircraft.y[6:9]
-            self._aircraft_graphics_info["orientation"] = self._aircraft.y[9:]
-
-            # Wait for graphics to load
-            while not self._graphics_ready.value:
-                continue
-
-        # Get an initial guess for how long each sim step is going to take
-        t0 = time.time()
-        if self._real_time:
-            self._RK4(self._aircraft, self._t0, 0.0)
-            self._aircraft.normalize()
-            self._aircraft.output_state(self._t0)
-            t1 = time.time()
-            self._dt = t1-t0
-            t0 = t1
-        else:
-            self._aircraft.output_state(self._t0)
-
-        t = copy.copy(self._t0)
-
-        # Simulation loop
-        while t <= self._tf and not self._quit.value:
-
-            # Integrate
-            self._RK4(self._aircraft, t, self._dt)
-
-            # Normalize
-            self._aircraft.normalize()
-
-            # Step in time
-            if self._real_time:
-                t1 = time.time()
-                self._dt = t1-t0
-                t0 = t1
-            t += self._dt
-
-            # Write output
-            self._aircraft.output_state(t)
-
-            # Handle graphics only things
-            if self._render_graphics:
-
-                # Pass information to graphics
-                self._state_manager[:13] = self._aircraft.y[:]
-                self._state_manager[13] = self._dt
-                self._state_manager[14] = t
-                self._state_manager[15] = t1
-                for key, value in self._aircraft._controls.items():
-                    self._control_settings[key] = value
-
-                while True:
-                    # Parse inputs
-                    inputs = self._aircraft._controller.get_input()
-                    if inputs.get("pause", False):
-                        self._pause.value = not self._pause.value
-                    if inputs.get("data", False):
-                        self._flight_data.value = not self._flight_data.value
-                    if inputs.get("quit", False):
-                        self._quit.value = not self._quit.value
-                    if inputs.get("view", False):
-                        self._view.value = (self._view.value+1)%self._num_views
-
-                    # Pause
-                    if self._pause.value and not self._paused:
-                        self._paused = True
-                        self._state_manager[13] = 0.0 # The physics isn't stepping...
-
-                    # Break out of pause
-                    if not self._pause.value:
-                        if self._paused:
-                            self._paused = False
-                            if self._real_time:
-                                t0 = time.time() # So as to not throw off the integration
-                        break
-
-        # If we exit the loop due to a timeout, let the graphics know we're done
-        self._quit.value = 1
 
 
     def run_sim(self):
@@ -443,7 +331,7 @@ class Simulator:
         u = y[0]
         v = y[1]
         w = y[2]
-        V = sqrt(u*u+v*v+w*w)
+        V = m.sqrt(u*u+v*v+w*w)
         E = np.degrees(Quat2Euler(y[9:]))
         V_f = Body2Fixed(y[:3], y[9:])
         a = m.atan2(w,u)
@@ -475,39 +363,3 @@ class Simulator:
         }
     
         return flight_data
-
-
-    def _RK4(self, aircraft, t, dt):
-        """Performs Runge-Kutta integration for the given aircraft.
-
-        Parameters
-        ----------
-        aircraft : BaseAircraft
-            Aircraft to integrate the state of.
-
-        t : float
-            Initial time.
-
-        dt : float
-            Time step.
-
-        """
-        y0 = copy.deepcopy(aircraft.y)
-
-        # Determine k0
-        k0 = aircraft.dy_dt(t)
-
-        # Determine k1
-        aircraft.y = y0+0.5*dt*k0 
-        k1 = aircraft.dy_dt(t+0.5*dt)
-
-        # Determine k2
-        aircraft.y = y0+0.5*dt*k1
-        k2 = aircraft.dy_dt(t+0.5*dt)
-
-        # Determine k3
-        aircraft.y = y0+dt*k2
-        k3 = aircraft.dy_dt(t+dt)
-
-        # Calculate y
-        aircraft.y = y0+0.16666666666666666666667*(k0+2*k1+2*k2+k3)*dt

@@ -14,6 +14,7 @@ class BaseController:
 
         # Initialize controls
         self._controls = []
+        pygame.init()
 
 
     def get_control_names(self):
