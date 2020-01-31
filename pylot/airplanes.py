@@ -4,11 +4,14 @@ import math as m
 import numpy as np
 import machupX as mx
 from abc import abstractmethod
-from .helpers import *
-from .std_atmos import *
-from .controllers import *
-from .engine import *
 import scipy.optimize as opt
+import os
+import copy
+
+from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne
+from .std_atmos import statee, statsi
+from .controllers import NoController, KeyboardController, JoystickController, TimeSequenceController
+from .engine import Engine
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
@@ -94,11 +97,11 @@ class BaseAircraft:
 
         # Joystick
         elif control_type == "joystick":
-            self._controller = JoystickAircraftController(self._input_dict.get("controls", {}))
+            self._controller = JoystickController(self._input_dict.get("controls", {}))
 
         # Keyboard
         elif control_type == "keyboard":
-            self._controller = KeyboardAircraftController(self._input_dict.get("controls", {}))
+            self._controller = KeyboardController(self._input_dict.get("controls", {}))
 
         # User-defined
         elif control_type == "user-defined":
@@ -188,16 +191,16 @@ class BaseAircraft:
         # Calculates the elevation angle, theta, based on the other known angles
 
         # Calculate constants
-        C_a = cos(alpha)
-        S_a = sin(alpha)
-        C_B = cos(beta)
-        S_B = sin(beta)
-        C_phi = cos(phi)
-        S_phi = sin(phi)
-        S_gamma = sin(gamma)
+        C_a = m.cos(alpha)
+        S_a = m.sin(alpha)
+        C_B = m.cos(beta)
+        S_B = m.sin(beta)
+        C_phi = m.cos(phi)
+        S_phi = m.sin(phi)
+        S_gamma = m.sin(gamma)
 
         # More constants
-        D = sqrt(1-S_a*S_a*S_B*S_B)
+        D = m.sqrt(1-S_a*S_a*S_B*S_B)
         A = S_a*C_B/D
         B = C_a*S_B/D
         C = C_a*C_B/D
@@ -207,13 +210,13 @@ class BaseAircraft:
 
         # Get two solutions
         first = C*S_gamma
-        second = E*sqrt(C2+E2-S_gamma*S_gamma)
+        second = E*m.sqrt(C2+E2-S_gamma*S_gamma)
         denom = C2+E2
-        theta1 = asin((first+second)/denom)
-        theta2 = asin((first-second)/denom)
+        theta1 = m.asin((first+second)/denom)
+        theta2 = m.asin((first-second)/denom)
 
         # Check which one is closer
-        if abs(C*sin(theta1)-E*cos(theta1)-S_gamma) < abs(C*sin(theta2)-E*cos(theta2)-S_gamma):
+        if abs(C*m.sin(theta1)-E*m.cos(theta1)-S_gamma) < abs(C*m.sin(theta2)-E*m.cos(theta2)-S_gamma):
             return theta1
         else:
             return theta2
@@ -441,13 +444,13 @@ class LinearizedAirplane(BaseAircraft):
         B = np.zeros(6)
         old_trim_vals = np.zeros(6) # These are deviations from the reference setting
         old_trim_vals[4] = m.radians(-5.0) # For comparing with Troy
-        C_phi = cos(bank)
-        S_phi = sin(bank)
+        C_phi = m.cos(bank)
+        S_phi = m.sin(bank)
         theta = self._get_elevation(0.0, 0.0, bank, climb)
 
         # Initialize output
         if verbose:
-            print("Trimming at {0} deg bank and {1} deg climb...".format(degrees(bank), degrees(climb)))
+            print("Trimming at {0} deg bank and {1} deg climb...".format(m.degrees(bank), m.degrees(climb)))
             header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
             for name in avail_controls:
                 header.append("{0:>20}".format(name))
@@ -464,15 +467,15 @@ class LinearizedAirplane(BaseAircraft):
             beta = old_trim_vals[1]
 
             # Calulate trig values
-            C_theta = cos(theta)
-            S_theta = sin(theta)
-            C_a = cos(alpha)
-            S_a = sin(alpha)
-            C_B = cos(beta)
-            S_B = sin(beta)
+            C_theta = m.cos(theta)
+            S_theta = m.sin(theta)
+            C_a = m.cos(alpha)
+            S_a = m.sin(alpha)
+            C_B = m.cos(beta)
+            S_B = m.sin(beta)
 
             # Get states
-            D = sqrt(1-S_a*S_a*S_B*S_B)
+            D = m.sqrt(1-S_a*S_a*S_B*S_B)
             u = V0*C_a*C_B/D
             v = V0*C_a*S_B/D
             w = V0*S_a*C_B/D
@@ -577,7 +580,7 @@ class LinearizedAirplane(BaseAircraft):
 
             # Output
             if verbose:
-                output = ["{0:>20.10f}{1:>20.10f}".format(degrees(alpha), degrees(beta))]
+                output = ["{0:>20.10f}{1:>20.10f}".format(m.degrees(alpha), m.degrees(beta))]
                 for i, name in enumerate(avail_controls):
                     output.append("{0:>20.10f}".format(m.degrees(old_trim_vals[i+2]+m.radians(self._control_ref[name]))))
                 output.append("{0:>20.10f}".format(m.degrees(theta)))
@@ -594,15 +597,15 @@ class LinearizedAirplane(BaseAircraft):
         alpha = trim_vals[0]
         beta = trim_vals[1]
         theta = self._get_elevation(alpha, beta, bank, climb)
-        C_theta = cos(theta)
-        S_theta = sin(theta)
-        C_phi = cos(bank)
-        S_phi = sin(bank)
-        C_a = cos(alpha)
-        S_a = sin(alpha)
-        C_B = cos(beta)
-        S_B = sin(beta)
-        D = sqrt(1-S_a*S_a*S_B*S_B)
+        C_theta = m.cos(theta)
+        S_theta = m.sin(theta)
+        C_phi = m.cos(bank)
+        S_phi = m.sin(bank)
+        C_a = m.cos(alpha)
+        S_a = m.sin(alpha)
+        C_B = m.cos(beta)
+        S_B = m.sin(beta)
+        D = m.sqrt(1-S_a*S_a*S_B*S_B)
         u = V0*C_a*C_B/D
         v = V0*C_a*S_B/D
         w = V0*S_a*C_B/D
@@ -694,8 +697,8 @@ class LinearizedAirplane(BaseAircraft):
 
         # Apply aerodynamic angles and dimensionalize
         FM[0] = redim*(CL*m.sin(a)-CS*m.sin(B)-CD*u*V_inv)
-        FM[1] = redim*(CS*cos(B)-CD*v*V_inv)
-        FM[2] = redim*(-CL*cos(a)-CD*w*V_inv)
+        FM[1] = redim*(CS*m.cos(B)-CD*v*V_inv)
+        FM[2] = redim*(-CL*m.cos(a)-CD*w*V_inv)
         FM[3] = redim*Cl*self._bw
         FM[4] = redim*Cm*self._cw
         FM[5] = redim*Cn*self._bw
@@ -721,11 +724,9 @@ class LinearizedAirplane(BaseAircraft):
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
         info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
-        info["v_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.vs"))
-        info["f_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.fs"))
-        info["texture_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "cessna_texture.jpg"))
-
-        # Pass off reference lengths
+        info["v_shader_file"] = graphics_dict.get("vertex_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("face_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "cessna_texture.jpg"))
         info["l_ref_lon"] = self._cw
         info["l_ref_lat"] = self._bw
 
@@ -794,9 +795,9 @@ class MachUpXAirplane(BaseAircraft):
         # Get params
         self._V0 = trim_dict["airspeed"]
         self.y[6:9] = trim_dict["position"]
-        self._climb = radians(trim_dict.get("climb_angle", 0.0))
-        self._bank = radians(trim_dict.get("bank_angle", 0.0))
-        self._heading = radians(trim_dict.get("heading", 0.0))
+        self._climb = m.radians(trim_dict.get("climb_angle", 0.0))
+        self._bank = m.radians(trim_dict.get("bank_angle", 0.0))
+        self._heading = m.radians(trim_dict.get("heading", 0.0))
         self._trim_verbose = trim_dict.get("verbose", False)
 
         # Parse controls
@@ -813,7 +814,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Initialize output
         if self._trim_verbose:
-            print("Trimming at {0} deg bank and {1} deg climb...".format(degrees(self._bank), degrees(self._climb)))
+            print("Trimming at {0} deg bank and {1} deg climb...".format(m.degrees(self._bank), m.degrees(self._climb)))
             header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
             for name in self._avail_controls:
                 header.append("{0:>20}".format(name))
@@ -870,7 +871,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Output
         if self._trim_verbose:
-            print("{0:>20.10f}{1:>20.10f}{2:>20.10f}{3:>20.10f}{4:>20.10f}{5:>20.10f}{6:>20.10f}".format(degrees(alpha), degrees(beta), *trim_vals[2:], degrees(theta)))
+            print("{0:>20.10f}{1:>20.10f}{2:>20.10f}{3:>20.10f}{4:>20.10f}{5:>20.10f}{6:>20.10f}".format(m.degrees(alpha), m.degrees(beta), *trim_vals[2:], m.degrees(theta)))
 
         # Set state
         self._set_state_in_coordinated_turn(alpha, beta, controls)
@@ -884,15 +885,15 @@ class MachUpXAirplane(BaseAircraft):
 
         # Set state
         theta = self._get_elevation(alpha, beta, self._bank, self._climb)
-        C_theta = cos(theta)
-        S_theta = sin(theta)
-        C_phi = cos(self._bank)
-        S_phi = sin(self._bank)
-        C_a = cos(alpha)
-        S_a = sin(alpha)
-        C_B = cos(beta)
-        S_B = sin(beta)
-        D = sqrt(1-S_a*S_a*S_B*S_B)
+        C_theta = m.cos(theta)
+        S_theta = m.sin(theta)
+        C_phi = m.cos(self._bank)
+        S_phi = m.sin(self._bank)
+        C_a = m.cos(alpha)
+        S_a = m.sin(alpha)
+        C_B = m.cos(beta)
+        S_B = m.sin(beta)
+        D = m.sqrt(1-S_a*S_a*S_B*S_B)
         u = self._V0*C_a*C_B/D
         v = self._V0*C_a*S_B/D
         w = self._V0*S_a*C_B/D
@@ -996,8 +997,8 @@ class MachUpXAirplane(BaseAircraft):
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
         info["obj_file"] = graphics_dict.get("obj_file", None)
-        info["v_shader_file"] = graphics_dict.get("v_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
-        info["f_shader_file"] = graphics_dict.get("s_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        info["v_shader_file"] = graphics_dict.get("vertex_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("face_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
         
         # Get the obj file from MachUpX
         if info["obj_file"] is None:
