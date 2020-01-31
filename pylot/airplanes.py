@@ -717,13 +717,15 @@ class LinearizedAirplane(BaseAircraft):
         self._res_path = os.path.join(self._graphics_path, "res")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
 
-        # Load
+        # Load input
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
         info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
         info["v_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.vs"))
         info["f_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.fs"))
         info["texture_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+
+        # Pass off reference lengths
         info["l_ref_lon"] = self._cw
         info["l_ref_lat"] = self._bw
 
@@ -762,7 +764,7 @@ class MachUpXAirplane(BaseAircraft):
                         "state" : {
                             "type" : "aerodynamic",
                             "position" : [0.0, 0.0, 0.0],
-                            "velocity" : 100
+                            "velocity" : 100 # These are arbitrary, as the first call to get_FM() will set the actual state
                         }
                     }
                 }
