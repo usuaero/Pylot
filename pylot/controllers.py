@@ -123,7 +123,7 @@ class NoController(BaseController):
         return prev_controls
 
 
-class JoystickAircraftController(BaseController):
+class JoystickController(BaseController):
     """A controller for controlling a 4-channel aircraft using a standard joystick.
 
     Parameters
@@ -233,7 +233,7 @@ class JoystickAircraftController(BaseController):
             self._storage_file.close()
 
 
-class KeyboardAircraftController(BaseController):
+class KeyboardController(BaseController):
     """A controller for controlling an aircraft with ailerons, elevators, and rudder, and a throttle using a standard keyboard.
 
     Parameters
