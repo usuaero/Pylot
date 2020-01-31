@@ -1,2 +1,0 @@
-# Building Custom Controllers
-The custom controller should be implemented in a file named "user_defined_controller.py" and be named "UserDefinedController". This file should be located in the current working directory.
