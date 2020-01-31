@@ -187,10 +187,6 @@ class Simulator:
             # Run graphics loop
             while not self._quit.value:
 
-                # Keep pygame alive
-                for event in pygame.event.get():
-                    pygame.event.post(event)
-
                 # Update graphics
                 self._update_graphics()
 
