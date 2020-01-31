@@ -1,7 +1,6 @@
 import numpy as np
 import time
 import copy
-import pygame
 from .airplanes import MachUpXAirplane, LinearizedAirplane
 import json
 from .helpers import import_value
@@ -39,9 +38,6 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
         # Wait for graphics to load
         while not graphics_ready_flag.value:
             continue
-
-    # Initialize pygame
-    pygame.init()
 
     # Get an initial guess for how long each sim step is going to take
     t0 = time.time()

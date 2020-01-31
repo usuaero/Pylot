@@ -25,11 +25,9 @@ class BaseController:
         """Returns a dictionary of inputs from the user for controlling pause, view, etc."""
 
         inputs= {}
-        pygame.init()
 
         # Check events
         for event in pygame.event.get():
-            print(event)
 
             # Check for key down events
             if event.type == pygame.KEYDOWN:
