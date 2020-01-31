@@ -40,7 +40,8 @@ class Simulator:
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
 
         # Initialize pygame modules
-        pygame.init()
+        pygame.display.init()
+        pygame.font.init()
 
         # Initialize inter-process communication
         self._manager = mp.Manager()
@@ -185,6 +186,10 @@ class Simulator:
 
             # Run graphics loop
             while not self._quit.value:
+
+                # Keep pygame alive
+                for event in pygame.event.get():
+                    pygame.event.post(event)
 
                 # Update graphics
                 self._update_graphics()
