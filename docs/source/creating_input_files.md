@@ -278,6 +278,23 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>**"control" : string or int, optional**
 >>>>Name of the control which governs the throttle setting for this engine. If the default joystick/keyboard is used, all engines are governed by the throttle control and this parameter is ignored. If a user-defined controller is used, this is the name of the control setting for this engine given by the controller. If a time-sequence control file is used, this is the column index of the control setting for this engine (as with "input_index" above).
 >
+>**"graphics" : dict, optional**
+>>Optionally provides graphics objects for rendering the aircraft in the simulator. If nothing is specified here, the aircraft will be rendered as a single-engine Cessna, unless the MachUpX aerodynamic model is being used.
+>>
+>>If MachUpX is being used and nothing is specified here, Pylot will attempt to use MachUpX to automatically generate an obj file of the aircraft. For this to work, the FreeCAD python libraries must be configured on your computer. instructions for doing this can be found in the [MachUpX documentation](https://machupx.readthedocs.io/en/latest/installation.html#freecad-for-exporting-step-files).
+>>
+>>**"obj_file" : str, optional**
+>>>Object file for rendering the aircraft.
+>>
+>>**"texture_file" : str, optional**
+>>>Texture file for coloring the skin of the aircraft.
+>>
+>>**"vertex_shader_file" : str, optional**
+>>>File describing the response of vertices to light.
+>>
+>>**"face_shader_file" : str, optional**
+>>>File describing the response of faces to light.
+>
 >**"aero_model" : dict**
 >>Describes how the aerodynamics are to be modelled within the simulator.
 >>
