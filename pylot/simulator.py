@@ -83,7 +83,8 @@ class Simulator:
 
         # Setup window size
         display_info = pygame.display.Info()
-        self._width, self._height = display_info.current_w, display_info.current_h
+        self._width = display_info.current_w
+        self._height = display_info.current_h
         pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
         self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
         pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
