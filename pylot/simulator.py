@@ -270,7 +270,7 @@ class Simulator:
             # Wait for physics to initialize then import aircraft object
             while True:
                 try:
-                    # Get files
+                    # Get graphics files
                     obj_path = self._aircraft_graphics_info["obj_file"]
                     v_shader_path = self._aircraft_graphics_info["v_shader_file"]
                     f_shader_path = self._aircraft_graphics_info["f_shader_file"]
