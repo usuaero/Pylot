@@ -721,9 +721,9 @@ class LinearizedAirplane(BaseAircraft):
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
         info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
-        info["v_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.vs"))
-        info["f_shader_file"] = graphics_dict.get("obj_file", os.path.join(self._shaders_path, "aircraft.fs"))
-        info["texture_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+        info["v_shader_file"] = graphics_dict.get("vertex_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("face_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "cessna_texture.jpg"))
         info["l_ref_lon"] = self._cw
         info["l_ref_lat"] = self._bw
 
@@ -994,8 +994,8 @@ class MachUpXAirplane(BaseAircraft):
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
         info["obj_file"] = graphics_dict.get("obj_file", None)
-        info["v_shader_file"] = graphics_dict.get("v_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
-        info["f_shader_file"] = graphics_dict.get("s_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
+        info["v_shader_file"] = graphics_dict.get("vertex_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
+        info["f_shader_file"] = graphics_dict.get("face_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
         
         # Get the obj file from MachUpX
         if info["obj_file"] is None:
