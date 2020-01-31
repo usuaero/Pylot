@@ -2,6 +2,7 @@
 
 import sys
 import json
+import pygame
 from .simulator import *
 
 def simulate(filename):
