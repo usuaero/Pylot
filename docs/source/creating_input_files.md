@@ -235,12 +235,12 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>**"input_axis" : int, optional**
 >>>>Specifies which input axis maps to this control. The input axes are as follows
 >>>>
->>>>>| Index    | Joystick  | Keyboard      |
->>>>>| -------- | --------- | ------------- |
->>>>>| 0        | roll      | LEFT-RIGHT    |
->>>>>| 1        | pitch     | UP-DOWN       |
->>>>>| 2        | yaw       | A-D           |
->>>>>| 3        | throttle  | W-S           |
+| Index    | Joystick  | Keyboard      |
+| -------- | --------- | ------------- |
+| 0        | roll      | LEFT-RIGHT    |
+| 1        | pitch     | UP-DOWN       |
+| 2        | yaw       | A-D           |
+| 3        | throttle  | W-S           |
 >>>>
 >>>>Only required if the keyboard or joystick are being used as input.
 >>>
