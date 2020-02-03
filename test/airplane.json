@@ -53,7 +53,8 @@
         }
     },
     "aero_model" : {
-        "type" : "linearized_coefficients"
+        "type" : "linearized_coefficients",
+        "stall_angle_of_attack" : 15
     },
     "coefficients" : {
         "CD" : 0.05,
