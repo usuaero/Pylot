@@ -65,18 +65,30 @@ class BaseController:
     
     @abstractmethod
     def get_control(self, t, state_vec, prev_controls):
-        """Returns the controls based on the inputted state.
+        """ABSTRACT METHOD. Returns the controls based on the inputted state.
 
         Parameters
         ----------
         t : float
-            Time index
+            Time index in seconds.
 
         state_vec : list
-            State vector of the entity being controlled.
+            State vector of the aircraft being controlled. It is given in the form
+
+                [u, v, w, p, q, r, x, y, z, e0, ex, ey, ez]
+
+            where u, v, and w are the body-fixed velocity components, p, q, and r are
+            the body-fixed angular velocity components, x, y, and z are the Earth-fixed
+            position coordinates, and e0, ex, ey, and ez are the quaternion encoding
+            a rotation from the local NED frame to the body-fixed frame.
 
         prev_controls : dict
             Previous control values.
+
+        Returns
+        -------
+        control_state : dict
+            Updated control state.
         """
         pass
 

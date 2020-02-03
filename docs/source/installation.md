@@ -2,7 +2,7 @@
 
 ## Getting Python
 
-If you do nothave Python installed on your machine, it can be downloaded from [https://www.anaconda.com/distribution/](https://www.anaconda.com/distribution/). This is the Anaconda distribution, which we highly recommend (no we are not affiliated with nor do we receive financial support from Anaconda).
+If you do nothave Python installed on your machine, it can be downloaded from [https://www.anaconda.com/distribution/](https://www.anaconda.com/distribution/).
 
 ## Getting the Source Code
 
@@ -35,10 +35,5 @@ Once you have the source code downloaded, navigate to the root (Pylot/) director
 
 Please note that any time you update the source code (e.g. after executing a git pull), Pylot will need to be reinstalled by executing the above command.
 
-## Testing the Installation
-
-Once the installation is complete, run
-
-    $ py.test test/
-
-to verify Pylot is working properly on your machine. Some warnings and depreciation notices are normal.
+### FreeCAD
+Pylot will use the FreeCAD Python libraries to generate graphics objects from MachUpX (see more under "graphics" in [Creating Input Files](creating_input_files). Instructions for installing FreeCAD can be found in the [MachUpX documentation](https://machupx.readthedocs.io/en/latest/installation.html#freecad-for-exporting-step-files). This is only necessary if you intend to use MachUpX for generating graphics.
