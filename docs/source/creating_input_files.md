@@ -303,6 +303,9 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>
 >>**"solver" : string, optional**
 >>>May be "linear" or "nonlinear". Specifies whether the linear approximation or full nonlinear correction should be used in computing the lifting-line solution. Has no effect on computation if "type" is specified as "linearized_coefficients". Defaults to "linear".
+>>
+>>**"stall_angle_of_attack" : float, optional**
+>>>Angle of attack in degrees at which the flight surfaces stall. At this angle of attack, the aerodynamics will transition to a flat-plate model. This is not meant to be accurate for the specific airframe being modelled, but rather to give the user a sense of the onset of stall. Defaults to 15.
 
 At this point, the structure of the airplane object for the two types of aerodynamic models diverges.
 

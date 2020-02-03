@@ -87,6 +87,9 @@ class BaseAircraft:
         controller = param_dict.get("controller", None)
         self._initialize_controller(controller)
 
+        # Get stall angle of attack
+        self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
+
 
     def _initialize_controller(self, control_type):
         # Sets up the control input for the aircraft
@@ -132,6 +135,41 @@ class BaseAircraft:
             for yi in self.y:
                 s.append("{:>18.9E}".format(yi))
             print("".join(s), file=self._output_handle)
+
+
+    def _correct_stall(self, CL, CD, CS, Cl, Cm, Cn, alpha, beta):
+        # Corrects the aerodnamic coefficients for stall
+
+        # Blending coefficient
+        k = 100
+
+        # Get trig
+        S_a = m.sin(alpha)
+        S_B = m.sin(beta)
+        C_a = m.cos(alpha)
+        C_B = m.cos(beta)
+
+        # Get stall values
+        CL_stall = 2.0*S_a*S_a*C_a*np.sign(alpha)
+        CD_stall = 1-C_a*S_a*np.sign(alpha)
+        Cm_stall = -S_a
+        CS_stall = 0.2*S_B*S_B*C_B*np.sign(beta)
+        Cl_stall = -CS_stall*0.05
+        Cn_stall = CS_stall*0.1
+
+        # Blending functions
+        lon_stall_weight = 1/(1+m.exp(-k*(-self._alpha_stall-alpha)))+1/(1+m.exp(-k*(alpha-self._alpha_stall)))
+        lat_stall_weight = 1/(1+m.exp(-k*(-self._alpha_stall-beta)))+1/(1+m.exp(-k*(beta-self._alpha_stall)))
+
+        # Blend
+        CL = CL*(1-lon_stall_weight)+CL_stall*lon_stall_weight
+        CD = CD*(1-lon_stall_weight)+CD_stall*lon_stall_weight
+        Cm = Cm*(1-lon_stall_weight)+Cm_stall*lon_stall_weight
+        CS = CS*(1-lat_stall_weight)+CS_stall*lat_stall_weight
+        Cl = Cl*(1-lat_stall_weight)+Cl_stall*lat_stall_weight
+        Cn = Cn*(1-lat_stall_weight)+Cn_stall*lat_stall_weight
+
+        return CL, CD, CS, Cl, Cm, Cn
 
 
     def dy_dt(self, t):
@@ -695,6 +733,9 @@ class LinearizedAirplane(BaseAircraft):
         Cm += (self._Cm_a/self._CL_a)*(CL*u*V_inv-self._CL_ref+CD*w*V_inv)
         Cn += (self._Cn_b/self._CY_b)*(CS*u*V_inv-CD*v*V_inv)+(self._Cn_p/self._CL_ref)*CL*p_bar
 
+        # Correct for stall
+        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B)
+
         # Apply aerodynamic angles and dimensionalize
         FM[0] = redim*(CL*m.sin(a)-CS*m.sin(B)-CD*u*V_inv)
         FM[1] = redim*(CS*m.cos(B)-CD*v*V_inv)
@@ -967,6 +1008,9 @@ class MachUpXAirplane(BaseAircraft):
         Cl = coef_dict["Cl"]
         Cm = coef_dict["Cm"]
         Cn = coef_dict["Cn"]
+
+        # Correct for stall
+        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B)
 
         # Get forces
         FM[0] = redim*(CL*S_a-CS*S_B-CD*u/V)
