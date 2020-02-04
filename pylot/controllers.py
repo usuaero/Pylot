@@ -17,6 +17,7 @@ class BaseController:
         # Initialize controls
         self._controls = []
         self._inputs = {}
+        self._control_keys = []
 
         # Initialize keyboard listener
         def on_press(key):
@@ -36,8 +37,22 @@ class BaseController:
                 self._inputs["quit"] = True
             elif k == 'space':
                 self._inputs["view"] = True
+            elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
+                self._control_keys.append(k)
 
-        self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press)
+        def on_release(key):
+
+            # Get key
+            try:
+                k = key.char
+            except:
+                k = key.name
+
+            # Remove those from the list
+            if k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down'] and k in self._control_keys:
+                self._control_keys = list(filter(lambda a: a != k, self._control_keys))
+
+        self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
         self._keyboard_listener.start()
 
 
@@ -56,42 +71,6 @@ class BaseController:
         inputs = copy.deepcopy(self._inputs)
         self._inputs= {}
         return inputs
-
-        ## Check events
-        #for event in pygame.event.get():
-
-        #    # Check for key down events
-        #    if event.type == pygame.KEYDOWN:
-
-        #        # Toggle flight data display
-        #        if event.key == pygame.K_i:
-        #            inputs["data"] = True
-
-        #        # Pause simulation
-        #        elif event.key == pygame.K_p:
-        #            inputs["pause"] = True
-
-        #        # Quit game
-        #        elif event.key == pygame.K_q:
-        #            inputs["quit"] = True
-
-        #        # Switch view
-        #        elif event.key == pygame.K_SPACE:
-        #            inputs["view"] = True
-
-        #        # If it's not used here, put it back on the queue
-        #        else:
-        #            pygame.event.post(event)
-
-        #    # Check for general quit condition
-        #    elif event.type == pygame.QUIT:
-        #        inputs["quit"] = True
-        #        
-        #    # Put keyup events back on the queue
-        #    elif event.type == pygame.KEYUP:
-        #        pygame.event.post(event)
-
-        #return inputs
 
     
     @abstractmethod
@@ -348,7 +327,9 @@ class KeyboardController(BaseController):
         """
 
         # Check for keyboard inputs
-        for event in pygame.event.get():
+        keys = copy.deepcopy(self._control_keys)
+        self._control_keys.clear()
+        for key in keys:
 
             if event.type == pygame.KEYDOWN:
 
