@@ -13,8 +13,8 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
 
     # Get simulation params
     real_time = input_dict["simulation"].get("real_time", True)
-    t0 = input_dict["simulation"].get("start_time", 0.0)
-    tf = input_dict["simulation"].get("final_time", np.inf)
+    t_start = input_dict["simulation"].get("start_time", 0.0)
+    t_final = input_dict["simulation"].get("final_time", np.inf)
     if not real_time:
         dt = input_dict["simulation"].get("dt", 0.01)
 
@@ -51,10 +51,10 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
     else:
         aircraft.output_state(t0)
 
-    t = copy.copy(t0)
+    t = copy.copy(t_start)
 
     # Simulation loop
-    while t <= tf and not quit_flag.value:
+    while t <= t_final and not quit_flag.value:
 
         # Integrate
         RK4(aircraft, t, dt)

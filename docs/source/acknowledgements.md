@@ -1,0 +1,2 @@
+# Acknowledgements
+Special thanks is given to Josh Goates, Ted Giblette, and Yushi Yanagita for developing the predecessor to Pylot. This project would not have been possible without them laying the groundwork. Thanks is also given to Troy Abraham for contributing many of the graphics objects used in the sim.

@@ -80,22 +80,10 @@ class Simulator:
         # Initializes the graphics
 
         # Get path to graphics objects
-        self._pylot_path = os.path.dirname(__file__)
-        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
-        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
-        self._res_path = os.path.join(self._graphics_path, "res")
-        self._shaders_path = os.path.join(self._graphics_path, "shaders")
+        self._set_graphics_paths()
 
-        # Setup window size
-        display_info = pygame.display.Info()
-        monitor_height = display_info.current_h
-        self._width = int(1.3*monitor_height)
-        self._height = int(0.8*monitor_height)
-        pygame.display.set_icon(pygame.image.load(os.path.join(self._res_path, 'gameicon.jpg')))
-        self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
-        pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
-        glViewport(0,0,self._width,self._height)
-        glEnable(GL_DEPTH_TEST)
+        # Initialize game window
+        self._initialize_game_window()
         
         # Get target framerate
         self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
@@ -111,7 +99,7 @@ class Simulator:
         self._gameover = Text(150)
 
         # Initialize HUD
-        self._HUD = HeadsUp(self._width, self._height, self._res_path, self._shaders_path, self._screen)
+        self._HUD = HeadsUp(self._width, self._height, self._objects_path, self._shaders_path, self._textures_path, self._screen)
 
         # Initialize flight data overlay
         self._data = FlightData(self._units)
@@ -129,15 +117,16 @@ class Simulator:
                                [0., 0., 1., 0.],
                                [0., 1., 0., 0.]] # I'm not storing these because they don't change
         for i in range(4):
-            self._ground_quad.append(Mesh(
-                os.path.join(self._res_path, "field.obj"),
-                os.path.join(self._shaders_path, "field.vs"),
-                os.path.join(self._shaders_path, "field.fs"),
-                os.path.join(self._res_path, "field_texture.jpg"),
-                self._width,
-                self._height))
-            self._ground_quad[i].set_position(self._ground_positions[i])
-            self._ground_quad[i].set_orientation(ground_orientations[i])
+            self._ground_quad.append(self._create_mesh("field.obj", "field.vs", "field.fs", "field_texture.jpg", self._ground_positions[i], ground_orientations[i]))
+
+        # Initialize scenery
+        self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds.jpeg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        self._airstrip = self._create_mesh("airstrip.obj", "field.vs", "field.fs", "landing.jpg", [0.0, 0.0, -1.0], [1.0, 0.0, 0.0, 0.0])
+        self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "Tent.jpeg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [0.0, 25.0, 10.0], [1.0, 0.0, 0.0, 0.0])
+        self._trees = []
+        for i in range(100):
+            self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", [np.random.rand(1)*1000-500, np.random.rand(1)*1000-500, 0.0], [1.0, 0.0, 0.0, 0.0]))
 
         # Initialize camera object
         self._cam = Camera()
@@ -147,6 +136,48 @@ class Simulator:
 
         # Ticks clock before starting game loop
         self._clock.tick_busy_loop()
+
+
+    def _create_mesh(self, obj, vs, fs, texture, position, orientation):
+        # Creates a mesh graphics object
+
+        mesh = Mesh(
+                os.path.join(self._objects_path, obj),
+                os.path.join(self._shaders_path, vs),
+                os.path.join(self._shaders_path, fs),
+                os.path.join(self._textures_path, texture),
+                self._width,
+                self._height)
+        mesh.set_position(position)
+        mesh.set_orientation(orientation)
+        return mesh
+
+
+    def _set_graphics_paths(self):
+        # Gets the absolute paths to the graphics files
+
+        self._pylot_path = os.path.dirname(__file__)
+        self._graphics_path = os.path.join(self._pylot_path, os.path.pardir, "graphics")
+        self._objects_path = os.path.join(self._graphics_path, "objects")
+        self._shaders_path = os.path.join(self._graphics_path, "shaders")
+        self._textures_path = os.path.join(self._graphics_path, "textures")
+
+
+    def _initialize_game_window(self):
+        # Sets up the pygame window
+
+        # Get monitor size
+        display_info = pygame.display.Info()
+        monitor_height = display_info.current_h
+        self._width = int(1.3*monitor_height)
+        self._height = int(0.8*monitor_height)
+
+        # Initialize window
+        pygame.display.set_icon(pygame.image.load(os.path.join(self._textures_path, 'gameicon.jpg')))
+        self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
+        pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
+        glViewport(0,0,self._width,self._height)
+        glEnable(GL_DEPTH_TEST)
 
 
     def run_sim(self):
@@ -169,9 +200,7 @@ class Simulator:
                     texture_path = self._aircraft_graphics_info["texture_file"]
 
                     # Initialize graphics object
-                    self._aircraft_graphics = Mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._width, self._height)
-                    self._aircraft_graphics.set_position(self._aircraft_graphics_info["position"])
-                    self._aircraft_graphics.set_orientation(self._aircraft_graphics_info["orientation"])
+                    self._aircraft_graphics = self._create_mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._aircraft_graphics_info["position"], self._aircraft_graphics_info["orientation"])
 
                     # Get reference lengths for setting camera offset
                     self._bw = self._aircraft_graphics_info["l_ref_lat"]
@@ -323,6 +352,19 @@ class Simulator:
             # Display flight data
             elif self._flight_data.value:
                 self._data.render(flight_data, self._control_settings)
+
+            # Display scenery
+            self._sky.set_view(view)
+            self._sky.render()
+            self._airstrip.set_view(view)
+            self._airstrip.render()
+            self._tent.set_view(view)
+            self._tent.render()
+            self._bench.set_view(view)
+            self._bench.render()
+            for tree in self._trees:
+                tree.set_view(view)
+                tree.render()
 
         # Update screen display
         pygame.display.flip()

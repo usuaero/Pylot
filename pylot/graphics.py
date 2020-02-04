@@ -127,7 +127,7 @@ class Mesh:
         self.text_index = []
         self.norm_index = []
         self.model = []
-        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,10000)
+        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,1000000)
         self.position = [0.,0.,0.]
         self.orientation = [0.,0.,0.,1.]
 
@@ -227,6 +227,7 @@ class Mesh:
         glUseProgram(self.shader)
         glUniformMatrix4fv(self.proj_loc,1,GL_FALSE,self.projection_matrix)
         glUseProgram(0)
+
     def set_view(self,view):
         glUseProgram(self.shader)
         glUniformMatrix4fv(self.view_loc,1,GL_FALSE,view)
@@ -323,7 +324,7 @@ class FlightData:
         self.text.draw(-0.6,-0.75,"Physics Time Step: " +str(round(flight_data["Physics Time Step"],6))+" sec")
 
 class HeadsUp:
-    def __init__(self,width, height, res_path, shaders_path, screen):
+    def __init__(self,width, height, objects_path, shaders_path, textures_path, screen):
         #initialize HUD objects
         self.view = np.identity(4)
         self.screen = screen
@@ -331,58 +332,58 @@ class HeadsUp:
         self.height = height
 
         #initialize pitch ladder
-        self.ladder = Mesh(os.path.join(res_path, "ladder.obj"),
+        self.ladder = Mesh(os.path.join(objects_path, "ladder.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
 
         #initialize flight path indicator
-        self.flightPath = Mesh(os.path.join(res_path, "flightPath.obj"),
+        self.flightPath = Mesh(os.path.join(objects_path, "flightPath.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
 
         #initialize crosshair
-        self.crosshair = Mesh(os.path.join(res_path, "crosshair.obj"),
+        self.crosshair = Mesh(os.path.join(objects_path, "crosshair.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
         self.crosshair.set_position([0.,0.,-0.5])
         self.crosshair.set_view(self.view)
 
         #initialize bank angle indicator
-        self.bank = Mesh(os.path.join(res_path, "bank.obj"),
+        self.bank = Mesh(os.path.join(objects_path, "bank.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
         self.bank.set_position([0.,-0.205,-0.075])
         self.bank.set_view(self.view)
 
         #initialize compass
-        self.compass = Mesh(os.path.join(res_path, "compass.obj"),
+        self.compass = Mesh(os.path.join(objects_path, "compass.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
         self.compass.set_view(self.view)
 
         #initialize speedometer
-        self.speed = Mesh(os.path.join(res_path, "speedometer.obj"),
+        self.speed = Mesh(os.path.join(objects_path, "speedometer.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
         self.speed.set_view(self.view)
 
         #initialize altimeter
-        self.alt = Mesh(os.path.join(res_path, "altimeter.obj"),
+        self.alt = Mesh(os.path.join(objects_path, "altimeter.obj"),
             os.path.join(shaders_path, "HUD.vs"),
             os.path.join(shaders_path, "HUD.fs"),
-            os.path.join(res_path, "HUD_texture.jpg"),
+            os.path.join(textures_path, "HUD_texture.jpg"),
             width,height)
         self.alt.set_view(self.view)
 
@@ -550,6 +551,64 @@ class Camera:
 
     def third_view(self, graphics_aircraft, physics_time, graphics_delay, airspeed, offset=[-10., 0., -2.]):
         """creates view matrix such that camera is positioned behind and slightly above graphics_aircraft. camera location and orientation is tied to graphics_aircraft
+
+        Parameters
+        ----------
+        graphics_aircraft: graphics_aircraft object used in graphics 
+
+        Returns
+        -------
+        view matrix
+
+        Raises
+        ------
+
+        Notes
+        -----
+        This function does several conversions between (e0,ex,ey,ez) and (x,y,z,w) forms of quaternions. It should not be altered.
+        """
+
+        #third person camera view of plane
+        quat_orientation = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
+        graphics_aircraft_to_camera = Body2Fixed(offset, quat_orientation)
+		
+        cam_up = [0.,0.,-1.]
+        rotated_cam_up = Body2Fixed(cam_up,quat_orientation)
+
+        # Store position, target, up, and time
+        self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
+        self.up_storage.append(np.array(rotated_cam_up))
+        self.target_storage.append(graphics_aircraft.position)
+        self.time_storage.append(physics_time)
+
+        # Delay in seconds. The camera will lag behind the aircraft by this time
+        delay = -4*offset[0]/airspeed
+        camera_time = physics_time-delay
+	
+        # If we don't have enough history, just pull the oldest
+        if self.time_storage[0] > camera_time:
+            self.camera_pos = self.pos_storage[0]
+            self.camera_up = self.up_storage[0]
+            self.target = self.target_storage[0]
+
+        # Otherwise, perform linear interpolation on the times to get position, up, and target
+        else:
+            self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)
+            self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
+            self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
+
+            # Clean up really old values
+            if self.time_storage[1] < camera_time:
+                self.time_storage.pop(0)
+                self.pos_storage.pop(0)
+                self.up_storage.pop(0)
+                self.target_storage.pop(0)
+
+        return self.look_at(self.camera_pos, self.target, self.camera_up)	
+
+
+    def ground_view(self, graphics_aircraft, physics_time, graphics_delay, airspeed, offset=[-10., 0., -2.]):
+        """creates view matrix such that camera is looking at the aircraft from the ground. orientation is tied to graphics_aircraft
 
         Parameters
         ----------
