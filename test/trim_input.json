@@ -22,6 +22,6 @@
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
         },
         "state_output" : "states.txt",
-        "controller" : "joystick"
+        "controller" : "keyboard"
     }
 }

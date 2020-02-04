@@ -19,10 +19,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
         dt = input_dict["simulation"].get("dt", 0.01)
 
     # Load aircraft
-    aircraft = load_aircraft(input_dict, units)
-
-    # Initialize pause
-    paused = False
+    aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag)
 
     # Pass airplane graphics information to parent process
     render_graphics = input_dict
@@ -83,40 +80,20 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
             for key, value in aircraft._controls.items():
                 control_manager[key] = value
 
-            while True:
-                # Parse inputs
-                inputs = aircraft._controller.get_input()
-                if inputs.get("pause", False):
-                    pause_flag.value = not pause_flag.value
-                if inputs.get("data", False):
-                    data_flag.value = not data_flag.value
-                if inputs.get("quit", False):
-                    quit_flag.value = not quit_flag.value
-                if inputs.get("view", False):
-                    view_flag.value = (view_flag.value+1)%num_views
+            while pause_flag.value and not quit_flag.value:
 
-                # Pause
-                if pause_flag.value and not paused:
-                    paused = True
-                    state_manager[13] = 0.0 # The physics isn't stepping...
+                # The physics isn't stepping...
+                state_manager[13] = 0.0
 
-                # Break out of pause
-                if not pause_flag.value:
-                    if paused:
-                        paused = False
-                        if real_time:
-                            t0 = time.time() # So as to not throw off the integration
-                    break
-
-                # Quit if necessary
-                if quit_flag.value:
-                    break
+            else:
+                if real_time:
+                    t0 = time.time() # So as to not throw off the integration
 
     # If we exit the loop due to a timeout, let the graphics know we're done
     quit_flag.value = 1
 
 
-def load_aircraft(input_dict, units):
+def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag):
     # Loads the aircraft from the input file
 
     # Read in aircraft input
@@ -130,11 +107,11 @@ def load_aircraft(input_dict, units):
 
     # Linear aircraft
     if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-        aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"])
+        aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"], quit_flag, view_flag, pause_flag, data_flag)
     
     # MachUpX aircraft
     else:
-        aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"])
+        aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"], quit_flag, view_flag, pause_flag, data_flag)
 
     return aircraft
 
