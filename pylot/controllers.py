@@ -1,9 +1,8 @@
 """Classes defining controllers for simulated aircraft."""
 
 from abc import abstractmethod
-import pygame.event
-import pygame.joystick
 import pynput
+import pygame
 from math import degrees, radians
 import numpy as np
 import copy
@@ -12,14 +11,20 @@ class BaseController:
     """An abstract aircraft controller class.
     """
 
-    def __init__(self):
+    def __init__(self, quit_flag, view_flag, pause_flag, data_flag):
 
         # Initialize controls
         self._controls = []
         self._inputs = {}
         self._control_keys = []
 
-        # Initialize keyboard listener
+        # Store flags
+        self._data_flag = data_flag
+        self._view_flag = view_flag
+        self._quit_flag = quit_flag
+        self._pause_flag = pause_flag
+
+        # Key press listener function
         def on_press(key):
 
             # Get key
@@ -29,17 +34,28 @@ class BaseController:
                 k = key.name
 
             # Check action
-            if k == 'i':
-                self._inputs["data"] = True
-            elif k == 'p':
-                self._inputs["pause"] = True
-            elif k == 'q':
-                self._inputs["quit"] = True
-            elif k == 'space':
-                self._inputs["view"] = True
-            elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
-                self._control_keys.append(k)
 
+            # Toggle flight data
+            if k == 'i':
+                self._data_flag.value = not self._data_flag.value
+
+            # Toggle pause
+            elif k == 'p':
+                self._pause_flag.value = not self._pause_flag.value
+
+            # Quit
+            elif k == 'q':
+                self._quit_flag.value = not self._quit_flag.value
+
+            # Toggle view
+            elif k == 'space':
+                self._view_flag.value = not self._view_flag.value
+
+            # Store other keystroke
+            elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
+                self._data_flag.value = not self._data_flag.value
+
+        # Key release listener function
         def on_release(key):
 
             # Get key
@@ -52,6 +68,7 @@ class BaseController:
             if k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down'] and k in self._control_keys:
                 self._control_keys = list(filter(lambda a: a != k, self._control_keys))
 
+        # Initialize keyboard listener
         self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
         self._keyboard_listener.start()
 
@@ -134,8 +151,8 @@ class NoController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict):
-        super().__init__()
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
 
         # Get control names
         for key in list(control_dict.keys()):
@@ -154,8 +171,8 @@ class JoystickController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict):
-        super().__init__()
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
 
         # Initialize user inputs
         pygame.joystick.init()
@@ -265,11 +282,10 @@ class KeyboardController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict):
-        super().__init__()
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
 
         # Initialize user inputs
-        self._thr = 0.
         self._UP = False
         self._DOWN = False
         self._RIGHT = False
@@ -326,58 +342,8 @@ class KeyboardController(BaseController):
             Dictionary of controls.
         """
 
-        # Check for keyboard inputs
-        keys = copy.deepcopy(self._control_keys)
-        self._control_keys.clear()
-        for key in keys:
-
-            if event.type == pygame.KEYDOWN:
-
-                if event.key == pygame.K_UP:
-                    self._UP = True
-                elif event.key == pygame.K_DOWN:
-                    self._DOWN = True
-                elif event.key == pygame.K_LEFT:
-                    self._LEFT = True
-                elif event.key == pygame.K_RIGHT:
-                    self._RIGHT = True
-
-                elif event.key == pygame.K_w:
-                    self._WW = True
-                elif event.key == pygame.K_s:
-                    self._SS = True
-                elif event.key == pygame.K_a:
-                    self._AA = True
-                elif event.key == pygame.K_d:
-                    self._DD = True
-                else:
-                    pygame.event.post(event)
-
-            elif event.type == pygame.KEYUP:
-                if event.key == pygame.K_UP:
-                    self._UP = False
-                elif event.key == pygame.K_DOWN:
-                    self._DOWN = False
-                elif event.key == pygame.K_LEFT:
-                    self._LEFT = False
-                elif event.key == pygame.K_RIGHT:
-                    self._RIGHT = False
-
-                elif event.key == pygame.K_w:
-                    self._WW = False
-                elif event.key == pygame.K_s:
-                    self._SS = False
-                elif event.key == pygame.K_a:
-                    self._AA = False
-                elif event.key == pygame.K_d:
-                    self._DD = False
-                else:
-                    pygame.event.post(event)
-            else:
-                pygame.event.post(event)
-
         # Check for perturbation
-        if not self._perturbed and (self._RIGHT or self._LEFT or self._UP or self._DOWN or self._WW or self._SS or self._DD or self._AA):
+        if not self._perturbed and len(self._control_keys) > 0:
             self._perturbed = True
 
         if self._perturbed:
@@ -389,27 +355,27 @@ class KeyboardController(BaseController):
 
                 # Get axis input
                 if i == 0: # Input roll axis
-                    if self._LEFT and not self._RIGHT:
+                    if 'left' in self._control_keys and not 'right' in self._control_keys:
                         defl = 1.0
-                    elif not self._LEFT and self._RIGHT:
+                    elif not 'left' in self._control_keys and 'right' in self._control_keys:
                         defl = -1.0
 
                 elif i == 1: # Input pitch axis
-                    if self._UP and not self._DOWN:
+                    if 'up' in self._control_keys and not 'down' in self._control_keys:
                         defl = 1.0
-                    elif not self._UP and self._DOWN:
+                    elif not 'up' in self._control_keys and 'down' in self._control_keys:
                         defl = -1.0
 
                 elif i == 2: # Input yaw axis
-                    if self._AA and not self._DD:
+                    if 'a' in self._control_keys and not 'd' in self._control_keys:
                         defl = 1.0
-                    elif not self._AA and self._DD:
+                    elif not 'a' in self._control_keys and 'd' in self._control_keys:
                         defl = -1.0
 
                 else: # Input throttle axis
-                    if self._WW and not self._SS:
+                    if 'w' in self._control_keys and not 's' in self._control_keys:
                         defl = 1.0
-                    elif not self._WW and self._SS:
+                    elif not 'w' in self._control_keys and 's' in self._control_keys:
                         defl = -1.0
 
                 # Apply deflection
@@ -434,8 +400,8 @@ class TimeSequenceController(BaseController):
     """
 
 
-    def __init__(self, control_dict):
-        super().__init__()
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
 
         # Store column mapping
         self._control_mapping = {}
