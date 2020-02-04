@@ -757,17 +757,17 @@ class LinearizedAirplane(BaseAircraft):
         # Get path to graphics objects
         self._pylot_path = os.path.dirname(__file__)
         self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
-        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
-        self._res_path = os.path.join(self._graphics_path, "res")
+        self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
+        self._textures_path = os.path.join(self._graphics_path, "textures")
 
         # Load input
         graphics_dict = self._input_dict.get("graphics", {})
         info = {}
-        info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
+        info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._objects_path, "Cessna.obj"))
         info["v_shader_file"] = graphics_dict.get("vertex_shader_file", os.path.join(self._shaders_path, "aircraft.vs"))
         info["f_shader_file"] = graphics_dict.get("face_shader_file", os.path.join(self._shaders_path, "aircraft.fs"))
-        info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+        info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._textures_path, "cessna_texture.jpg"))
         info["l_ref_lon"] = self._cw
         info["l_ref_lat"] = self._bw
 
@@ -1033,9 +1033,9 @@ class MachUpXAirplane(BaseAircraft):
         # Get path to graphics objects
         self._pylot_path = os.path.dirname(__file__)
         self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
-        self._cessna_path = os.path.join(self._graphics_path, "Cessna")
-        self._res_path = os.path.join(self._graphics_path, "res")
+        self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
+        self._textures_path = os.path.join(self._graphics_path, "textures")
 
         # Load inputs
         graphics_dict = self._input_dict.get("graphics", {})
@@ -1066,12 +1066,12 @@ class MachUpXAirplane(BaseAircraft):
 
                 # Save
                 info["obj_file"] = graphics_dict.get("obj_file", obj_file)
-                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "grey.jpg"))
+                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._objects_path, "grey.jpg"))
 
             # Just render a Cessna... ;)
             except ImportError:
-                info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._res_path, "Cessna.obj"))
-                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._res_path, "cessna_texture.jpg"))
+                info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._objects_path, "Cessna.obj"))
+                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._textures_path, "cessna_texture.jpg"))
 
         # Pass off reference lengths
         info["l_ref_lon"] = self._cw

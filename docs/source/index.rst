@@ -10,5 +10,6 @@ Pylot
    user_interface
    creating_input_files
    building_custom_controllers
+   acknowledgements
    support
    developer_notes
