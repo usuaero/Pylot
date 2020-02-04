@@ -580,6 +580,11 @@ class Camera:
         self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
         self.time_storage.append(physics_time)
+        
+        # Make sure the storage arrays are the same length
+        n = len(self.up_storage)
+        self.time_storage = self.time_storage[-n:]
+        self.target_storage = self.target_storage[-n:]
 
         # Delay in seconds. The camera will lag behind the aircraft by this time
         delay = -4*offset[0]/airspeed
@@ -607,7 +612,7 @@ class Camera:
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
 
 
-    def ground_view(self, graphics_aircraft, physics_time, graphics_delay, airspeed, offset=[-10., 0., -2.]):
+    def ground_view(self, graphics_aircraft, physics_time, graphics_delay):
         """creates view matrix such that camera is looking at the aircraft from the ground. orientation is tied to graphics_aircraft
 
         Parameters
@@ -626,43 +631,33 @@ class Camera:
         This function does several conversions between (e0,ex,ey,ez) and (x,y,z,w) forms of quaternions. It should not be altered.
         """
 
-        #third person camera view of plane
-        quat_orientation = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
-        graphics_aircraft_to_camera = Body2Fixed(offset, quat_orientation)
 		
+        # Camera is always normal to the ground and near the tent
         cam_up = [0.,0.,-1.]
-        rotated_cam_up = Body2Fixed(cam_up,quat_orientation)
+        pos = [20.0, 25.0, -5.0]
 
         # Store position, target, up, and time
-        self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
-        self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
         self.time_storage.append(physics_time)
 
         # Delay in seconds. The camera will lag behind the aircraft by this time
-        delay = -4*offset[0]/airspeed
+        delay = 0.1
         camera_time = physics_time-delay
 	
         # If we don't have enough history, just pull the oldest
         if self.time_storage[0] > camera_time:
-            self.camera_pos = self.pos_storage[0]
-            self.camera_up = self.up_storage[0]
             self.target = self.target_storage[0]
 
         # Otherwise, perform linear interpolation on the times to get position, up, and target
         else:
-            self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)
-            self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
             self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
 
             # Clean up really old values
             if self.time_storage[1] < camera_time:
                 self.time_storage.pop(0)
-                self.pos_storage.pop(0)
-                self.up_storage.pop(0)
                 self.target_storage.pop(0)
 
-        return self.look_at(self.camera_pos, self.target, self.camera_up)	
+        return self.look_at(pos, self.target, cam_up)	
 
     def cockpit_view(self, graphics_aircraft):
         """creates view matrix such that camera is positioned at the graphics_aircraft location, as if in the cockpit

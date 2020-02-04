@@ -56,7 +56,7 @@ class Simulator:
         self._control_settings = self._manager.dict()
 
         # Number of pilot views available
-        self._num_views = 2
+        self._num_views = 3
 
         # Kick off physics process
         self._physics_process = mp.Process(target=run_physics, args=(self._input_dict,
@@ -141,8 +141,7 @@ class Simulator:
     def _create_mesh(self, obj, vs, fs, texture, position, orientation):
         # Creates a mesh graphics object
 
-        mesh = Mesh(
-                os.path.join(self._objects_path, obj),
+        mesh = Mesh(os.path.join(self._objects_path, obj),
                 os.path.join(self._shaders_path, vs),
                 os.path.join(self._shaders_path, fs),
                 os.path.join(self._textures_path, texture),
@@ -292,6 +291,13 @@ class Simulator:
                 self._cam.time_storage.clear()
                 view = self._cam.cockpit_view(self._aircraft_graphics)
                 self._HUD.render(y[:3], self._aircraft_graphics, view)
+
+            # Ground view
+            elif self._view.value == 2:
+                view = self._cam.ground_view(self._aircraft_graphics, t_physics, graphics_delay)
+                self._aircraft_graphics.set_view(view)
+                self._aircraft_graphics.render()
+
 
             # Determine aircraft displacement in quad widths
             x_pos = y[6]
