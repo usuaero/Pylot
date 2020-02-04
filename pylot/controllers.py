@@ -240,6 +240,7 @@ class JoystickController(BaseController):
         """
 
         # Get the joystick positions
+        pygame.event.get()
         joy_def = np.zeros(4)
         joy_def[0] = self._joy.get_axis(0)
         joy_def[1] = self._joy.get_axis(1)
