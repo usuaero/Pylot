@@ -108,6 +108,10 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
                             t0 = time.time() # So as to not throw off the integration
                     break
 
+                # Quit if necessary
+                if quit_flag.value:
+                    break
+
     # If we exit the loop due to a timeout, let the graphics know we're done
     quit_flag.value = 1
 
