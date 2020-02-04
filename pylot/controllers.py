@@ -53,7 +53,7 @@ class BaseController:
 
             # Store other keystroke
             elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
-                self._data_flag.value = not self._data_flag.value
+                self._control_keys.append(k)
 
         # Key release listener function
         def on_release(key):
@@ -382,7 +382,7 @@ class KeyboardController(BaseController):
                 if self._angular_control[name]:
                     control_state[name] = min(self._control_limits[name], max(prev_controls[name]+0.01*defl, -self._control_limits[name]))
                 else:
-                    control_state[name] = min(1.0, max(prev_controls[name]+defl*0.01, 0.0))
+                    control_state[name] = min(1.0, max(prev_controls[name]+defl*0.0001, 0.0))
 
             return control_state
 
