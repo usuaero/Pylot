@@ -134,5 +134,4 @@ from_troy/
 states.txt
 *.csv
 *.stl
-*.obj
-*.mtl
+airplane.obj
