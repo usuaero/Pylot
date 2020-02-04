@@ -350,15 +350,6 @@ class Simulator:
                 quad.set_view(view)
                 quad.render()
 
-            # Check for the aerodynamic model falling apart
-            if np.isnan(y[0]):
-                error_msg = Text(100)
-                error_msg.draw(-1.0, 0.5, "Pylot encountered a physics error...", color=(255,0,0,1))
-
-            # Display flight data
-            elif self._flight_data.value:
-                self._data.render(flight_data, self._control_settings)
-
             # Display scenery
             self._sky.set_view(view)
             self._sky.render()
@@ -371,6 +362,15 @@ class Simulator:
             for tree in self._trees:
                 tree.set_view(view)
                 tree.render()
+
+            # Check for the aerodynamic model falling apart
+            if np.isnan(y[0]):
+                error_msg = Text(100)
+                error_msg.draw(-1.0, 0.5, "Pylot encountered a physics error...", color=(255,0,0,1))
+
+            # Display flight data
+            elif self._flight_data.value:
+                self._data.render(flight_data, self._control_settings)
 
         # Update screen display
         pygame.display.flip()
