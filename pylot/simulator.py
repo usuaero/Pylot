@@ -125,8 +125,8 @@ class Simulator:
         self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "Tent.jpeg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
         self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [0.0, 25.0, 10.0], [1.0, 0.0, 0.0, 0.0])
         self._trees = []
-        for i in range(100):
-            self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", [np.random.rand(1)*1000-500, np.random.rand(1)*1000-500, 0.0], [1.0, 0.0, 0.0, 0.0]))
+        for i in range(10):
+            self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", [np.random.rand(1)*100-50, np.random.rand(1)*100-50, 0.0], [1.0, 0.0, 0.0, 0.0]))
 
         # Initialize camera object
         self._cam = Camera()
