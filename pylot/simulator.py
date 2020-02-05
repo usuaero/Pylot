@@ -55,9 +55,6 @@ class Simulator:
         self._aircraft_graphics_info = self._manager.dict()
         self._control_settings = self._manager.dict()
 
-        # Number of pilot views available
-        self._num_views = 3
-
         # Kick off physics process
         self._physics_process = mp.Process(target=run_physics, args=(self._input_dict,
                                                                      self._units,
@@ -68,8 +65,7 @@ class Simulator:
                                                                      self._pause,
                                                                      self._flight_data,
                                                                      self._state_manager,
-                                                                     self._control_settings,
-                                                                     self._num_views))
+                                                                     self._control_settings))
 
         # Initialize graphics
         if self._render_graphics:
