@@ -5,7 +5,7 @@ from .airplanes import MachUpXAirplane, LinearizedAirplane
 import json
 from .helpers import import_value
 
-def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager, num_views):
+def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager):
     """Runs the physics on a separate process."""
     # Note that this was a member function of Simulator, but bound methods
     # cannot be passed as the target to multiprocessing.Process() on

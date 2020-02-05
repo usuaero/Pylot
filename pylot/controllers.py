@@ -2,10 +2,11 @@
 
 from abc import abstractmethod
 import pynput
-import pygame
+import inputs
 from math import degrees, radians
 import numpy as np
 import copy
+import multiprocessing as mp
 
 class BaseController:
     """An abstract aircraft controller class.
@@ -49,7 +50,7 @@ class BaseController:
 
             # Toggle view
             elif k == 'space':
-                self._view_flag.value = not self._view_flag.value
+                self._view_flag.value = (self._view_flag.value+1)%3
 
             # Store other keystroke
             elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
@@ -174,15 +175,19 @@ class JoystickController(BaseController):
     def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
         super().__init__(quit_flag, view_flag, pause_flag, data_flag)
 
-        # Initialize user inputs
-        pygame.joystick.init()
-        if pygame.joystick.get_count()>0.:
-            self._joy = pygame.joystick.Joystick(0)
-            self._joy.init()
-            self._joy_trim = np.zeros(3)
-            self._trimming = False
-        else:
-            raise IOError("No joystick detected.")
+        # Check for device
+        self._avail_pads = inputs.devices.gamepads
+        if len(self._avail_pads) == 0:
+            raise RuntimeError("Couldn't find any joysticks!")
+        elif len(self._avail_pads) > 1:
+            raise RuntimeError("More than one joystick detected!")
+
+        # Set off listener
+        self._manager = mp.Manager()
+        self._joy_def = self._manager.list()
+        self._joy_def[:] = [0.0]*4
+        self._joy_listener = mp.Process(target=joystick_listener, args=(self._joy_def, self._quit_flag))
+        self._joy_listener.start()
 
         # Get mapping and limits
         self._control_mapping = {}
@@ -206,11 +211,8 @@ class JoystickController(BaseController):
 
         # Set variable for knowing if the user has perturbed from the trim state yet
         self._perturbed = False
-        self._joy_init = np.zeros(4)
-        self._joy_init[0] = self._joy.get_axis(0)
-        self._joy_init[1] = self._joy.get_axis(1)
-        self._joy_init[2] = self._joy.get_axis(2)
-        self._joy_init[3] = self._joy.get_axis(3)
+        self._joy_init = [0.0]*4
+        self._joy_init[:] = self._joy_def[:]
 
         # For me to create a control input csv for testing
         self._store_input = False
@@ -235,17 +237,9 @@ class JoystickController(BaseController):
             Dictionary of controls.
         """
 
-        # Get the joystick positions
-        pygame.event.get()
-        joy_def = np.zeros(4)
-        joy_def[0] = self._joy.get_axis(0)
-        joy_def[1] = self._joy.get_axis(1)
-        joy_def[2] = self._joy.get_axis(2)
-        joy_def[3] = self._joy.get_axis(3)
-
         # Check if we're perturbed from the start control set
         if not self._perturbed:
-            if (joy_def != self._joy_init).any():
+            if (np.array(self._joy_def) != np.array(self._joy_init)).any():
                 self._perturbed = True
             else:
                 return prev_controls # No point in parsing things if nothing's changed
@@ -255,9 +249,9 @@ class JoystickController(BaseController):
         setting_list = []
         for name in self._controls:
             if self._angular_control[name]:
-                setting = (joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
+                setting = (self._joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
             else:
-                setting = (-joy_def[self._control_mapping[name]]+1.)*0.5
+                setting = (-self._joy_def[self._control_mapping[name]]+1.)*0.5
             control_state[name] = setting
             setting_list.append(setting)
 
@@ -438,3 +432,39 @@ class TimeSequenceController(BaseController):
             controls[name] = np.interp(t, self._control_data[:,0], self._control_data[:,i], left=default, right=default)
 
         return controls
+
+
+def joystick_listener(axes_def, quit_flag):
+    """Listens to the joystick input and posts latest values to the manager list."""
+
+    # While the game is still going
+    while not quit_flag.value:
+
+        # Wait for events
+        events = inputs.get_gamepad()
+
+        # Parse events
+        try:
+            for event in events:
+                if event.ev_type == 'Absolute':
+
+                    # Roll axis
+                    if event.code == 'ABS_X':
+                        axes_def[0] = event.state/511.5-1.0
+
+                    # Pitch axis
+                    elif event.code == 'ABS_Y':
+                        axes_def[1] = event.state/511.5-1.0
+
+                    # Yaw axis
+                    elif event.code == 'ABS_RZ':
+                        axes_def[2] = event.state/127.5-1.0
+
+                    # Throttle axis
+                    elif event.code == 'ABS_THROTTLE':
+                        axes_def[3] = event.state/127.5-1.0
+
+        except BrokenPipeError:
+            return
+
+    return
