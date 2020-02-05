@@ -210,9 +210,9 @@ class JoystickController(BaseController):
             self._controls.append(key)
 
         # Set variable for knowing if the user has perturbed from the trim state yet
+        self._perturbed_set = False
         self._perturbed = False
         self._joy_init = [0.0]*4
-        self._joy_init[:] = self._joy_def[:]
 
         # For me to create a control input csv for testing
         self._store_input = False
@@ -236,6 +236,11 @@ class JoystickController(BaseController):
         controls : dict
             Dictionary of controls.
         """
+
+        # Set perturbation condition
+        if not self._perturbed_set:
+            self._joy_init[:] = self._joy_def[:]
+            self._perturbed_set = True
 
         # Check if we're perturbed from the start control set
         if not self._perturbed:
