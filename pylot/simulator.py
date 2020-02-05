@@ -116,7 +116,10 @@ class Simulator:
             self._ground_quad.append(self._create_mesh("field.obj", "field.vs", "field.fs", "field_texture.jpg", self._ground_positions[i], ground_orientations[i]))
 
         # Initialize scenery
-        self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds.jpeg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        try:
+            self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        except:
+            self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds_low_res.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
         self._airstrip = self._create_mesh("airstrip.obj", "field.vs", "field.fs", "landing.jpg", [0.0, 0.0, -1.0], [1.0, 0.0, 0.0, 0.0])
         self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "Tent.jpeg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
         self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [0.0, 25.0, 10.0], [1.0, 0.0, 0.0, 0.0])
@@ -211,6 +214,9 @@ class Simulator:
 
             # Run graphics loop
             while not self._quit.value:
+
+                # Clear pygame queue
+                pygame.event.get()
 
                 # Update graphics
                 self._update_graphics()
