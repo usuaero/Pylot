@@ -16,6 +16,8 @@ The following keyboard keys affect the simulator interface, regardless of the co
 | SPACE | Cycle through camera views    |
 | q     | Exit simulation               |
 
+As explained in [Creating Input Files](creating_input_files), the user can set whether these keys are active. Please note that the pynput module will capture keystrokes whether the simulator window is active or not (i.e. if the sim is running in one window and you're editing a document in another, your keystrokes will affect the simulation). The default behavior is for these keys to be active only if the graphics are running.
+
 ### Keyboard Control
 The keyboard controls four independent axes or channels using the key pairs A-D, W-S, UP-DOWN, and LEFT-RIGHT. Holding down any of these keys results in an incremental change in the respective control. If all keys are released, the current control state is maintained.
 
