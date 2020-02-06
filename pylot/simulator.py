@@ -51,7 +51,7 @@ class Simulator:
         self._pause = self._manager.Value('i', 0)
         self._graphics_ready = self._manager.Value('i', 0)
         self._view = self._manager.Value('i', 1)
-        self._flight_data = self._manager.Value('i', 0)
+        self._flight_data = self._manager.Value('i', 1)
         self._aircraft_graphics_info = self._manager.dict()
         self._control_settings = self._manager.dict()
 
@@ -353,6 +353,7 @@ class Simulator:
                 quad.render()
 
             # Display scenery
+            #self._sky.set_position([y[6], y[7], 0.0])
             self._sky.set_view(view)
             self._sky.render()
             self._airstrip.set_view(view)

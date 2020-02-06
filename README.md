@@ -4,4 +4,8 @@ A fully-featured flight simulator, capable of real-time lifting-line aerodynamic
 ## Documentation
 Documentation is available on [ReadTheDocs](https://aerolabpylot.readthedocs.io/en/latest/). Please read through the documentation fully before contacting the development team with questions.
 
-**Currently under development. Any level of functionality is not guaranteed.**
+## Support
+For bugs, create a new issue on the Github repo.
+
+## License
+This project is licensed under the MIT license. See LICENSE file for more information. 
