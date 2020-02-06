@@ -3,7 +3,8 @@
     "simulation" : {
         "real_time" : true,
         "enable_graphics" : true,
-        "target_framerate" : 30
+        "target_framerate" : 30,
+        "enable_interface" : false
     },
     "units" : "English",
     "atmosphere" : {
@@ -18,10 +19,7 @@
             "climb_angle" : 5.0,
             "bank_angle" : 20.0,
             "heading" : 0.0,
-            "verbose" : true,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
-        },
-        "state_output" : "states.txt",
-        "controller" : "keyboard"
+        }
     }
 }

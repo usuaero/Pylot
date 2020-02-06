@@ -125,7 +125,7 @@ class BaseAircraft:
 
 
     def __del__(self):
-        if self.output_state:
+        if self._output_state:
             self._output_handle.close()
 
 
@@ -440,7 +440,7 @@ class LinearizedAirplane(BaseAircraft):
         climb = m.radians(trim_dict["climb_angle"])
         bank = m.radians(trim_dict["bank_angle"])
         heading = m.radians(trim_dict["heading"])
-        verbose = trim_dict["verbose"]
+        verbose = trim_dict.get("verbose", False)
 
         # Parse controls
         avail_controls = trim_dict.get("trim_controls", list(self._controls.keys()))
