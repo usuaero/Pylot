@@ -476,4 +476,7 @@ def joystick_listener(axes_def, quit_flag):
         except BrokenPipeError:
             return
 
+        except FileNotFoundError:
+            return
+
     return
