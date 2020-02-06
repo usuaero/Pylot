@@ -7,7 +7,7 @@ Pylot is run from the command line using the "-m" option. For example
 The aircraft can be controlled in real-time using either a joystick or the keyboard. This is specified in the [input file](creating_input_files). Please note that the specific function of the keyboard/joystick inputs is determined by how the input files are configured. The mapping from the input axes or channels to the aircraft controls is up to the user.
 
 ### General Interface Controls
-The following keyboard keys affect the simulator interface, regardlesss of whether the joystick or keyboard are used.
+The following keyboard keys affect the simulator interface, regardless of the controller specified.
 
 | Key   | Action                        |
 | ----- | ----------------------------- |

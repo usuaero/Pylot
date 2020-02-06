@@ -9,20 +9,21 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
     """Runs the physics on a separate process."""
     # Note that this was a member function of Simulator, but bound methods
     # cannot be passed as the target to multiprocessing.Process() on
-    # Windows. Grrr...
+    # Windows. This irks me Bill...
 
     # Get simulation params
     real_time = input_dict["simulation"].get("real_time", True)
     t_start = input_dict["simulation"].get("start_time", 0.0)
     t_final = input_dict["simulation"].get("final_time", np.inf)
+    render_graphics = input_dict["simulation"].get("enable_graphics", False)
+    enable_interface = input_dict["simulation"].get("enable_interface", render_graphics)
     if not real_time:
         dt = input_dict["simulation"].get("dt", 0.01)
 
     # Load aircraft
-    aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag)
+    aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
     # Pass airplane graphics information to parent process
-    render_graphics = input_dict
     if render_graphics:
         aircraft_graphics_info = aircraft.get_graphics_info()
         for key, value in aircraft_graphics_info.items():
@@ -76,7 +77,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
             state_manager[:13] = aircraft.y[:]
             state_manager[13] = dt
             state_manager[14] = t
-            state_manager[15] = t1
+            state_manager[15] = t0+t
             for key, value in aircraft._controls.items():
                 control_manager[key] = value
 
@@ -93,7 +94,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
     quit_flag.value = 1
 
 
-def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag):
+def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
     # Loads the aircraft from the input file
 
     # Read in aircraft input
@@ -107,11 +108,11 @@ def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag
 
     # Linear aircraft
     if aircraft_dict["aero_model"]["type"] == "linearized_coefficients":
-        aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"], quit_flag, view_flag, pause_flag, data_flag)
+        aircraft = LinearizedAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"], quit_flag, view_flag, pause_flag, data_flag, enable_interface)
     
     # MachUpX aircraft
     else:
-        aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"], quit_flag, view_flag, pause_flag, data_flag)
+        aircraft = MachUpXAirplane(aircraft_name, aircraft_dict, density, units, input_dict["aircraft"], quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
     return aircraft
 

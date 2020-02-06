@@ -25,7 +25,7 @@ class BaseAircraft:
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag):
+    def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
 
         # Store input
         self.name = name
@@ -85,35 +85,35 @@ class BaseAircraft:
 
         # Load controls
         controller = param_dict.get("controller", None)
-        self._initialize_controller(controller, quit_flag, view_flag, pause_flag, data_flag)
+        self._initialize_controller(controller, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Get stall angle of attack
         self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
 
 
-    def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag):
+    def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
         # Sets up the control input for the aircraft
 
         # No control input
         if control_type is None:
-            self._controller = NoController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag)
+            self._controller = NoController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Joystick
         elif control_type == "joystick":
-            self._controller = JoystickController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag)
+            self._controller = JoystickController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Keyboard
         elif control_type == "keyboard":
-            self._controller = KeyboardController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag)
+            self._controller = KeyboardController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # User-defined
         elif control_type == "user-defined":
             from user_defined_controller import UserDefinedController
-            self._controller = UserDefinedController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag)
+            self._controller = UserDefinedController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Time sequence file
         elif ".csv" in control_type:
-            self._controller = TimeSequenceController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag)
+            self._controller = TimeSequenceController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
             self._controller.set_input(control_type)
 
         else:
@@ -299,8 +299,8 @@ class LinearizedAirplane(BaseAircraft):
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag):
-        super().__init__(name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag)
+    def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+        super().__init__(name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Initialize density
         self._get_density = self._initialize_density(density)
@@ -491,7 +491,7 @@ class LinearizedAirplane(BaseAircraft):
             print("Trimming at {0} deg bank and {1} deg climb...".format(m.degrees(bank), m.degrees(climb)))
             header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
             for name in avail_controls:
-                header.append("{0:>20}".format(name))
+                header.append("{0:>20}".format(name.title()))
             header.append("{0:>20}".format("Elevation [deg]"))
             print("".join(header))
 
@@ -786,8 +786,8 @@ class MachUpXAirplane(BaseAircraft):
         Dictionary describing the airplane.
     """
 
-    def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag):
-        super().__init__(name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag)
+    def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+        super().__init__(name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Create MachUpX scene
         import machupX as mx
@@ -858,7 +858,7 @@ class MachUpXAirplane(BaseAircraft):
             print("Trimming at {0} deg bank and {1} deg climb...".format(m.degrees(self._bank), m.degrees(self._climb)))
             header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
             for name in self._avail_controls:
-                header.append("{0:>20}".format(name))
+                header.append("{0:>20}".format(name.title()))
             header.append("{0:>20}".format("Elevation [deg]"))
             print("".join(header))
 
@@ -1066,7 +1066,7 @@ class MachUpXAirplane(BaseAircraft):
 
                 # Save
                 info["obj_file"] = graphics_dict.get("obj_file", obj_file)
-                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._objects_path, "grey.jpg"))
+                info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._textures_path, "grey.jpg"))
 
             # Just render a Cessna... ;)
             except ImportError:

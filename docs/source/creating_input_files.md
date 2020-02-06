@@ -73,6 +73,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>
 >>**"target_framerate" : int, optional**
 >>>Desired number of graphics updates per second. Max is 60. The graphics will update no faster than the value specified here. Defaults to 30.
+>>
+>>**"enable_interface" : boolean, optional**
+>>>Whether to allow the user to affect the simulation during execution (pause, quit, toggle views). Defaults to the same value as "enable_graphics".
 >
 >**"units" : string, optional**
 >>Specifies the unit system to be used for inputs and outputs. Can be "SI" or "English". Any units not explicitly defined for each value in the input objects will be assumed to be the default unit for that measurement in the system specified here. Defaults to "English".
@@ -235,12 +238,14 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>**"input_axis" : int, optional**
 >>>>Specifies which input axis maps to this control. The input axes are as follows
 >>>>
+
 | Index    | Joystick  | Keyboard      |
 | -------- | --------- | ------------- |
 | 0        | roll      | LEFT-RIGHT    |
 | 1        | pitch     | UP-DOWN       |
 | 2        | yaw       | A-D           |
 | 3        | throttle  | W-S           |
+
 >>>>
 >>>>Only required if the keyboard or joystick are being used as input.
 >>>

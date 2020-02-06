@@ -39,10 +39,6 @@ class Simulator:
         # Get simulation parameters
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
 
-        # Initialize pygame modules
-        pygame.display.init()
-        pygame.font.init()
-
         # Initialize inter-process communication
         self._manager = mp.Manager()
         self._state_manager = self._manager.list()
@@ -69,6 +65,11 @@ class Simulator:
 
         # Initialize graphics
         if self._render_graphics:
+
+            # Initialize pygame modules
+            pygame.display.init()
+            pygame.font.init()
+
             self._initialize_graphics()
 
 
@@ -198,7 +199,9 @@ class Simulator:
                     texture_path = self._aircraft_graphics_info["texture_file"]
 
                     # Initialize graphics object
-                    self._aircraft_graphics = self._create_mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._aircraft_graphics_info["position"], self._aircraft_graphics_info["orientation"])
+                    self._aircraft_graphics = Mesh(obj_path, v_shader_path, f_shader_path, texture_path, self._width, self._height)
+                    self._aircraft_graphics.set_position(self._aircraft_graphics_info["position"])
+                    self._aircraft_graphics.set_orientation(self._aircraft_graphics_info["orientation"])
 
                     # Get reference lengths for setting camera offset
                     self._bw = self._aircraft_graphics_info["l_ref_lat"]
@@ -216,7 +219,10 @@ class Simulator:
             while not self._quit.value:
 
                 # Clear pygame queue
-                pygame.event.get()
+                events = pygame.event.get()
+                for event in events:
+                    if event.type == pygame.QUIT:
+                        self._quit.value = 1
 
                 # Update graphics
                 self._update_graphics()
