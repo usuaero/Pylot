@@ -26,7 +26,8 @@ class BaseController:
         self._pause_flag = pause_flag
 
         # Set up user interface
-        if enable_interface:
+        self._enable_interface = enable_interface
+        if self._enable_interface:
             # Key press listener function
             def on_press(key):
 
@@ -77,7 +78,8 @@ class BaseController:
 
 
     def __del__(self):
-        self._keyboard_listener.stop()
+        if self._enable_interface:
+            self._keyboard_listener.stop()
 
 
     def get_control_names(self):
