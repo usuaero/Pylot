@@ -12,7 +12,7 @@ class BaseController:
     """An abstract aircraft controller class.
     """
 
-    def __init__(self, quit_flag, view_flag, pause_flag, data_flag):
+    def __init__(self, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
 
         # Initialize controls
         self._controls = []
@@ -25,53 +25,55 @@ class BaseController:
         self._quit_flag = quit_flag
         self._pause_flag = pause_flag
 
-        # Key press listener function
-        def on_press(key):
+        # Set up user interface
+        if enable_interface:
+            # Key press listener function
+            def on_press(key):
 
-            # Get key
-            try:
-                k = key.char
-            except:
-                k = key.name
+                # Get key
+                try:
+                    k = key.char
+                except:
+                    k = key.name
 
-            # Check action
+                # Check action
 
-            # Toggle flight data
-            if k == 'i':
-                self._data_flag.value = not self._data_flag.value
+                # Toggle flight data
+                if k == 'i':
+                    self._data_flag.value = not self._data_flag.value
 
-            # Toggle pause
-            elif k == 'p':
-                self._pause_flag.value = not self._pause_flag.value
+                # Toggle pause
+                elif k == 'p':
+                    self._pause_flag.value = not self._pause_flag.value
 
-            # Quit
-            elif k == 'q':
-                self._quit_flag.value = not self._quit_flag.value
+                # Quit
+                elif k == 'q':
+                    self._quit_flag.value = not self._quit_flag.value
 
-            # Toggle view
-            elif k == 'space':
-                self._view_flag.value = (self._view_flag.value+1)%3
+                # Toggle view
+                elif k == 'space':
+                    self._view_flag.value = (self._view_flag.value+1)%3
 
-            # Store other keystroke
-            elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
-                self._control_keys.append(k)
+                # Store other keystroke
+                elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
+                    self._control_keys.append(k)
 
-        # Key release listener function
-        def on_release(key):
+            # Key release listener function
+            def on_release(key):
 
-            # Get key
-            try:
-                k = key.char
-            except:
-                k = key.name
+                # Get key
+                try:
+                    k = key.char
+                except:
+                    k = key.name
 
-            # Remove those from the list
-            if k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down'] and k in self._control_keys:
-                self._control_keys = list(filter(lambda a: a != k, self._control_keys))
+                # Remove those from the list
+                if k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down'] and k in self._control_keys:
+                    self._control_keys = list(filter(lambda a: a != k, self._control_keys))
 
-        # Initialize keyboard listener
-        self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
-        self._keyboard_listener.start()
+            # Initialize keyboard listener
+            self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
+            self._keyboard_listener.start()
 
 
     def __del__(self):
@@ -152,8 +154,8 @@ class NoController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Get control names
         for key in list(control_dict.keys()):
@@ -172,8 +174,8 @@ class JoystickController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Check for device
         self._avail_pads = inputs.devices.gamepads
@@ -281,8 +283,8 @@ class KeyboardController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Initialize user inputs
         self._UP = False
@@ -399,8 +401,8 @@ class TimeSequenceController(BaseController):
     """
 
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
         # Store column mapping
         self._control_mapping = {}
