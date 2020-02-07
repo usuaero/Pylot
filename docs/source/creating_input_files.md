@@ -1,5 +1,5 @@
 # Input Files
-The basic input file for Pylot is a JSON object describing the simulation parameters, control inputs, and aircraft initial state. A separate JSON object is used to specify the aerodynamics of the aircraft.
+The basic input file for Pylot is a JSON object describing the simulation parameters, control inputs, and aircraft initial state. A separate JSON object is used to specify the aerodynamic and mass properties of the aircraft. Examples of both of these files can be found in the examples/ directory.
 
 ## JSON Format
 The basic structure of a JSON object is a set of key-value pairs, analogous to a Python dictionary. Examples can be found in the examples/ directory. The following sections describe the structure of the JSON objects used to interface with Pylot. Only one JSON object is specified per .json file. When using the JSON objects, only the simulation object is passed to Pylot. Pylot will automatically locate the aircraft object specified in the simulation object.
