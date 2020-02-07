@@ -140,10 +140,6 @@ class Simulator:
         # Ticks clock before starting game loop
         self._clock.tick_busy_loop()
 
-        # Initialize position storage
-        self._pos_storage = []
-        self._time_storage = []
-
 
     def _create_mesh(self, obj, vs, fs, texture, position, orientation):
         # Creates a mesh graphics object
@@ -278,22 +274,6 @@ class Simulator:
 
         # Graphics timestep
         dt_graphics = self._clock.tick(self._target_framerate)/1000.
-
-        # Store position, but only if it's new
-        if len(self._time_storage) == 0 or t_physics != self._time_storage[-1]:
-            self._pos_storage.append(y[6:9])
-            self._time_storage.append(t_physics)
-
-        # No use carting too many around
-        if len(self._time_storage) > 4:
-            self._pos_storage.pop(0)
-            self._time_storage.pop(0)
-
-        # Estimate position
-        if len(self._time_storage) > 1:
-            pos_est = intp.interp1d(np.array(self._time_storage), np.array(self._pos_storage), axis=0, fill_value='extrapolate')(t_physics+graphics_delay)
-        else:
-            pos_est = y[6:9]
 
         # Update aircraft position and orientation
         self._aircraft_graphics.set_orientation(swap_quat(y[9:]))
