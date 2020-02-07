@@ -3,7 +3,7 @@
 import sys
 import json
 import pygame
-from .simulator import *
+from pylot.simulator import *
 
 def simulate(filename):
 

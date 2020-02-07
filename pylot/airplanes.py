@@ -1063,6 +1063,7 @@ class MachUpXAirplane(BaseAircraft):
                 Mesh.open(stl_file)
                 o = FreeCAD.getDocument("Unnamed").findObjects()[0]
                 Mesh.export([o], obj_file)
+                print("\n")
 
                 # Save
                 info["obj_file"] = graphics_dict.get("obj_file", obj_file)
