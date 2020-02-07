@@ -1,0 +1,94 @@
+{
+    "units" : "English",
+    "CG" : [0,0,0],
+    "weight" : 2500.0,
+    "inertia" : {
+        "Ixx" : 1000.0,
+        "Iyy" : 3000.0,
+        "Izz" : 3500.0,
+        "Ixy" : 0.0,
+        "Ixz" : 30.0,
+        "Iyz" : 0.0
+    },
+    "angular_momentum" : [0.0, 0.0, 0.0],
+    "reference" : {
+        "area" : 185.0,
+        "lateral_length" : 33.0,
+        "airspeed" : 180.0,
+        "density" : 0.0023769,
+        "lift" : 2800,
+        "controls" : {
+            "elevator" : 5.0
+        }
+    },
+    "controls" : {
+        "aileron" : {
+            "max_deflection" : 20.0,
+            "input_axis" : 0,
+            "column_index" : 1
+        },
+        "elevator" : {
+            "max_deflection" : 20.0,
+            "input_axis" : 1,
+            "column_index" : 2
+        },
+        "rudder" : {
+            "max_deflection" : 20.0,
+            "input_axis" : 2,
+            "column_index" : 3
+        },
+        "throttle" : {
+            "input_axis" : 3,
+            "column_index" : 4
+        }
+    },
+    "engines" : {
+        "engine0" : {
+            "offset" : [0.0, 0.0, -1.0],
+            "T0" : 1500,
+            "T1" : -3.5,
+            "T2" : -0.0022,
+            "a" : 1.0,
+            "control" : "throttle"
+        }
+    },
+    "aero_model" : {
+        "type" : "linearized_coefficients",
+        "stall_angle_of_attack" : 15
+    },
+    "coefficients" : {
+        "CD" : 0.05,
+        "CL,a" : 4.40,
+        "CD,a" : 0.35,
+        "CD,a,a" : 0.1,
+        "CD3" : 0.109,
+        "Cm,a" : -0.68,
+        "CY,b" : -0.560,
+        "Cl,b" : -0.075,
+        "Cn,b" : 0.070,
+        "CL,q" : 3.80,
+        "CD,q" : 0.01,
+        "Cm,q" : -9.95,
+        "CY,p" : 0.05,
+        "Cl,p" : -0.410,
+        "Cn,p" : -0.0575,
+        "CY,r" : 0.240,
+        "Cl,r" : 0.105,
+        "Cn,r" : -0.125,
+        "elevator" : {
+            "CL" : 0.350,
+            "CD" : 0.01,
+            "Cm" : -0.920
+        },
+        "aileron" : {
+            "CY" : 0.01,
+            "Cl" : -0.135,
+            "Cn" : 0.0035
+        },
+        "rudder" : {
+            "CY" : 0.155,
+            "Cl" : 0.105,
+            "Cn" : -0.075
+        }
+    }
+}
