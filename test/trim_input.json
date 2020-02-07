@@ -3,8 +3,7 @@
     "simulation" : {
         "real_time" : true,
         "enable_graphics" : true,
-        "target_framerate" : 30,
-        "enable_interface" : false
+        "target_framerate" : 30
     },
     "units" : "English",
     "atmosphere" : {
@@ -21,5 +20,6 @@
             "heading" : 0.0,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
         }
-    }
+    },
+    "controller" : "joystick"
 }

@@ -77,7 +77,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
             state_manager[:13] = aircraft.y[:]
             state_manager[13] = dt
             state_manager[14] = t
-            state_manager[15] = t0+t
+            state_manager[15] = time.time()
             for key, value in aircraft._controls.items():
                 control_manager[key] = value
 

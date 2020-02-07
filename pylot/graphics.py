@@ -257,7 +257,7 @@ class Text:
         glEnable(GL_BLEND) 
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)           
         glRasterPos3d(*position)                                                
-        glDrawPixels(textSurface.get_width(), textSurface.get_height(),GL_RGBA, GL_UNSIGNED_BYTE, textData) 
+        glDrawPixels(textSurface.get_width(), textSurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData) 
         glDisable(GL_BLEND)
 
 

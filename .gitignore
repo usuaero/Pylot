@@ -135,3 +135,4 @@ states.txt
 *.csv
 *.stl
 airplane.obj
+*.dat

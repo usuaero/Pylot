@@ -479,4 +479,7 @@ def joystick_listener(axes_def, quit_flag):
         except FileNotFoundError:
             return
 
+        except ConnectionResetError:
+            return
+
     return
