@@ -28,9 +28,9 @@ class Simulator:
 
         # Print welcome
         print("\n--------------------------------------------------")
-        print("              Welcome to Pylot!                   ")
-        print("                 USU AeroLab                      ")
-        print("--------------------------------------------------")
+        print(  "              Welcome to Pylot!                   ")
+        print(  "                 USU AeroLab                      ")
+        print(  "--------------------------------------------------")
 
         # Store input
         self._input_dict = input_dict
@@ -186,6 +186,7 @@ class Simulator:
         """Runs the simulation according to the defined inputs.
         """
 
+        print("Running simulation...")
         # Kick off the physics
         self._physics_process.start()
 
@@ -236,9 +237,9 @@ class Simulator:
 
         # Print quit message
         print("\n--------------------------------------------------")
-        print("           Pylot exited successfully.             ")
-        print("                  Thank you!                      ")
-        print("--------------------------------------------------")
+        print(  "           Pylot exited successfully.             ")
+        print(  "                  Thank you!                      ")
+        print(  "--------------------------------------------------")
 
 
     def _update_graphics(self):
