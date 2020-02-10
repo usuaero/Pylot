@@ -176,7 +176,7 @@ class Simulator:
 
         # Initialize window
         pygame.display.set_icon(pygame.image.load(os.path.join(self._textures_path, 'gameicon.jpg')))
-        self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF, pygame.RESIZABLE)
+        self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF|pygame.RESIZABLE)
         pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
         glViewport(0,0,self._width,self._height)
         glEnable(GL_DEPTH_TEST)
@@ -244,7 +244,13 @@ class Simulator:
     def _update_graphics(self):
         # Does a step in graphics
 
-        # Clear pygame queue
+        # Set default background color for sky
+        glClearColor(0.65,1.0,1.0,1.0)
+
+        # Clear GL buffers
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
+
+        # Check pygame event queue
         events = pygame.event.get()
         for event in events:
 
@@ -252,17 +258,11 @@ class Simulator:
             if event.type == pygame.QUIT:
                 self._quit.value = 1
 
-            # Resize window
-            elif event.type == pygame.VIDEORESIZE:
-                self._width = event.w
-                self._height = event.h
-                self._screen = pygame.display.set_mode((self._width, self._height), pygame.RESIZABLE)
-
-        # Set default background color for sky
-        glClearColor(0.65,1.0,1.0,1.0)
-
-        # Clear GL buffers
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
+            ## Resize window
+            #elif event.type == pygame.VIDEORESIZE:
+            #    self._width = event.w
+            #    self._height = event.h
+            #    self._screen = pygame.display.set_mode((self._width, self._height), HWSURFACE|OPENGL|DOUBLEBUF|pygame.RESIZABLE)
 
         # Check for quitting
         if self._quit.value:
