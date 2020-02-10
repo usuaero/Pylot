@@ -176,14 +176,11 @@ class Mesh:
 
         self.resize(width, height)
 
-        self.set_position(self.position)
-        self.set_orientation(self.orientation)
-
 
     def resize(self, width, height):
         """Resizes the mesh."""
 
-        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,100000)
+        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height, 0.1, 100000)
 
         self.shader = compile_shader(self.vertexshadername, self.fragmentshadername)
         self.model_loc = glGetUniformLocation(self.shader, "model")
@@ -198,7 +195,7 @@ class Mesh:
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
         self.vbo = glGenBuffers(1)
-        glBindBuffer(GL_ARRAY_BUFFER,self.vbo)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo)
         glBufferData(GL_ARRAY_BUFFER, self.model.itemsize*len(self.model), self.model, GL_STATIC_DRAW)
         #position
         glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE, self.model.itemsize*3, ctypes.c_void_p(0))
@@ -211,15 +208,23 @@ class Mesh:
         glEnableVertexAttribArray(2)
         glBindVertexArray(0)
 
+        self.set_position(self.position)
+        self.set_orientation(self.orientation)
+
 
     def set_position(self,position):
+        """Sets mesh position."""
+
         self.position = position
         self.model_matrix = create_from_translation(self.position)
         glUseProgram(self.shader)
         glUniformMatrix4fv(self.model_loc,1,GL_FALSE,self.model_matrix)
         glUseProgram(0)
 
+
     def set_orientation(self,orientation):
+        """Sets mesh orientation."""
+
         self.orientation = orientation
         self.orientation_matrix = create_from_inverse_of_quaternion(self.orientation)
         glUseProgram(self.shader)
@@ -227,27 +232,35 @@ class Mesh:
         glUseProgram(0)
 
     def set_orientation_z(self,rotation):
+        """Sets mesh orientation."""
+        
         self.orientation_matrix = create_from_z_rotation(-np.radians(rotation))
         glUseProgram(self.shader)
         glUniformMatrix4fv(self.orientation_loc,1, GL_FALSE, self.orientation_matrix)
         glUseProgram(0)
 
     def change_projection_matrix(self, fov, aspect_ratio, near, far):
+        """Changes mesh projection matrix."""
+        
         self.projection_matrix = matrix44.create_perspective_projection_matrix(fov,aspect_ratio,near,far)
         glUseProgram(self.shader)
         glUniformMatrix4fv(self.proj_loc,1,GL_FALSE,self.projection_matrix)
         glUseProgram(0)
 
     def set_view(self,view):
+        """Sets mesh view."""
+
         glUseProgram(self.shader)
         glUniformMatrix4fv(self.view_loc,1,GL_FALSE,view)
         glUseProgram(0)
 
     def render(self):
+        """Renders mesh."""
+
         glBindVertexArray(self.vao)
         glUseProgram(self.shader)
         glBindTexture(GL_TEXTURE_2D, self.texture)
-        glDrawArrays(GL_TRIANGLES,0,len(self.vert_index))
+        glDrawArrays(GL_TRIANGLES, 0, len(self.vert_index))
         glBindTexture(GL_TEXTURE_2D, 0)
         glUseProgram(0)
         glBindVertexArray(0)
@@ -411,6 +424,7 @@ class HeadsUp:
         """Resizes the HUD."""
         self.width = width
         self.height = height
+
         self.ladder.resize(width, height)
         self.bank.resize(width, height)
         self.speed.resize(width, height)
@@ -747,7 +761,6 @@ class Camera:
         translation[3][1] = -position[1]
         translation[3][2] = -position[2]
 
-
         rotation = self.IDENTITY2
         rotation[0][0] = xaxis[0]
         rotation[1][0] = xaxis[1]
@@ -758,6 +771,5 @@ class Camera:
         rotation[0][2] = zaxis[0]
         rotation[1][2] = zaxis[1]
         rotation[2][2] = zaxis[2]
-
 
         return np.matmul(translation, rotation)
