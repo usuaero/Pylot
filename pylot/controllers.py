@@ -297,7 +297,7 @@ class KeyboardController(BaseController):
         self._SS = False
         self._AA = False
         self._DD = False
-        self._RESET= False
+        print("keyboard!")
 
         # Get mapping and limits
         self._control_mapping = {}
@@ -383,9 +383,11 @@ class KeyboardController(BaseController):
 
                 # Apply deflection
                 if self._angular_control[name]:
-                    control_state[name] = min(self._control_limits[name], max(prev_controls[name]+0.01*defl, -self._control_limits[name]))
+                    sensitivity = 0.01
+                    control_state[name] = min(self._control_limits[name], max(prev_controls[name]+sensitivity*defl, -self._control_limits[name]))
                 else:
-                    control_state[name] = min(1.0, max(prev_controls[name]+defl*0.0001, 0.0))
+                    sensitivity = 0.001
+                    control_state[name] = min(1.0, max(prev_controls[name]+defl*sensitivity, 0.0))
 
             return control_state
 

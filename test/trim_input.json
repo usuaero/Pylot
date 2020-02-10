@@ -19,7 +19,7 @@
             "bank_angle" : 20.0,
             "heading" : 0.0,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
-        }
-    },
-    "controller" : "joystick"
+        },
+        "controller" : "keyboard"
+    }
 }
