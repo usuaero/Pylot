@@ -297,7 +297,6 @@ class KeyboardController(BaseController):
         self._SS = False
         self._AA = False
         self._DD = False
-        print("keyboard!")
 
         # Get mapping and limits
         self._control_mapping = {}

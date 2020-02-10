@@ -176,7 +176,7 @@ class Simulator:
 
         # Initialize window
         pygame.display.set_icon(pygame.image.load(os.path.join(self._textures_path, 'gameicon.jpg')))
-        self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF)
+        self._screen = pygame.display.set_mode((self._width,self._height), HWSURFACE|OPENGL|DOUBLEBUF, pygame.RESIZABLE)
         pygame.display.set_caption("Pylot Flight Simulator, (C) USU AeroLab")
         glViewport(0,0,self._width,self._height)
         glEnable(GL_DEPTH_TEST)
@@ -226,12 +226,6 @@ class Simulator:
             # Run graphics loop
             while not self._quit.value:
 
-                # Clear pygame queue
-                events = pygame.event.get()
-                for event in events:
-                    if event.type == pygame.QUIT:
-                        self._quit.value = 1
-
                 # Update graphics
                 self._update_graphics()
 
@@ -249,6 +243,20 @@ class Simulator:
 
     def _update_graphics(self):
         # Does a step in graphics
+
+        # Clear pygame queue
+        events = pygame.event.get()
+        for event in events:
+
+            # Quit by 'x'
+            if event.type == pygame.QUIT:
+                self._quit.value = 1
+
+            # Resize window
+            elif event.type == pygame.VIDEORESIZE:
+                self._width = event.w
+                self._height = event.h
+                self._screen = pygame.display.set_mode((self._width, self._height), pygame.RESIZABLE)
 
         # Set default background color for sky
         glClearColor(0.65,1.0,1.0,1.0)
