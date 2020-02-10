@@ -129,6 +129,8 @@ class Mesh:
         self.model = []
         self.position = [0.,0.,0.]
         self.orientation = [0.,0.,0.,1.]
+        self.vertexshadername = vertexshadername
+        self.fragmentshadername = fragmentshadername
 
         for line in open(filename, 'r'):
             if line.startswith('#'):continue
@@ -170,15 +172,28 @@ class Mesh:
         self.texture_offset = len(self.vert_index)*12
         self.normal_offset = (self.texture_offset+len(self.text_index)*8)
 
-        self.shader = compile_shader(vertexshadername, fragmentshadername)
+        self.texture = load_texture(texturename)
+
+        self.resize(width, height)
+
+        self.set_position(self.position)
+        self.set_orientation(self.orientation)
+
+
+    def resize(self, width, height):
+        """Resizes the mesh."""
+
+        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,100000)
+
+        self.shader = compile_shader(self.vertexshadername, self.fragmentshadername)
         self.model_loc = glGetUniformLocation(self.shader, "model")
         self.view_loc = glGetUniformLocation(self.shader, "view")
         self.proj_loc = glGetUniformLocation(self.shader, "proj")
         self.orientation_loc = glGetUniformLocation(self.shader, "orientation")
 
-        self.resize(width, height)
-
-        self.texture = load_texture(texturename)
+        glUseProgram(self.shader)
+        glUniformMatrix4fv(self.proj_loc,1,GL_FALSE,self.projection_matrix)
+        glUseProgram(0)
 
         self.vao = glGenVertexArrays(1)
         glBindVertexArray(self.vao)
@@ -195,19 +210,6 @@ class Mesh:
         glVertexAttribPointer(2,3,GL_FLOAT,GL_FALSE,self.model.itemsize*3, ctypes.c_void_p(self.normal_offset))
         glEnableVertexAttribArray(2)
         glBindVertexArray(0)
-
-        self.set_position(self.position)
-        self.set_orientation(self.orientation)
-
-
-    def resize(self, width, height):
-        """Resizes the mesh."""
-
-        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,100000)
-
-        glUseProgram(self.shader)
-        glUniformMatrix4fv(self.proj_loc,1,GL_FALSE,self.projection_matrix)
-        glUseProgram(0)
 
 
     def set_position(self,position):
