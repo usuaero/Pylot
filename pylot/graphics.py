@@ -127,7 +127,7 @@ class Mesh:
         self.text_index = []
         self.norm_index = []
         self.model = []
-        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,1000000)
+        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,100000)
         self.position = [0.,0.,0.]
         self.orientation = [0.,0.,0.,1.]
 
