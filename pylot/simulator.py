@@ -258,11 +258,21 @@ class Simulator:
             if event.type == pygame.QUIT:
                 self._quit.value = 1
 
-            ## Resize window
-            #elif event.type == pygame.VIDEORESIZE:
-            #    self._width = event.w
-            #    self._height = event.h
-            #    self._screen = pygame.display.set_mode((self._width, self._height), HWSURFACE|OPENGL|DOUBLEBUF|pygame.RESIZABLE)
+            # Resize window
+            elif event.type == pygame.VIDEORESIZE:
+                self._width = event.w
+                self._height = event.h
+                self._screen = pygame.display.set_mode((self._width, self._height), HWSURFACE|OPENGL|DOUBLEBUF|pygame.RESIZABLE)
+                self._HUD.resize(self._width, self._height)
+                self._sky.resize(self._width, self._height)
+                self._aircraft_graphics.resize(self._width, self._height)
+                self._airstrip.resize(self._width, self._height)
+                self._bench.resize(self._width, self._height)
+                self._tent.resize(self._width, self._height)
+                for tree in self._trees:
+                    tree.resize(self._width, self._height)
+                for quad in self._ground_quad:
+                    quad.resize(self._width, self._height)
 
         # Check for quitting
         if self._quit.value:

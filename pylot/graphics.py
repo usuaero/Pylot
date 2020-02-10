@@ -127,7 +127,6 @@ class Mesh:
         self.text_index = []
         self.norm_index = []
         self.model = []
-        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,100000)
         self.position = [0.,0.,0.]
         self.orientation = [0.,0.,0.,1.]
 
@@ -177,9 +176,7 @@ class Mesh:
         self.proj_loc = glGetUniformLocation(self.shader, "proj")
         self.orientation_loc = glGetUniformLocation(self.shader, "orientation")
 
-        glUseProgram(self.shader)
-        glUniformMatrix4fv(self.proj_loc,1,GL_FALSE,self.projection_matrix)
-        glUseProgram(0)
+        self.resize(width, height)
 
         self.texture = load_texture(texturename)
 
@@ -201,6 +198,17 @@ class Mesh:
 
         self.set_position(self.position)
         self.set_orientation(self.orientation)
+
+
+    def resize(self, width, height):
+        """Resizes the mesh."""
+
+        self.projection_matrix = matrix44.create_perspective_projection_matrix(60.0, width/height,0.1,100000)
+
+        glUseProgram(self.shader)
+        glUniformMatrix4fv(self.proj_loc,1,GL_FALSE,self.projection_matrix)
+        glUseProgram(0)
+
 
     def set_position(self,position):
         self.position = position
@@ -267,16 +275,13 @@ class FlightData:
         self._units = unit_system
 
     def render(self, flight_data, controls):
-        #TODO add units
         #left side data
         self.text.draw(-0.9,0.90,"Airspeed")
-        self.text.draw(-0.9,0.84,str(round(flight_data["Airspeed"],1))+" fps")
         self.text.draw(-0.9,0.75,"AoA")
         self.text.draw(-0.9,0.69,str(round(flight_data["AoA"],5))+" deg")
         self.text.draw(-0.9,0.60,"Sideslip")
         self.text.draw(-0.9,0.54,str(round(flight_data["Sideslip"],5))+" deg")
         self.text.draw(-0.9,0.45,"Altitude")
-        self.text.draw(-0.9,0.39,str(round(flight_data["Altitude"],2))+" ft")
         self.text.draw(-0.9,0.30,"Latitude")
         self.text.draw(-0.9,0.24,str(round(flight_data["Latitude"],6))+" deg")
         self.text.draw(-0.9,0.15,"Longitude")
@@ -288,7 +293,6 @@ class FlightData:
         self.text.draw(-0.9,-0.30,"Heading")
         self.text.draw(-0.9,-0.36,str(round(flight_data["Heading"],2))+" deg")
         self.text.draw(-0.9,-0.45,"Gnd Speed")
-        self.text.draw(-0.9,-0.51,str(round(flight_data["Gnd Speed"],1))+" mph")
         self.text.draw(-0.9,-0.60,"Gnd Track")
         self.text.draw(-0.9,-0.66,str(round(flight_data["Gnd Track"],2))+" deg")
         self.text.draw(-0.9,-0.75,"Climb")
@@ -311,6 +315,16 @@ class FlightData:
         self.text.draw(0.7,-0.75,"Time")
         self.text.draw(0.7,-0.81,str(round(flight_data["Time"],1))+" sec")
 
+        # Unit system dependent
+        if self._units == "English":
+            self.text.draw(-0.9,0.84,str(round(flight_data["Airspeed"],1))+" fps")
+            self.text.draw(-0.9,-0.51,str(round(flight_data["Gnd Speed"],1))+" mph")
+            self.text.draw(-0.9,0.39,str(round(flight_data["Altitude"],2))+" ft")
+        else:
+            self.text.draw(-0.9,0.84,str(round(flight_data["Airspeed"],1))+" mps")
+            self.text.draw(-0.9,-0.51,str(round(flight_data["Gnd Speed"],1))+" kph")
+            self.text.draw(-0.9,0.39,str(round(flight_data["Altitude"],2))+" m")
+
         # Control settings
         control_names = list(controls.keys())
         for i, name in enumerate(control_names):
@@ -324,12 +338,13 @@ class FlightData:
         self.text.draw(-0.6,-0.75,"Physics Time Step: " +str(round(flight_data["Physics Time Step"],6))+" sec")
 
 class HeadsUp:
-    def __init__(self,width, height, objects_path, shaders_path, textures_path, screen):
+    def __init__(self, width, height, objects_path, shaders_path, textures_path, screen):
         #initialize HUD objects
         self.view = np.identity(4)
         self.screen = screen
         self.width = width
         self.height = height
+        self.shaders_path = shaders_path
 
         #initialize pitch ladder
         self.ladder = Mesh(os.path.join(objects_path, "ladder.obj"),
@@ -387,11 +402,23 @@ class HeadsUp:
             width,height)
         self.alt.set_view(self.view)
 
-        #initialize viewports for HUD objects
-        self.viewport = Frame(0.75,0.75,width,height,[0.,0.,-1.], shaders_path)
-        self.speed_viewport = Frame(1.25,0.3,width,height,[0.,0.,-1.], shaders_path)
-        self.bank_viewport = Frame(0.5,0.125,width, height,[0.,0.26,-1.], shaders_path)
+        self.resize(width, height)
 
+
+    def resize(self, width, height):
+        """Resizes the HUD."""
+        self.width = width
+        self.height = height
+        self.ladder.resize(width, height)
+        self.bank.resize(width, height)
+        self.speed.resize(width, height)
+        self.alt.resize(width, height)
+        self.compass.resize(width, height)
+
+        #initialize viewports for HUD objects
+        self.viewport = Frame(0.75,0.75,width,height,[0.,0.,-1.], self.shaders_path)
+        self.speed_viewport = Frame(1.25,0.3,width,height,[0.,0.,-1.], self.shaders_path)
+        self.bank_viewport = Frame(0.5,0.125,width, height,[0.,0.26,-1.], self.shaders_path)
 
         #change HUD matrices to fit in center_viewport
         self.compass.change_projection_matrix(60,self.viewport.external_aspect_ratio,0.1,10)
