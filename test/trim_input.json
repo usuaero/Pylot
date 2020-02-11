@@ -3,7 +3,8 @@
     "simulation" : {
         "real_time" : true,
         "enable_graphics" : true,
-        "target_framerate" : 30
+        "target_framerate" : 30,
+        "screen_resolution" : [1000, 1000]
     },
     "units" : "English",
     "atmosphere" : {

@@ -76,6 +76,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>
 >>**"enable_interface" : boolean, optional**
 >>>Whether to allow the user to affect the simulation during execution (pause, quit, toggle views). Defaults to the same value as "enable_graphics".
+>>
+>>**"screen_resolution" : list, optional**
+>>>Desired resolution of the simulator window in pixels. Defaults to [1800, 900].
 >
 >**"units" : string, optional**
 >>Specifies the unit system to be used for inputs and outputs. Can be "SI" or "English". Any units not explicitly defined for each value in the input objects will be assumed to be the default unit for that measurement in the system specified here. Defaults to "English".
