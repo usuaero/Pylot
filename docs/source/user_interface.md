@@ -3,6 +3,8 @@ Pylot is run from the command line using the "-m" option. For example
 
     $ python -m pylot example_input.json
 
+The `-m` argument tells Python to run the Pylot module. The JSON file specified here should be the simulation [input file](creating_input_files).
+
 ## Controlling the Aircraft
 The aircraft can be controlled in real-time using either a joystick or the keyboard. This is specified in the [input file](creating_input_files). Please note that the specific function of the keyboard/joystick inputs is determined by how the input files are configured. The mapping from the input axes or channels to the aircraft controls is up to the user.
 

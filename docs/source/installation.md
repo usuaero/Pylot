@@ -36,4 +36,4 @@ Once you have the source code downloaded, navigate to the root (Pylot/) director
 Please note that any time you update the source code (e.g. after executing a git pull), Pylot will need to be reinstalled by executing the above command.
 
 ### FreeCAD
-Pylot will use the FreeCAD Python libraries to generate graphics objects from MachUpX (see more under "graphics" in [Creating Input Files](creating_input_files). Instructions for installing FreeCAD can be found in the [MachUpX documentation](https://machupx.readthedocs.io/en/latest/installation.html#freecad-for-exporting-step-files). This is only necessary if you intend to use MachUpX for generating graphics.
+Pylot will use the FreeCAD Python libraries to generate graphics objects from MachUpX (see more under "graphics" in [Creating Input Files](creating_input_files)). Instructions for installing FreeCAD can be found in the [MachUpX documentation](https://machupx.readthedocs.io/en/latest/installation.html#freecad-for-exporting-step-files). This is only necessary if you intend to use MachUpX for generating graphics.
