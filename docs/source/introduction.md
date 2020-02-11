@@ -10,3 +10,5 @@ Welcome to Pylot! Pylot is a fast, customizable flight simulator designed for ac
 In this documentation, you'll find information for creating airplane models, defining inputs, and interacting with the simulator.
 
 Please note that our physics engine does not currently support interations with the ground/solid objects (i.e. trees). We hope to include this functionality in a soon-to-be-released update for Pylot. Until then, you'll have to plan on staying in the air.
+
+There are couple known issues with Pylot which we are working to correct. If you run into any issues, please submit a bug report on GitHub.
