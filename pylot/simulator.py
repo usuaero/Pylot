@@ -89,7 +89,7 @@ class Simulator:
         glClearColor(0.,0.,0.,1.0)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
         loading = Text(150)
-        loading.draw(-0.2,-0.05,"Loading...",(0,255,0,1))
+        loading.draw(-(450/self._width),-0.05,"Loading...",(0,255,0,1))
         pygame.display.flip()
 
         # Initialize game over screen
@@ -169,10 +169,7 @@ class Simulator:
         # Sets up the pygame window
 
         # Get monitor size
-        display_info = pygame.display.Info()
-        monitor_height = display_info.current_h
-        self._width = int(1.3*monitor_height)
-        self._height = int(0.8*monitor_height)
+        self._width, self._height = self._input_dict["simulation"].get("screen_resolution", [1800, 900])
 
         # Initialize window
         pygame.display.set_icon(pygame.image.load(os.path.join(self._textures_path, 'gameicon.jpg')))
@@ -260,6 +257,7 @@ class Simulator:
                 self._quit.value = 1
 
             ## Resize window
+            # I can't get this working. Feel free to try yourself.
             #elif event.type == pygame.VIDEORESIZE:
             #    self._width = event.w
             #    self._height = event.h
@@ -300,11 +298,11 @@ class Simulator:
 
         # Check for crashing into the ground
         if y[8] > 0.0:
-            glClearColor(0,0,0,1.0)
-            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
 
             # Display Game Over screen and quit physics
-            self._gameover.draw(-0.2,-0.05,"Game Over",(0,255,0,1))
+            glClearColor(0,0,0,1.0)
+            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
+            self._gameover.draw(-(450/self._width),-0.05,"Game Over",(0,255,0,1))
             self._quit.value = 1
 	
         # Otherwise, render graphics
