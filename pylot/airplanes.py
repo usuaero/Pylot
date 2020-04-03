@@ -756,7 +756,7 @@ class LinearizedAirplane(BaseAircraft):
 
         # Get path to graphics objects
         self._pylot_path = os.path.dirname(__file__)
-        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
+        self._graphics_path = os.path.join(self._pylot_path, "graphics")
         self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
         self._textures_path = os.path.join(self._graphics_path, "textures")
@@ -1032,7 +1032,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Get path to graphics objects
         self._pylot_path = os.path.dirname(__file__)
-        self._graphics_path = os.path.join(self._pylot_path,os.path.pardir,"graphics")
+        self._graphics_path = os.path.join(self._pylot_path, "graphics")
         self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
         self._textures_path = os.path.join(self._graphics_path, "textures")
