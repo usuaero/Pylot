@@ -159,11 +159,10 @@ class Simulator:
         # Gets the absolute paths to the graphics files
 
         self._pylot_path = os.path.dirname(__file__)
-        self._graphics_path = os.path.join(self._pylot_path, os.path.pardir, "graphics")
+        self._graphics_path = os.path.join(self._pylot_path, "graphics")
         self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
         self._textures_path = os.path.join(self._graphics_path, "textures")
-        print(self._textures_path)
 
 
     def _initialize_game_window(self):

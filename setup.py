@@ -12,6 +12,7 @@ setup(name = 'Pylot',
     author_email = 'doug.hunsaker@usu.edu',
     install_requires = ['pygame', 'pyrr', 'PyOpenGL_accelerate', 'PyOpenGL', 'numpy', 'scipy', 'pytest', 'matplotlib', 'pynput', 'inputs'],
     python_requires ='>=3.6.0',
+    include_package_data=True,
     license = 'MIT',
     packages = ['pylot'],
     zip_safe = False)
