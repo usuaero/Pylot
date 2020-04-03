@@ -163,6 +163,7 @@ class Simulator:
         self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
         self._textures_path = os.path.join(self._graphics_path, "textures")
+        print(self._textures_path)
 
 
     def _initialize_game_window(self):
