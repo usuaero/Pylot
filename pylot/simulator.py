@@ -85,24 +85,20 @@ class Simulator:
         # Get target framerate
         self._target_framerate = self._input_dict["simulation"].get("target_framerate", 30)
 
-        # Render loading screen
-        glClearColor(0.,0.,0.,1.0)
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
-        loading = Text(150)
-        loading.draw(-(450/self._width),-0.05,"Loading...",(0,255,0,1))
-        pygame.display.flip()
-
         # Initialize game over screen
         self._gameover = Text(150)
 
         # Initialize HUD
+        self._render_loading_message('HUD')
         self._HUD = HeadsUp(self._width, self._height, self._objects_path, self._shaders_path, self._textures_path, self._screen)
 
         # Initialize flight data overlay
+        self._render_loading_message('data overlay')
         self._data = FlightData(self._units)
         self._stall_warning = Text(100)
 
         # Initialize ground
+        self._render_loading_message('terrain')
         self._ground_quad = []
         self._quad_size = 20000
         self._ground_positions = [[0., 0., 0.],
@@ -117,12 +113,13 @@ class Simulator:
             self._ground_quad.append(self._create_mesh("field.obj", "field.vs", "field.fs", "field_texture.jpg", self._ground_positions[i], ground_orientations[i]))
 
         # Initialize scenery
-        try:
-            self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
-        except:
+        self._render_loading_message('scenery')
+        #try: # The full resolution sky hay be too much for some machines...
+        #    self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        if True:#except:
             self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds_low_res.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
         self._airstrip = self._create_mesh("airstrip.obj", "field.vs", "field.fs", "landing.jpg", [0.0, 0.0, -1.0], [1.0, 0.0, 0.0, 0.0])
-        self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "Tent.jpeg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "tent.jpg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
         self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [10.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
         self._trees = []
         for i in range(10):
@@ -132,6 +129,7 @@ class Simulator:
             self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", pos, [1.0, 0.0, 0.0, 0.0]))
 
         # Initialize camera object
+        self._render_loading_message('camera')
         self._cam = Camera()
 
         # Clock object for tracking frames and timestep
@@ -139,6 +137,15 @@ class Simulator:
 
         # Ticks clock before starting game loop
         self._clock.tick_busy_loop()
+
+
+    def _render_loading_message(self, msg):
+        # Render loading screen
+        glClearColor(0.,0.,0.,1.0)
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
+        loading = Text(150)
+        loading.draw(-(600/self._width),-0.05,"Loading {0}...".format(msg),(0,255,0,1))
+        pygame.display.flip()
 
 
     def _create_mesh(self, obj, vs, fs, texture, position, orientation):
@@ -159,7 +166,7 @@ class Simulator:
         # Gets the absolute paths to the graphics files
 
         self._pylot_path = os.path.dirname(__file__)
-        self._graphics_path = os.path.join(self._pylot_path, os.path.pardir, "graphics")
+        self._graphics_path = os.path.join(self._pylot_path, "graphics")
         self._objects_path = os.path.join(self._graphics_path, "objects")
         self._shaders_path = os.path.join(self._graphics_path, "shaders")
         self._textures_path = os.path.join(self._graphics_path, "textures")
