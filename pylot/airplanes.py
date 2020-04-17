@@ -89,7 +89,7 @@ class BaseAircraft:
 
         # Get stall angle of attack
         self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
-        self._beta_stall = m.radians(self._input_dict["aero_model"].get("stall_sideslip_angle", 1000.0))
+        self._beta_stall = m.radians(self._input_dict["aero_model"].get("stall_sideslip_angle", 200.0))
 
 
     def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
