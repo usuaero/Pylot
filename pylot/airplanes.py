@@ -89,6 +89,7 @@ class BaseAircraft:
 
         # Get stall angle of attack
         self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
+        self._beta_stall = m.radians(self._input_dict["aero_model"].get("stall_sideslip_angle", 1000.0))
 
 
     def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
@@ -159,7 +160,7 @@ class BaseAircraft:
 
         # Blending functions
         lon_stall_weight = 1/(1+m.exp(-k*(-self._alpha_stall-alpha)))+1/(1+m.exp(-k*(alpha-self._alpha_stall)))
-        lat_stall_weight = 1/(1+m.exp(-k*(-self._alpha_stall-beta)))+1/(1+m.exp(-k*(beta-self._alpha_stall)))
+        lat_stall_weight = 1/(1+m.exp(-k*(-self._beta_stall-beta)))+1/(1+m.exp(-k*(beta-self._beta_stall)))
 
         # Blend
         CL = CL*(1-lon_stall_weight)+CL_stall*lon_stall_weight

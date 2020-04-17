@@ -314,6 +314,9 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>
 >>**"stall_angle_of_attack" : float, optional**
 >>>Angle of attack in degrees at which the flight surfaces stall. At this angle of attack, the aerodynamics will transition to a flat-plate model. This is not meant to be accurate for the specific airframe being modelled, but rather to give the user a sense of the onset of stall. Defaults to 15.
+>>
+>>**"stall_sideslip_angle" : float, optional**
+>>>Sideslip angle in degrees at which the flight surfaces stall. At this angle of attack, the aerodynamics will transition to a flat-plate model. This is not meant to be accurate for the specific airframe being modelled, but rather to give the user a sense of the onset of stall. Defaults to 1000 (no stall).
 
 At this point, the structure of the airplane object for the two types of aerodynamic models diverges.
 
