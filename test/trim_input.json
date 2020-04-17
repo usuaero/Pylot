@@ -3,8 +3,7 @@
     "simulation" : {
         "real_time" : true,
         "enable_graphics" : true,
-        "target_framerate" : 30,
-        "screen_resolution" : [1000, 1000]
+        "target_framerate" : 30
     },
     "units" : "English",
     "atmosphere" : {
@@ -15,12 +14,12 @@
         "file" : "test/airplane.json",
         "trim" : {
             "airspeed" : 175,
-            "position" : [0.0, 0.0, -500.0],
-            "climb_angle" : 5.0,
-            "bank_angle" : 20.0,
+            "position" : [-100.0, 0.0, -5.0],
+            "climb_angle" : 0.0,
+            "bank_angle" : 0.0,
             "heading" : 0.0,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
         },
-        "controller" : "keyboard"
+        "controller" : "joystick"
     }
 }
