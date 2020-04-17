@@ -1,0 +1,7 @@
+include pylot/graphics/Cessna/*.stl
+include pylot/graphics/Cessna/*.blend
+include pylot/graphics/Cessna/*.blend1
+include pylot/graphics/objects/*.obj
+include pylot/graphics/shaders/*.vs
+include pylot/graphics/shaders/*.fs
+include pylot/graphics/textures/*.jpg
