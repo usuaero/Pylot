@@ -52,6 +52,11 @@
             "control" : "throttle",
             "CD" : 0.2,
             "area" : 5.0
+        },
+        "camera_pos" : {
+            "position" : [0.0, 10.0, 1.0],
+            "CD" : 0.2,
+            "area" : 2.0
         }
     },
     "aero_model" : {
