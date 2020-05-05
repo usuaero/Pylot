@@ -44,12 +44,14 @@
     },
     "engines" : {
         "engine0" : {
-            "offset" : [0.0, 0.0, -1.0],
+            "position" : [0.0, 0.0, -1.0],
             "T0" : 1500,
             "T1" : -3.5,
             "T2" : -0.0022,
             "a" : 1.0,
-            "control" : "throttle"
+            "control" : "throttle",
+            "CD" : 0.2,
+            "area" : 5.0
         }
     },
     "aero_model" : {

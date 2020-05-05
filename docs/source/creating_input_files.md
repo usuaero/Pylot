@@ -256,14 +256,14 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is always the time index (i.e. the first column after the time indices is denoted 1). Only required if a time sequence control input is used.
 >
 >**"engines" : dict, optional**
->>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated.
+>>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated. can also be used to simulate external stores and nacelles.
 >>
 >>**"<ENGINE_NAME>" : dict**
 >>>Describes a single engine. The thrust produced is assumed to be modelled by the function
 >>>
 >>>>T = t\*(d/d0)^a\*(T0+T1\*V+T2\*V^2)
 >>>
->>>where T is the thrust, t is the control setting, d is the air density at the current altitude, d0 is the air density at sea level, V is the airspeed, and a, T0, T1, and T2 are engine-specific parameters.
+>>>where T is the thrust, t is the control setting, d is the air density at the current altitude, d0 is the air density at sea level, V is the airspeed, and a, T0, T1, and T2 are engine-specific parameters. This object can also be used to simulate the effect of nacelles and external stores, simply by specifying a drag coefficient and reference area, but not thrust parameters.
 >>>
 >>>**"postision" : vector, optional**
 >>>>Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
@@ -271,8 +271,8 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>**"direction" : vector, optional**
 >>>>Direction of the thrust force vector exerted by the engine on the aircraft in body-fixed coordinates. Defaults to [1.0, 0.0, 0.0].
 >>>
->>>**"T0" : float**
->>>>Corresponds to T0 in the above thrust equation. Represents full-throttle, static thrust.
+>>>**"T0" : float, optional**
+>>>>Corresponds to T0 in the above thrust equation. Represents full-throttle, static thrust. Defaults to 0.0.
 >>>
 >>>**"T1" : float, optional**
 >>>>Corresponds to T1 in the above thrust equation. Represents the linear change in thrust produced due to airspeed for the same throttle setting and density. This value is typically negative. Defaults to 0.0.
@@ -285,6 +285,12 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>
 >>>**"control" : string or int, optional**
 >>>>Name of the control which governs the throttle setting for this engine. If the default joystick/keyboard is used, all engines are governed by the throttle control and this parameter is ignored. If a user-defined controller is used, this is the name of the control setting for this engine given by the controller. If a time-sequence control file is used, this is the column index of the control setting for this engine (as with "input_index" above).
+>>>
+>>>**"CD" : float, optional**
+>>>>Coefficient of drag for the powerplant. Defaults to 0.0.
+>>>
+>>>**"area" : float, optional**
+>>>>Reference area for redimensionalizing the drag coefficient. Defaults to 1.0.
 >
 >**"graphics" : dict, optional**
 >>Optionally provides graphics objects for rendering the aircraft in the simulator. If nothing is specified here, the aircraft will be rendered as a single-engine Cessna, unless the MachUpX aerodynamic model is being used.

@@ -706,6 +706,7 @@ class LinearizedAirplane(BaseAircraft):
         p_bar = self._bw*p*const
         q_bar = self._cw*q*const
         r_bar = self._bw*r*const
+        u_inf = self.y[0:3]*V_inv
 
         # Get redimensionalizer
         redim = 0.5*rho*V*V*self._Sw
@@ -747,7 +748,7 @@ class LinearizedAirplane(BaseAircraft):
 
         # Get effect of engines
         for engine in self._engines:
-            FM += engine.get_thrust_FM(self._controls, rho, V)
+            FM += engine.get_thrust_FM(self._controls, rho, u_inf, V)
 
         return FM
 
@@ -985,6 +986,7 @@ class MachUpXAirplane(BaseAircraft):
         C_B = m.cos(B)
         V = m.sqrt(u*u+v*v+w*w)
         redim = 0.5*rho*V*V*self._Sw
+        u_inf = self.y[0:3]/V
 
         # Get MachUpX predicted coefficients
         coef_dict = self._mx_scene.solve_forces(dimensional=False)[self.name]["total"]
@@ -1008,7 +1010,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Get effect of engines
         for engine in self._engines:
-            FM += engine.get_thrust_FM(self._controls, rho, V)
+            FM += engine.get_thrust_FM(self._controls, rho, u_inf, V)
 
         return FM
 
