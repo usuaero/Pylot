@@ -265,7 +265,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>
 >>>where T is the thrust, t is the control setting, d is the air density at the current altitude, d0 is the air density at sea level, V is the airspeed, and a, T0, T1, and T2 are engine-specific parameters.
 >>>
->>>**"offset" : vector, optional**
+>>>**"postision" : vector, optional**
 >>>>Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
 >>>
 >>>**"direction" : vector, optional**

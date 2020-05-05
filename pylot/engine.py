@@ -33,7 +33,7 @@ class Engine:
         # Store parameters
         self._name = name
         self._units = kwargs.get("units")
-        self._offset = import_value("offset", kwargs, self._units, [0.0, 0.0, 0.0])
+        self._position = import_value("position", kwargs, self._units, [0.0, 0.0, 0.0])
         self._direction = import_value("direction", kwargs, self._units, [1.0, 0.0, 0.0])
         self._T0 = import_value("T0", kwargs, self._units, None)
         self._T1 = import_value("T1", kwargs, self._units, None)
@@ -83,7 +83,7 @@ class Engine:
         FM[:3] = T*self._direction
 
         # Set moments
-        FM[3:] = np.cross(self._offset, FM[:3])
+        FM[3:] = np.cross(self._position, FM[:3])
 
         return FM
 
@@ -91,7 +91,7 @@ class Engine:
     def get_unit_thrust_moment(self):
         """Returns the thrust moment vector assuming a thrust magnitude of unity.
         """
-        return np.cross(self._offset, self._direction)
+        return np.cross(self._position, self._direction)
 
 
     def get_thrust_deriv(self, control, rho, V):
@@ -107,6 +107,6 @@ class Engine:
         """Returns the derivative of the thrust moment with respect to the given control.
         """
         if control == self._control:
-            return np.cross(self._offset, self._direction*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V))
+            return np.cross(self._position, self._direction*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V))
         else:
             return np.zeros(3)

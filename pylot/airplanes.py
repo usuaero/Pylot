@@ -805,7 +805,6 @@ class MachUpXAirplane(BaseAircraft):
                     name : {
                         "file" : param_dict["file"],
                         "state" : {
-                            "type" : "aerodynamic",
                             "position" : [0.0, 0.0, 0.0],
                             "velocity" : 100 # These are arbitrary, as the first call to get_FM() will set the actual state
                         }
@@ -863,24 +862,16 @@ class MachUpXAirplane(BaseAircraft):
             header.append("{0:>20}".format("Elevation [deg]"))
             print("".join(header))
 
-        # Optimizer options
+        # Solve for trim
         trim_val_guess = np.zeros(6)
-        control_lims = self._controller.get_limits()
-        if control_lims is not None:
-            bounds = [(-np.inf, np.inf), (-np.inf, np.inf)]
-            for name in self._avail_controls:
-                bounds.append(control_lims[name])
-            bounds = tuple(bounds)
-        else:
-            bounds = None
-        opt_method = "L-BFGS-B"
-        optimizer_options = {
-            "ftol" : 1e-22
-        }
+        x, info_dict, ier, mesg = opt.fsolve(self._trim_residual_function, trim_val_guess, full_output=True)
+        trim_settings = x
 
-        # Optimize
-        result = opt.minimize(self._trim_minimizer_function, trim_val_guess, method=opt_method, bounds=bounds, options=optimizer_options)
-        trim_settings = result.x
+        # Output results of trim
+        if self._trim_verbose:
+            if ier != 1:
+                print("No trim solution found. Scipy returned '{0}'.".format(mesg))
+            print("\nFinal trim residuals: {0}".format(info_dict["fvec"]))
 
         # Parse trimmed state
         alpha = trim_settings[0]
@@ -889,16 +880,11 @@ class MachUpXAirplane(BaseAircraft):
         for i, name in enumerate(self._avail_controls):
             controls[name] = trim_settings[i+2]
 
-        # Output results of trim
-        if self._trim_verbose:
-            print("\nFinal trim residuals: {0}".format(self.dy_dt(0.0)[:6]))
-            print("\nFinal trim scalar: {0}".format(result.fun))
-
         # Set state
         self._set_state_in_coordinated_turn(alpha, beta, controls)
 
 
-    def _trim_minimizer_function(self, trim_vals):
+    def _trim_residual_function(self, trim_vals):
         # Returns the trim residuals as a function of the control inputs
 
         # Unpack args
@@ -920,7 +906,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Get residuals
         dy_dt = self.dy_dt(0.0)
-        return np.sum(dy_dt[:6]*dy_dt[:6])
+        return dy_dt[:6]
 
 
     def _set_state_in_coordinated_turn(self, alpha, beta, controls):
@@ -968,8 +954,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Set MachUpX state
         mx_state = {
-            "type" : "aerodynamic",
-            "position" : [0.0, 0.0, self.y[8]],
+            "position" : list(self.y[6:9]),
             "velocity" : list(self.y[0:3]),
             "orientation" : list(self.y[9:]),
             "angular_rates" : list(self.y[3:6])
@@ -1058,7 +1043,7 @@ class MachUpXAirplane(BaseAircraft):
                 # Create stl using MachUpX
                 stl_file = "airplane.stl"
                 obj_file = "airplane.obj"
-                self._mx_scene.export_stl(stl_file, section_resolution=50, aircraft=self.name)
+                self._mx_scene.export_stl(filename=stl_file, section_resolution=50, aircraft=self.name)
                 
                 # Convert to obj
                 Mesh.open(stl_file)
