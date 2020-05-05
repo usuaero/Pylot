@@ -334,17 +334,20 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>
 >>q = 0.5\*rho\*V^2
 >>
->>**"CD" : float**
->>>Drag coefficient.
+>>**"CD_ref" : float**
+>>>Drag coefficient at the reference condition.
 >>
 >>**"CL,a" : float**
 >>>Lift slope.
 >>
->>**"CD,a" : float**
->>>First derivative of drag coefficient with respect to angle of attack.
+>>**"CD0" : float**
+>>>Drag coefficient at zero-lift
 >>
->>**"CD,a,a" : float**
->>>Second derivative of drag coefficient with respect to angle of attack.
+>>**"CD1" : float**
+>>>Linear coefficient of quadratic drag polar with respect to lift (i.e. CD=CD0+CD1\*CL+CD2\*CL\*CL).
+>>
+>>**"CD2" : float**
+>>>Quadratic coefficient of quadratic drag polar with respect to lift (i.e. CD=CD0+CD1\*CL+CD2\*CL\*CL).
 >>
 >>**"CD3" : float**
 >>>Sets the proportionality of drag coefficient to the sideforce coefficient squared.
