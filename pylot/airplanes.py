@@ -375,14 +375,9 @@ class LinearizedAirplane(BaseAircraft):
         L_ref = import_value("lift", self._input_dict["reference"], self._units, None)
         self._CL_ref = L_ref/(0.5*rho_ref*V_ref*V_ref*self._Sw)
 
-        # Determine drag polar
-        self._CD2 = self._CD_a2/(2*self._CL_a*self._CL_a)
-        self._CD1 = self._CD_a/self._CL_a-2*self._CD2*self._CL_ref
-        self._CD0 = self._CD-self._CD1*self._CL_ref-self._CD2*self._CL_ref*self._CL_ref
-
         # Determine reference aerodynamic moments
         # This assumes thrust is evenly distributed among all engines
-        engine_CT = self._CD/self._num_engines
+        engine_CT = self._CD_ref/self._num_engines
         engine_CM = np.zeros(3)
         for engine in self._engines:
             engine_CM += engine.get_unit_thrust_moment()*engine_CT
@@ -395,9 +390,10 @@ class LinearizedAirplane(BaseAircraft):
     def _import_coefficients(self):
         # Reads aerodynamic coefficients and derivatives in from input file
         self._CL_a = self._input_dict["coefficients"]["CL,a"]
-        self._CD = self._input_dict["coefficients"]["CD"]
-        self._CD_a = self._input_dict["coefficients"]["CD,a"]
-        self._CD_a2 = self._input_dict["coefficients"]["CD,a,a"]
+        self._CD_ref = self._input_dict["coefficients"]["CD_ref"]
+        self._CD0 = self._input_dict["coefficients"]["CD0"]
+        self._CD1 = self._input_dict["coefficients"]["CD1"]
+        self._CD2 = self._input_dict["coefficients"]["CD2"]
         self._CD3 = self._input_dict["coefficients"]["CD3"]
         self._Cm_a = self._input_dict["coefficients"]["Cm,a"]
         self._CY_b = self._input_dict["coefficients"]["CY,b"]
