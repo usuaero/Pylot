@@ -41,7 +41,7 @@ class Engine:
         self._units = kwargs.get("units")
         self._position = import_value("position", kwargs, self._units, [0.0, 0.0, 0.0])
         self._direction = import_value("direction", kwargs, self._units, [1.0, 0.0, 0.0])
-        self._T0 = import_value("T0", kwargs, self._units, None)
+        self._T0 = import_value("T0", kwargs, self._units, 0.0)
         self._T1 = import_value("T1", kwargs, self._units, 0.0)
         self._T2 = import_value("T2", kwargs, self._units, 0.0)
         self._a = import_value("a", kwargs, self._units, 1.0)
