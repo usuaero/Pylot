@@ -24,6 +24,12 @@ class Engine:
     control : str
         Name of the control that sets the throttle for this engine. Defaults to "throttle".
 
+    CD : float, optional
+        Coefficient of drag for the powerplant. Defaults to 0.0.
+
+    area : float, optional
+        Reference area for redimensionalizing the drag coefficient. Defaults to 1.0.
+
     units : str
         Unit system used for the engine.
     """
@@ -36,10 +42,12 @@ class Engine:
         self._position = import_value("position", kwargs, self._units, [0.0, 0.0, 0.0])
         self._direction = import_value("direction", kwargs, self._units, [1.0, 0.0, 0.0])
         self._T0 = import_value("T0", kwargs, self._units, None)
-        self._T1 = import_value("T1", kwargs, self._units, None)
-        self._T2 = import_value("T2", kwargs, self._units, None)
-        self._a = import_value("a", kwargs, self._units, None)
+        self._T1 = import_value("T1", kwargs, self._units, 0.0)
+        self._T2 = import_value("T2", kwargs, self._units, 0.0)
+        self._a = import_value("a", kwargs, self._units, 1.0)
         self._control = kwargs.get("control", "throttle")
+        self._ref_area = import_value("area", kwargs, self._units, 1.0)
+        self._CD = import_value("CD", kwargs, self._units, 0.0)
 
         # Normalize direction vector
         self._direction /= np.linalg.norm(self._direction)
@@ -51,7 +59,7 @@ class Engine:
             self._rho0 = statsi(0)[-1]
 
 
-    def get_thrust_FM(self, controls, rho, V):
+    def get_thrust_FM(self, controls, rho, u_inf, V):
         """Returns the forces and moments due to thrust from this engine.
 
         Parameters
@@ -61,6 +69,9 @@ class Engine:
 
         rho : float
             Air density.
+
+        u_inf : ndarray
+            Freestream direction vector.
 
         V : float
             Airspeed.
@@ -79,11 +90,15 @@ class Engine:
         # Calculate thrust magnitude
         T = tau*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V)
 
+        # Calculate drag
+        D = -0.5*rho*V*V*self._ref_area*self._CD*u_inf
+
         # Set thrust vector
-        FM[:3] = T*self._direction
+        F = T*self._direction+D
+        FM[:3] = F
 
         # Set moments
-        FM[3:] = np.cross(self._position, FM[:3])
+        FM[3:] = np.cross(self._position, F)
 
         return FM
 
