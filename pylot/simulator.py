@@ -117,6 +117,8 @@ class Simulator:
 
         # Initialize scenery
         if not self._simple_graphics:
+
+            # Load various scenery
             self._render_loading_message('sky')
             self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds_low_res.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
             self._render_loading_message('airstrip')
@@ -125,12 +127,24 @@ class Simulator:
             self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "tent.jpg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
             self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [10.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
             self._render_loading_message('trees')
+
+            # Load trees
             self._trees = []
             for i in range(10):
                 theta = np.random.rand(1)*2*np.pi
                 rho = np.random.rand(1)*70+30
                 pos = [rho*np.cos(theta), rho*np.sin(theta), 0.0]
                 self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", pos, [1.0, 0.0, 0.0, 0.0]))
+
+            # Initialize fog
+            self._render_loading_message('fog')
+            glFogi(GL_FOG_MODE, GL_LINEAR)
+            glFogfv(GL_FOG_COLOR, [0.5, 0.5, 0.5, 1.0])
+            glFogf(GL_FOG_DENSITY, 0.05)
+            glHint(GL_FOG_HINT, GL_DONT_CARE)
+            glFogf(GL_FOG_START, 0.0)
+            glFogf(GL_FOG_END, 5.0)
+            glEnable(GL_FOG)
 
         # Initialize camera object
         self._render_loading_message('camera')
