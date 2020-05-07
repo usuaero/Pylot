@@ -965,10 +965,10 @@ class MachUpXAirplane(BaseAircraft):
             "orientation" : list(self.y[9:]),
             "angular_rates" : list(self.y[3:6])
         }
-        self._mx_scene.set_aircraft_state(state=mx_state, aircraft_name=self.name)
+        self._mx_scene.set_aircraft_state(state=mx_state, aircraft=self.name)
 
         # Update controls
-        self._mx_scene.set_aircraft_control_state(control_state=self._controls, aircraft_name=self.name)
+        self._mx_scene.set_aircraft_control_state(control_state=self._controls, aircraft=self.name)
 
 
     def get_FM(self, t):
@@ -1047,10 +1047,17 @@ class MachUpXAirplane(BaseAircraft):
                 import FreeCAD
                 import Mesh
 
-                # Create stl using MachUpX
+                # Create stl using MachUpX (involves temporarily resetting the state)
                 stl_file = "airplane.stl"
                 obj_file = "airplane.obj"
+                reset_state = {
+                    "position" : [0.0, 0.0, 0.0],
+                    "velocity" : [10.0, 0.0, 0.0],
+                    "orientation" : [1.0, 0.0, 0.0, 0.0]
+                }
+                self._mx_scene.set_aircraft_state(state=reset_state, aircraft=self.name)
                 self._mx_scene.export_stl(filename=stl_file, section_resolution=50, aircraft=self.name)
+                self._update_machupx_state()
                 
                 # Convert to obj
                 Mesh.open(stl_file)
