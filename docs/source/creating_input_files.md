@@ -330,15 +330,23 @@ At this point, the structure of the airplane object for the two types of aerodyn
 As mentioned above, this model relies on a set of equations given by Phillips. The inputs to this set of equations are the aerodynamic coefficients described below. These are all contained within a key called "coefficients".
 
 >**"coefficients" : dict**
->>Aerodynamic coefficients and dreivatives describing the behavior of the aircraft at small perturbations from the given reference state. Note that damping derivatives are defined relative to the body-fixed axes, rather than stability axes. All coefficients use the traditional definition of dynamic pressure:
+>>Aerodynamic coefficients and dreivatives describing the behavior of the aircraft at small perturbations from the given reference state. Note that aerodymanic moments and damping derivatives are defined relative to the body-fixed axes, rather than stability axes. All coefficients use the traditional definition of dynamic pressure:
 >>
 >>q = 0.5\*rho\*V^2
 >>
->>**"CD_ref" : float**
->>>Drag coefficient at the reference condition.
+>>For a full explanation and derivation of the aerodynamic model used here, see Hunsaker and Thurgood, "Aerodynamic Model and Trim Algorithm for Fixed-Wing Aircraft", *AIAA SciTech Conference*, 2021 (not yet published).
+>>
+>>**"CL0" : float**
+>>>Lift coefficient at zero angle of attack, sideslip, angular rates, and control deflections.
 >>
 >>**"CL,a" : float**
 >>>Lift slope.
+>>
+>>**"CL,a_hat" : float**
+>>>Derivative of lift with respect to vertical acceleration.
+>>
+>>**"CL,q" : float**
+>>>Derivative of lift coefficient with respect to pitching rate.
 >>
 >>**"CD0" : float**
 >>>Drag coefficient at zero-lift
@@ -352,41 +360,56 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"CD3" : float**
 >>>Sets the proportionality of drag coefficient to the sideforce coefficient squared.
 >>
->>**"Cm,a" : float**
->>>Pitching moment slope.
+>>**"CD,q" : float**
+>>>Derivative of drag coefficient with respect to pitching rate.
 >>
->>**"CY,b" : float**
->>>Derivative of body-y force coefficient with respect to sideslip angle.
+>>**"CD,a_hat" : float**
+>>>Derivative of drag coefficient with respect to vertical acceleration.
+>>
+>>**"CS,b" : float**
+>>>Derivative of sideforce coefficient with respect to sideslip angle.
+>>
+>>**"CS,b_hat" : float**
+>>>Derivative of sideforce coefficient with respect to lateral acceleration.
+>>
+>>**"CS,p" : float**
+>>>Derivative of sideforce coefficient with respect to roll rate.
+>>
+>>**"CS,r" : float**
+>>>Derivative of sideforce coefficient with respect to yawing rate.
 >>
 >>**"Cl,b" : float**
 >>>Roll stability derivative.
 >>
->>**"Cn,b" : float**
->>>Yaw stability derivative.
->>
->>**"CL,q" : float**
->>>Derivative of lift coefficient with respect to pitching rate.
->>
->>**"CD,q" : float**
->>>Derivative of drag coefficient with respect to pitching rate.
->>
->>**"Cm,q" : float**
->>>Pitch damping derivative.
->>
->>**"CY,p" : float**
->>>Derivative of body-y force coefficient with respect to roll rate.
+>>**"Cl,b_hat" : float**
+>>>Derivative of rolling moment coefficient with respect to lateral acceleration.
 >>
 >>**"Cl,p" : float**
 >>>Roll damping derivative.
 >>
->>**"Cn,p" : float**
->>>Derivative of yawing moment coefficient with respect to roll rate.
->>
->>**"CY,r" : float**
->>>Derivative of body-y force coefficient with respect to yawing rate.
->>
 >>**"Cl,r" : float**
 >>>Derivative of rolling moment coefficient with respect to yaw rate.
+>>
+>>**"Cm0" : float**
+>>>Pitching moment coefficient at zero angle of attack, sideslip, angular rates, and control deflection.
+>>
+>>**"Cm,a" : float**
+>>>Pitching moment slope.
+>>
+>>**"Cm,a_hat" : float**
+>>>Derivative of pitching moment coefficient with respect to vertical acceleration.
+>>
+>>**"Cm,q" : float**
+>>>Pitch damping derivative.
+>>
+>>**"Cn,b" : float**
+>>>Yaw stability derivative.
+>>
+>>**"Cn,b_hat" : float**
+>>>Derivative of yawing moment coefficient with respect to lateral acceleration.
+>>
+>>**"Cn,p" : float**
+>>>Derivative of yawing moment coefficient with respect to roll rate.
 >>
 >>**"Cn,r" : float**
 >>>Yaw damping derivative.

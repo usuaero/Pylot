@@ -140,6 +140,7 @@ class BaseAircraft:
 
     def _correct_stall(self, CL, CD, CS, Cl, Cm, Cn, alpha, beta):
         # Corrects the aerodnamic coefficients for stall
+        # TODO : Make this better!
 
         # Blending coefficient
         k = 100
@@ -279,7 +280,7 @@ class BaseAircraft:
 
 
     @abstractmethod
-    def trim(self, **kwargs):
+    def _trim(self, **kwargs):
         pass
 
 
@@ -310,7 +311,7 @@ class LinearizedAirplane(BaseAircraft):
         self._import_coefficients()
 
         # Import reference params
-        self._import_reference_state()
+        self._import_reference_params()
 
         # Set initial state
         trim = param_dict.get("trim", False)
@@ -318,6 +319,7 @@ class LinearizedAirplane(BaseAircraft):
         if trim and initial_state:
             raise IOError("Both a trim condition and an initial state may not be specified.")
         elif trim:
+            raise RuntimeError("Trim functionality for the linearized model is not currently available.")
             self._trim(trim)
         elif initial_state:
             self._set_initial_state(initial_state)
@@ -351,62 +353,45 @@ class LinearizedAirplane(BaseAircraft):
         return density_getter
 
 
-    def _import_reference_state(self):
-        # Parses the reference state from the input file
-
-        # Get reference lengths and area
-        self._Sw = self._input_dict["reference"].get("area", None)
-        self._bw = self._input_dict["reference"].get("lateral_length", None)
-        self._cw = self._input_dict["reference"].get("longitudinal_length", None)
-
-        # Check we have all the reference lengths we need
-        if self._Sw is not None and self._bw is not None and self._cw is None:
-            self._cw = self._Sw/self._bw
-        elif self._Sw is None and self._bw is not None and self._cw is not None:
-            self._Sw = self._cw*self._bw
-        elif self._Sw is not None and self._bw is None and self._cw is not None:
-            self._bw = self._Sw/self._cw
-        elif not (self._Sw is not None and self._bw is not None and self._cw is not None):
-            raise IOError("At least two of area, lateral length, or longitudinal length must be specified.")
-
-        # Parse the reference state
-        rho_ref = import_value("density", self._input_dict["reference"], self._units, None)
-        V_ref = import_value("airspeed", self._input_dict["reference"], self._units, None)
-        L_ref = import_value("lift", self._input_dict["reference"], self._units, None)
-        self._CL_ref = L_ref/(0.5*rho_ref*V_ref*V_ref*self._Sw)
-
-        # Determine reference aerodynamic moments
-        # This assumes thrust is evenly distributed among all engines
-        engine_CT = self._CD_ref/self._num_engines
-        engine_CM = np.zeros(3)
-        for engine in self._engines:
-            engine_CM += engine.get_unit_thrust_moment()*engine_CT
-
-        self._Cl_ref = -engine_CM[0]/self._bw
-        self._Cm_ref = -engine_CM[1]/self._cw
-        self._Cn_ref = -engine_CM[2]/self._bw
-
-
     def _import_coefficients(self):
         # Reads aerodynamic coefficients and derivatives in from input file
+
+        # Lift
+        self._CL0 = self._input_dict["coefficients"]["CL0"]
         self._CL_a = self._input_dict["coefficients"]["CL,a"]
-        self._CD_ref = self._input_dict["coefficients"]["CD_ref"]
+        self._CL_a_hat = self._input_dict["coefficients"]["CL,a_hat"]
+        self._CL_q = self._input_dict["coefficients"]["CL,q"]
+
+        # Drag
         self._CD0 = self._input_dict["coefficients"]["CD0"]
         self._CD1 = self._input_dict["coefficients"]["CD1"]
         self._CD2 = self._input_dict["coefficients"]["CD2"]
         self._CD3 = self._input_dict["coefficients"]["CD3"]
-        self._Cm_a = self._input_dict["coefficients"]["Cm,a"]
-        self._CY_b = self._input_dict["coefficients"]["CY,b"]
-        self._Cl_b = self._input_dict["coefficients"]["Cl,b"]
-        self._Cn_b = self._input_dict["coefficients"]["Cn,b"]
-        self._CL_q = self._input_dict["coefficients"]["CL,q"]
         self._CD_q = self._input_dict["coefficients"]["CD,q"]
-        self._Cm_q = self._input_dict["coefficients"]["Cm,q"]
-        self._CY_p = self._input_dict["coefficients"]["CY,p"]
+        self._CD_a_hat = self._input_dict["coefficients"]["CD,a_hat"]
+
+        # Sideforce
+        self._CS_b = self._input_dict["coefficients"]["CS,b"]
+        self._CS_b_hat = self._input_dict["coefficients"]["CS,b_hat"]
+        self._CS_p = self._input_dict["coefficients"]["CS,p"]
+        self._CS_r = self._input_dict["coefficients"]["CS,r"]
+
+        # Rolling Moment
+        self._Cl_b = self._input_dict["coefficients"]["Cl,b"]
+        self._Cl_b_hat = self._input_dict["coefficients"]["Cl,b_hat"]
         self._Cl_p = self._input_dict["coefficients"]["Cl,p"]
-        self._Cn_p = self._input_dict["coefficients"]["Cn,p"]
-        self._CY_r = self._input_dict["coefficients"]["CY,r"]
         self._Cl_r = self._input_dict["coefficients"]["Cl,r"]
+
+        # Pitching moment
+        self._Cm0 = self._input_dict["coefficients"]["Cm0"]
+        self._Cm_a = self._input_dict["coefficients"]["Cm,a"]
+        self._Cm_a_hat = self._input_dict["coefficients"]["Cm,a_hat"]
+        self._Cm_q = self._input_dict["coefficients"]["Cm,q"]
+
+        # Yawing moment
+        self._Cn_b = self._input_dict["coefficients"]["Cn,b"]
+        self._Cn_b_hat = self._input_dict["coefficients"]["Cn,b_hat"]
+        self._Cn_p = self._input_dict["coefficients"]["Cn,p"]
         self._Cn_r = self._input_dict["coefficients"]["Cn,r"]
 
         # Parse control derivatives and reference control settings
@@ -426,6 +411,25 @@ class LinearizedAirplane(BaseAircraft):
 
             # Get reference control deflections
             self._control_ref[name] = self._input_dict["reference"].get("controls", {}).get(name, 0.0)
+
+
+    def _import_reference_params(self):
+        # Parses the reference state from the input file
+
+        # Get reference lengths and area
+        self._Sw = self._input_dict["reference"].get("area", None)
+        self._bw = self._input_dict["reference"].get("lateral_length", None)
+        self._cw = self._input_dict["reference"].get("longitudinal_length", None)
+
+        # Check we have all the reference lengths we need
+        if self._Sw is not None and self._bw is not None and self._cw is None:
+            self._cw = self._Sw/self._bw
+        elif self._Sw is None and self._bw is not None and self._cw is not None:
+            self._Sw = self._cw*self._bw
+        elif self._Sw is not None and self._bw is None and self._cw is not None:
+            self._bw = self._Sw/self._cw
+        elif not (self._Sw is not None and self._bw is not None and self._cw is not None):
+            raise IOError("At least two of area, lateral length, or longitudinal length must be specified.")
 
 
     def _trim(self, trim_dict):
@@ -528,8 +532,8 @@ class LinearizedAirplane(BaseAircraft):
             r_bar = self._bw*const*r
 
             # Calculate aerodynamic coefficients
-            CL = self._CL_ref+self._CL_a*alpha+self._CL_q*q_bar
-            CS = self._CY_b*beta+self._CY_p*p_bar+self._CY_r*r_bar
+            CL = self._CL0+self._CL_a*alpha+self._CL_q*q_bar
+            CS = self._CS_b*beta+self._CS_p*p_bar+self._CS_r*r_bar
             CD = self._CD0+self._CD_q*q_bar
 
             # Determine influence of trim controls
@@ -555,7 +559,7 @@ class LinearizedAirplane(BaseAircraft):
             A[2,0] = -self._CL_a*C_a
 
             # Terms dependent on beta
-            A[1,1] = self._CY_b*C_B
+            A[1,1] = self._CS_b*C_B
             A[3,1] = self._bw*self._Cl_b
 
             # Now loop through trim controls
@@ -570,11 +574,11 @@ class LinearizedAirplane(BaseAircraft):
             # Populate B vector
             # Aerodynamic contributions
             B[0] = -CL*S_a+CS*S_B+(self._CD0+self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS+self._CD_q*q_bar)*u*V0_inv
-            B[1] = (-self._CY_p*p_bar-self._CY_r*r_bar)*C_B+CD*v*V0_inv
-            B[2] = (self._CL_ref+self._CL_q*q_bar)*C_a+CD*w*V0_inv
-            B[3] = -self._bw*(self._Cl_ref+self._Cl_p*p_bar+(self._Cl_r/self._CL_ref)*CL*r_bar)
-            B[4] = -self._cw*(self._Cm_ref+(self._Cm_a/self._CL_a)*(CL*u*V0_inv-self._CL_ref+CD*w*V0_inv)+self._Cm_q*q_bar)
-            B[5] = -self._bw*(self._Cn_ref+(self._Cn_b/self._CY_b)*(CS*u*V0_inv-CD*v*V0_inv)+(self._Cn_p/self._CL_ref)*CL*p_bar+self._Cn_r*r_bar)
+            B[1] = (-self._CS_p*p_bar-self._CS_r*r_bar)*C_B+CD*v*V0_inv
+            B[2] = (self._CL0+self._CL_q*q_bar)*C_a+CD*w*V0_inv
+            B[3] = -self._bw*(self._Cl_p*p_bar+(self._Cl_r/self._CL0)*CL*r_bar)
+            B[4] = -self._cw*(self._Cm0+(self._Cm_a/self._CL_a)*(CL*u*V0_inv-self._CL0+CD*w*V0_inv)+self._Cm_q*q_bar)
+            B[5] = -self._bw*((self._Cn_b/self._CS_b)*(CS*u*V0_inv-CD*v*V0_inv)+(self._Cn_p/self._CL0)*CL*p_bar+self._Cn_r*r_bar)
 
             # Contributions of fixed controls
             for key, value in fixed_controls.items():
@@ -698,6 +702,11 @@ class LinearizedAirplane(BaseAircraft):
         V_inv = 1.0/V
         a = m.atan2(w,u)
         B = m.atan2(v,u)
+
+        # TODO: actually calculate these
+        a_hat = 0.0
+        B_hat = 0.0
+
         const = 0.5*V_inv
         p_bar = self._bw*p*const
         q_bar = self._cw*q*const
@@ -708,12 +717,12 @@ class LinearizedAirplane(BaseAircraft):
         redim = 0.5*rho*V*V*self._Sw
 
         # Determine coefficients without knowing final values for CL and CS
-        CL = self._CL_ref+self._CL_a*a+self._CL_q*q_bar
-        CS = self._CY_b*B+self._CY_p*p_bar+self._CY_r*r_bar
-        CD = self._CD0+self._CD_q*q_bar
-        Cl = self._Cl_ref+self._Cl_b*B+self._Cl_p*p_bar
-        Cm = self._Cm_ref+self._Cm_q*q_bar
-        Cn = self._Cn_ref+self._Cn_r*r_bar
+        CL = self._CL0+self._CL_a*a+self._CL_q*q_bar+self._CL_a_hat*a_hat
+        CS = self._CS_b*B+self._CS_p*p_bar+self._CS_r*r_bar+self._CS_b_hat*B_hat
+        CD = self._CD0+self._CD_q*q_bar+self._CD_a_hat*a_hat
+        Cl = self._Cl_b*B+self._Cl_p*p_bar+self._Cl_r*r_bar+self._Cl_b_hat*B_hat
+        Cm = self._Cm0+self._Cm_a*a+self._Cm_q*q_bar+self._Cm_a_hat*a_hat
+        Cn = self._Cn_b*B+self._Cn_p*p_bar+self._Cn_r*r_bar+self._Cn_b_hat*B_hat
 
         # Determine influence of controls
         for key, value in self._controls.items():
@@ -725,19 +734,22 @@ class LinearizedAirplane(BaseAircraft):
             Cm += m.radians(value-self._control_ref[key])*control_deriv["Cm"]
             Cn += m.radians(value-self._control_ref[key])*control_deriv["Cn"]
 
-        # Factor in terms involving CL and CS
+        # Factor in drag polar terms
         CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
-        Cl += (self._Cl_r/self._CL_ref)*CL*r_bar
-        Cm += (self._Cm_a/self._CL_a)*(CL*u*V_inv-self._CL_ref+CD*w*V_inv)
-        Cn += (self._Cn_b/self._CY_b)*(CS*u*V_inv-CD*v*V_inv)+(self._Cn_p/self._CL_ref)*CL*p_bar
 
         # Correct for stall
         CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B)
 
+        # Get trig vals
+        C_a = m.cos(a)
+        S_a = w/u*C_a
+        C_B = m.cos(B)
+        S_B = v/V
+
         # Apply aerodynamic angles and dimensionalize
-        FM[0] = redim*(CL*m.sin(a)-CS*m.sin(B)-CD*u*V_inv)
-        FM[1] = redim*(CS*m.cos(B)-CD*v*V_inv)
-        FM[2] = redim*(-CL*m.cos(a)-CD*w*V_inv)
+        FM[0] = redim*(CL*S_a-CS*C_a*S_B-CD*C_a*C_B)
+        FM[1] = redim*(CS*C_B-CD*S_B)
+        FM[2] = redim*(-CL*C_a-CS*S_a*S_B-CD*S_a*C_B)
         FM[3] = redim*Cl*self._bw
         FM[4] = redim*Cm*self._cw
         FM[5] = redim*Cn*self._bw
