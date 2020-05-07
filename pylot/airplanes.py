@@ -396,7 +396,6 @@ class LinearizedAirplane(BaseAircraft):
 
         # Parse control derivatives and reference control settings
         self._control_derivs = {}
-        self._control_ref = {}
         for name in self._control_names:
 
             # Get derivatives
@@ -408,9 +407,6 @@ class LinearizedAirplane(BaseAircraft):
             self._control_derivs[name]["CY"] = derivs.get("CY", 0.0)
             self._control_derivs[name]["Cl"] = derivs.get("Cl", 0.0)
             self._control_derivs[name]["Cn"] = derivs.get("Cn", 0.0)
-
-            # Get reference control deflections
-            self._control_ref[name] = self._input_dict["reference"].get("controls", {}).get(name, 0.0)
 
 
     def _import_reference_params(self):
@@ -727,12 +723,13 @@ class LinearizedAirplane(BaseAircraft):
         # Determine influence of controls
         for key, value in self._controls.items():
             control_deriv = self._control_derivs[key]
-            CL += m.radians(value-self._control_ref[key])*control_deriv["CL"]
-            CD += m.radians(value-self._control_ref[key])*control_deriv["CD"]
-            CS += m.radians(value-self._control_ref[key])*control_deriv["CY"]
-            Cl += m.radians(value-self._control_ref[key])*control_deriv["Cl"]
-            Cm += m.radians(value-self._control_ref[key])*control_deriv["Cm"]
-            Cn += m.radians(value-self._control_ref[key])*control_deriv["Cn"]
+            control_def = m.radians(value)
+            CL += control_def*control_deriv["CL"]
+            CD += control_def*control_deriv["CD"]
+            CS += control_def*control_deriv["CY"]
+            Cl += control_def*control_deriv["Cl"]
+            Cm += control_def*control_deriv["Cm"]
+            Cn += control_def*control_deriv["Cn"]
 
         # Factor in drag polar terms
         CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
