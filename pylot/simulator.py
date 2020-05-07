@@ -38,6 +38,7 @@ class Simulator:
 
         # Get simulation parameters
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
+        self._simple_graphics = self._input_dict["simulation"].get("simple_graphics", False)
 
         # Initialize inter-process communication
         self._manager = mp.Manager()
@@ -113,20 +114,21 @@ class Simulator:
             self._ground_quad.append(self._create_mesh("field.obj", "field.vs", "field.fs", "field_texture.jpg", self._ground_positions[i], ground_orientations[i]))
 
         # Initialize scenery
-        self._render_loading_message('scenery')
-        #try: # The full resolution sky hay be too much for some machines...
-        #    self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
-        if True:#except:
+        if not self._simple_graphics:
+            self._render_loading_message('sky')
             self._sky = self._create_mesh("sky.obj", "sky.vs", "sky.fs", "clouds_low_res.jpg", [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
-        self._airstrip = self._create_mesh("airstrip.obj", "field.vs", "field.fs", "landing.jpg", [0.0, 0.0, -1.0], [1.0, 0.0, 0.0, 0.0])
-        self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "tent.jpg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
-        self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [10.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
-        self._trees = []
-        for i in range(10):
-            theta = np.random.rand(1)*2*np.pi
-            rho = np.random.rand(1)*70+30
-            pos = [rho*np.cos(theta), rho*np.sin(theta), 0.0]
-            self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", pos, [1.0, 0.0, 0.0, 0.0]))
+            self._render_loading_message('airstrip')
+            self._airstrip = self._create_mesh("airstrip.obj", "field.vs", "field.fs", "landing.jpg", [0.0, 0.0, -1.0], [1.0, 0.0, 0.0, 0.0])
+            self._render_loading_message('props')
+            self._tent = self._create_mesh("tent.obj", "aircraft.vs", "aircraft.fs", "tent.jpg", [0.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+            self._bench = self._create_mesh("wood_bench.obj", "aircraft.vs", "aircraft.fs", "bench.jpg", [10.0, 25.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+            self._render_loading_message('trees')
+            self._trees = []
+            for i in range(10):
+                theta = np.random.rand(1)*2*np.pi
+                rho = np.random.rand(1)*70+30
+                pos = [rho*np.cos(theta), rho*np.sin(theta), 0.0]
+                self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", pos, [1.0, 0.0, 0.0, 0.0]))
 
         # Initialize camera object
         self._render_loading_message('camera')
@@ -388,18 +390,18 @@ class Simulator:
                 quad.render()
 
             # Display scenery
-            #self._sky.set_position([y[6], y[7], 0.0])
-            self._sky.set_view(view)
-            self._sky.render()
-            self._airstrip.set_view(view)
-            self._airstrip.render()
-            self._tent.set_view(view)
-            self._tent.render()
-            self._bench.set_view(view)
-            self._bench.render()
-            for tree in self._trees:
-                tree.set_view(view)
-                tree.render()
+            if not self._simple_graphics:
+                self._sky.set_view(view)
+                self._sky.render()
+                self._airstrip.set_view(view)
+                self._airstrip.render()
+                self._tent.set_view(view)
+                self._tent.render()
+                self._bench.set_view(view)
+                self._bench.render()
+                for tree in self._trees:
+                    tree.set_view(view)
+                    tree.render()
 
             # Check for the aerodynamic model falling apart
             if np.isnan(y[0]):

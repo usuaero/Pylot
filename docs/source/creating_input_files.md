@@ -71,6 +71,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>**"enable_graphics" : boolean, optional**
 >>>Whether to render the aircraft in a simulated environment. Defaults to false.
 >>
+>>**"simple_graphics" : boolean, optional**
+>>>If this is set to true, nonessential graphics objects will not be loaded. This can speed up loading. Defaults to false.
+>>
 >>**"target_framerate" : int, optional**
 >>>Desired number of graphics updates per second. Max is 60. The graphics will update no faster than the value specified here. Defaults to 30.
 >>
@@ -202,8 +205,6 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >**"reference" : dict, optional**
 >>Specifies the reference lengths and areas used to redimensionalize coefficients. If the aircraft is to be modelled using MachUpX, all or none of these may be specified. If the aircraft is to be modelled using a set of linearized coefficients, at least two of these must be given, from which the third will be calculated, if not provided. It is assumed area = longitudinal_length * lateral_length.
 >>
->>For the linearized aerodynamic model, this is also used to describe the steady, level, trim state of the aircraft at which the aerodynamic coefficients and derivatives were determined.
->
 >>**"area" : float**
 >>>The reference area.
 >>
