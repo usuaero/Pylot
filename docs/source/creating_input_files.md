@@ -212,18 +212,6 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>
 >>**"lateral_length" : float**
 >>>Lateral reference length.
->>
->>**"airspeed" : float**
->>>Reference airspeed. Required for linearized model.
->>
->>**"density" : float**
->>>Reference air density. Required for linearized model.
->>
->>**"controls" : dict, optional**
->>>Lists the control deflections required to trim the aircraft at the reference state. Required only for linearized model.
->>>
->>>**"<CONTROL_NAME>" : float, optional**
->>>>Control deflection at trim reference state in degrees. This should be repeated for each *aerodynamic* control used to trim the aircraft at the reference state. Engine controls should not be listed. Defaults to 0.0.
 >
 >**"controls" : dict, optional**
 >>Defines the control inputs of the aircraft. If the joystick or keyboard are selected for user input, at most 4 controls may be listed here. For information on using the joystick/keyboard, see [User Interface](user_interface).
