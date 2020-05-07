@@ -1044,6 +1044,7 @@ class MachUpXAirplane(BaseAircraft):
             try:
 
                 # Import necessary files
+                print("\nGenerating 3D model from MachUpX...")
                 import FreeCAD
                 import Mesh
 
@@ -1071,6 +1072,7 @@ class MachUpXAirplane(BaseAircraft):
 
             # Just render a Cessna... ;)
             except ImportError:
+                print("\nFreeCAD modules not found. Reverting to Cessna model...")
                 info["obj_file"] = graphics_dict.get("obj_file", os.path.join(self._objects_path, "Cessna.obj"))
                 info["texture_file"] = graphics_dict.get("texture_file", os.path.join(self._textures_path, "cessna_texture.jpg"))
 
