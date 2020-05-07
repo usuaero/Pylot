@@ -45,6 +45,7 @@ class Simulator:
         self._state_manager = self._manager.list()
         self._state_manager[:] = [0.0]*16
         self._quit = self._manager.Value('i', 0)
+        self._game_over = self._manager.Value('i', 0)
         self._pause = self._manager.Value('i', 0)
         self._graphics_ready = self._manager.Value('i', 0)
         self._view = self._manager.Value('i', 1)
@@ -57,6 +58,7 @@ class Simulator:
                                                                      self._units,
                                                                      self._aircraft_graphics_info,
                                                                      self._graphics_ready,
+                                                                     self._game_over,
                                                                      self._quit,
                                                                      self._view,
                                                                      self._pause,
@@ -192,7 +194,6 @@ class Simulator:
         """Runs the simulation according to the defined inputs.
         """
 
-        print("Running simulation...")
         # Kick off the physics
         self._physics_process.start()
 
@@ -312,7 +313,7 @@ class Simulator:
             glClearColor(0,0,0,1.0)
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
             self._gameover.draw(-(450/self._width),-0.05,"Game Over",(0,255,0,1))
-            self._quit.value = 1
+            self._game_over.value = 1
 	
         # Otherwise, render graphics
         else:

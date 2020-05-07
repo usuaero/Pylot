@@ -5,7 +5,7 @@ from .airplanes import MachUpXAirplane, LinearizedAirplane
 import json
 from .helpers import import_value
 
-def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager):
+def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager):
     """Runs the physics on a separate process."""
     # Note that this was a member function of Simulator, but bound methods
     # cannot be passed as the target to multiprocessing.Process() on
@@ -52,7 +52,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
     t = copy.copy(t_start)
 
     # Simulation loop
-    while t <= t_final and not quit_flag.value:
+    while t <= t_final and not (quit_flag.value or game_over_flag.value):
 
         # Integrate
         RK4(aircraft, t, dt)
@@ -91,7 +91,8 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, quit_flag
                     t0 = time.time() # So as to not throw off the integration
 
     # If we exit the loop due to a timeout, let the graphics know we're done
-    quit_flag.value = 1
+    if t > t_final:
+        quit_flag.value = 1
 
 
 def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
