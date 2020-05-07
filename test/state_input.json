@@ -2,8 +2,7 @@
     "tag" : "Example of flight simulator input.",
     "simulation" : {
         "real_time" : true,
-        "enable_graphics" : true,
-        "simple_graphics" : true
+        "enable_graphics" : true
     },
     "units" : "English",
     "atmosphere" : {
