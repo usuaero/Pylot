@@ -13,13 +13,7 @@
     "angular_momentum" : [0.0, 0.0, 0.0],
     "reference" : {
         "area" : 185.0,
-        "lateral_length" : 33.0,
-        "airspeed" : 180.0,
-        "density" : 0.0023769,
-        "lift" : 2800,
-        "controls" : {
-            "elevator" : 5.0
-        }
+        "lateral_length" : 33.0
     },
     "controls" : {
         "aileron" : {
