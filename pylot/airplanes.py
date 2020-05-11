@@ -138,18 +138,12 @@ class BaseAircraft:
             print("".join(s), file=self._output_handle)
 
 
-    def _correct_stall(self, CL, CD, CS, Cl, Cm, Cn, alpha, beta):
+    def _correct_stall(self, CL, CD, CS, Cl, Cm, Cn, alpha, beta, S_a, S_B, C_a, C_B):
         # Corrects the aerodnamic coefficients for stall
         # TODO : Make this better!
 
         # Blending coefficient
         k = 100
-
-        # Get trig
-        S_a = m.sin(alpha)
-        S_B = m.sin(beta)
-        C_a = m.cos(alpha)
-        C_B = m.cos(beta)
 
         # Get stall values
         CL_stall = 2.0*S_a*S_a*C_a*np.sign(alpha)
@@ -734,14 +728,14 @@ class LinearizedAirplane(BaseAircraft):
         # Factor in drag polar terms
         CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
 
-        # Correct for stall
-        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B)
-
         # Get trig vals
         C_a = m.cos(a)
         S_a = w/u*C_a
         C_B = m.cos(B)
         S_B = v/V
+
+        # Correct for stall
+        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B, S_a, S_B, C_a, C_B)
 
         # Apply aerodynamic angles and dimensionalize
         FM[0] = redim*(CL*S_a-CS*C_a*S_B-CD*C_a*C_B)
@@ -983,18 +977,18 @@ class MachUpXAirplane(BaseAircraft):
         u = self.y[0]
         v = self.y[1]
         w = self.y[2]
-        a = m.atan2(w,u)
-        B = m.atan2(v,u)
-        S_a = m.sin(a)
-        S_B = m.sin(B)
-        C_a = m.cos(a)
-        C_B = m.cos(B)
         V = m.sqrt(u*u+v*v+w*w)
         redim = 0.5*rho*V*V*self._Sw
         u_inf = self.y[0:3]/V
+        a = m.atan2(w,u)
+        B = m.asin(u_inf[1])
+        C_B = m.cos(B)
+        S_B = u_inf[1]
+        C_a = m.cos(a)
+        S_a = w/u*C_a
 
         # Get MachUpX predicted coefficients
-        coef_dict = self._mx_scene.solve_forces(dimensional=False)[self.name]["total"]
+        coef_dict = self._mx_scene.solve_forces(dimensional=False, body_frame=True, wind_frame=True)[self.name]["total"]
         CL = coef_dict["CL"]
         CS = coef_dict["CS"]
         CD = coef_dict["CD"]
@@ -1003,12 +997,12 @@ class MachUpXAirplane(BaseAircraft):
         Cn = coef_dict["Cn"]
 
         # Correct for stall
-        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B)
+        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B, S_a, S_B, C_a, C_B)
 
         # Get forces
-        FM[0] = redim*(CL*S_a-CS*S_B-CD*u/V)
-        FM[1] = redim*(CS*C_B-CD*v/V)
-        FM[2] = redim*(-CL*C_a-CD*w/V)
+        FM[0] = redim*(CL*S_a-CS*C_a*S_B-CD*C_a*C_B)
+        FM[1] = redim*(CS*C_B-CD*S_B)
+        FM[2] = redim*(-CL*C_a-CS*S_a*S_B-CD*S_a*C_B)
         FM[3] = redim*Cl*self._bw
         FM[4] = redim*Cm*self._cw
         FM[5] = redim*Cn*self._bw
