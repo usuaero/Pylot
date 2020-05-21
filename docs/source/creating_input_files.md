@@ -276,7 +276,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Name of the control which governs the throttle setting for this engine. If the default joystick/keyboard is used, all engines are governed by the throttle control and this parameter is ignored. If a user-defined controller is used, this is the name of the control setting for this engine given by the controller. If a time-sequence control file is used, this is the column index of the control setting for this engine (as with "input_index" above).
 >>>
 >>>**"CD" : float, optional**
->>>>Coefficient of drag for the powerplant. Defaults to 0.0.
+>>>>Coefficient of drag for the powerplant. This should be a positive value. Defaults to 0.0.
 >>>
 >>>**"area" : float, optional**
 >>>>Reference area for redimensionalizing the drag coefficient. Defaults to 1.0.
