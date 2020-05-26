@@ -85,36 +85,36 @@ class BaseAircraft:
 
         # Load controls
         controller = param_dict.get("controller", None)
-        self._initialize_controller(controller, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+        self._initialize_controller(controller, quit_flag, view_flag, pause_flag, data_flag, enable_interface, param_dict.get("control_output", None))
 
         # Get stall angle of attack
         self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
         self._beta_stall = m.radians(self._input_dict["aero_model"].get("stall_sideslip_angle", 200.0))
 
 
-    def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+    def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
         # Sets up the control input for the aircraft
 
         # No control input
         if control_type is None:
-            self._controller = NoController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+            self._controller = NoController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Joystick
         elif control_type == "joystick":
-            self._controller = JoystickController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+            self._controller = JoystickController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Keyboard
         elif control_type == "keyboard":
-            self._controller = KeyboardController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+            self._controller = KeyboardController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # User-defined
         elif control_type == "user-defined":
             from user_defined_controller import UserDefinedController
-            self._controller = UserDefinedController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+            self._controller = UserDefinedController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Time sequence file
         elif ".csv" in control_type:
-            self._controller = TimeSequenceController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+            self._controller = TimeSequenceController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
             self._controller.set_input(control_type)
 
         else:
