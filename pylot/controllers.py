@@ -12,7 +12,7 @@ class BaseController:
     """An abstract aircraft controller class.
     """
 
-    def __init__(self, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
+    def __init__(self, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
 
         # Initialize controls
         self._controls = []
@@ -76,10 +76,23 @@ class BaseController:
             self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
             self._keyboard_listener.start()
 
+            # Initialize storage
+            if control_output is not None:
+
+                # Check for csv
+                if ".csv" not in control_output:
+                    raise IOError("Control output file must be .csv")
+
+                # Open file
+                self._write_controls = True
+                self._control_output = open(control_output, 'w')
+
 
     def __del__(self):
         if self._enable_interface:
             self._keyboard_listener.stop()
+        if self._write_controls:
+            self._control_output.close()
 
 
     def get_control_names(self):
@@ -93,6 +106,14 @@ class BaseController:
         inputs = copy.deepcopy(self._inputs)
         self._inputs= {}
         return inputs
+
+
+    def _output_controls(self, setting_list):
+        # Writes controls to csv
+        line = ["{0}".format(t)]
+        for setting in setting_list:
+            line.append(",{0}".format(setting))
+        self._control_output.write("".join(line))
 
     
     @abstractmethod
@@ -156,8 +177,8 @@ class NoController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Get control names
         for key in list(control_dict.keys()):
@@ -176,8 +197,8 @@ class JoystickController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Check for device
         self._avail_pads = inputs.devices.gamepads
@@ -217,11 +238,6 @@ class JoystickController(BaseController):
         self._perturbed_set = False
         self._perturbed = False
         self._joy_init = [0.0]*4
-
-        # For me to create a control input csv for testing
-        self._store_input = False
-        if self._store_input:
-            self._storage_file = open("control_input.csv", 'w')
 
 
     def get_control(self, t, state_vec, prev_controls):
@@ -264,16 +280,11 @@ class JoystickController(BaseController):
             control_state[name] = setting
             setting_list.append(setting)
 
-        if self._store_input:
-            line = "{0},{1},{2},{3},{4}\n".format(t, *setting_list)
-            self._storage_file.write(line)
+        # Store
+        if self._write_controls:
+            self._output_controls()
 
         return control_state
-
-
-    def __del__(self):
-        if self._store_input:
-            self._storage_file.close()
 
 
 class KeyboardController(BaseController):
@@ -285,8 +296,8 @@ class KeyboardController(BaseController):
         A dictionary of control names and specifications.
     """
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Initialize user inputs
         self._UP = False
@@ -404,8 +415,8 @@ class TimeSequenceController(BaseController):
     """
 
 
-    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface)
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
+        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Store column mapping
         self._control_mapping = {}

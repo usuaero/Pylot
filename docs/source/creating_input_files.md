@@ -159,6 +159,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>**"state_output" : string, optional**
 >>>If specified, the simulator will write the 13 element state vector of the aircraft to this file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Defaults to no output.
 >>
+>>**"control_output" : string, optional**
+>>>If specified, the simulator will write the control inputs to this csv file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Must be ".csv". Currently only available for "joystick" controller. Defaults to no output.
+>>
 >>**"controller" : string**
 >>>Specifies how the aircraft is to be controlled. Basic, Real-time, direct user control is chosen by specifying "joystick" or "keyboard". This allows for basic 4-channel control where the user selects the mapping between the input axes and the controls. For more information on this, see [User Interface](user_interface).
 >>>
