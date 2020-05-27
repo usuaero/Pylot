@@ -12,12 +12,12 @@ class BaseController:
     """An abstract aircraft controller class.
     """
 
-    def __init__(self, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
+    def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
 
-        # Initialize controls
-        self._controls = []
-        self._inputs = {}
-        self._control_keys = []
+        # Initialize
+        self._UI_inputs = {}
+        self._keys_pressed = []
+        self._input_dict = control_dict
 
         # Store flags
         self._data_flag = data_flag
@@ -57,7 +57,7 @@ class BaseController:
 
                 # Store other keystroke
                 elif k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down']:
-                    self._control_keys.append(k)
+                    self._keys_pressed.append(k)
 
             # Key release listener function
             def on_release(key):
@@ -69,23 +69,45 @@ class BaseController:
                     k = key.name
 
                 # Remove those from the list
-                if k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down'] and k in self._control_keys:
-                    self._control_keys = list(filter(lambda a: a != k, self._control_keys))
+                if k in ['w', 's', 'a', 'd', 'left', 'right', 'up', 'down'] and k in self._keys_pressed:
+                    self._keys_pressed = list(filter(lambda a: a != k, self._keys_pressed))
 
             # Initialize keyboard listener
             self._keyboard_listener = pynput.keyboard.Listener(on_press=on_press, on_release=on_release)
             self._keyboard_listener.start()
 
-            # Initialize storage
-            if control_output is not None:
+        # Get control names
+        self._controls = []
+        for key, value in self._input_dict.items():
+            self._controls.append(key)
+        self._num_controls = len(self._controls)
 
-                # Check for csv
-                if ".csv" not in control_output:
-                    raise IOError("Control output file must be .csv")
+        # Initialize storage
+        if control_output is not None:
 
-                # Open file
-                self._write_controls = True
-                self._control_output = open(control_output, 'w')
+            # Check for csv
+            if ".csv" not in control_output:
+                raise IOError("Control output file must be .csv")
+
+            # Open file
+            self._write_controls = True
+            self._control_output = open(control_output, 'w')
+        else:
+            self._write_controls = False
+
+        # Store mapping
+        if control_output is not None or isinstance(self, TimeSequenceController):
+            self._column_mapping = {}
+            self._output_cols = [""]*self._num_controls
+            for key, value in self._input_dict.items():
+                try:
+                    self._column_mapping[key] = value["column_index"]
+                    self._output_cols[self._column_mapping[key]-1] = key
+                except KeyError:
+                    if control_output is not None:
+                        raise IOError("'column_index' must be specified for each control if the controls are to be output.")
+                    else:
+                        raise IOError("'column_index' must be specified for each control if a time-sequence controller is used.")
 
 
     def __del__(self):
@@ -103,17 +125,19 @@ class BaseController:
     def get_input(self):
         """Returns a dictionary of inputs from the user for controlling pause, view, etc."""
 
-        inputs = copy.deepcopy(self._inputs)
-        self._inputs= {}
+        inputs = copy.deepcopy(self._UI_inputs)
+        self._UI_inputs= {}
         return inputs
 
 
-    def _output_controls(self, setting_list):
+    def output_controls(self, t, control_dict):
         # Writes controls to csv
-        line = ["{0}".format(t)]
-        for setting in setting_list:
-            line.append(",{0}".format(setting))
-        self._control_output.write("".join(line))
+        if self._write_controls:
+            line = ["{0}".format(t)]
+            for i in range(self._num_controls):
+                line.append(",{0}".format(control_dict[self._output_cols[i]]))
+            line.append("\n")
+            self._control_output.write("".join(line))
 
     
     @abstractmethod
@@ -178,11 +202,7 @@ class NoController(BaseController):
     """
 
     def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
-
-        # Get control names
-        for key in list(control_dict.keys()):
-            self._controls.append(key)
+        super().__init__(control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
     def get_control(self, t, state_vec, prev_controls):
         return prev_controls
@@ -198,7 +218,7 @@ class JoystickController(BaseController):
     """
 
     def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+        super().__init__(control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Check for device
         self._avail_pads = inputs.devices.gamepads
@@ -215,7 +235,7 @@ class JoystickController(BaseController):
         self._joy_listener.start()
 
         # Get mapping and limits
-        self._control_mapping = {}
+        self._axis_mapping = {}
         self._control_limits = {}
         self._angular_control = {} # True for angular deflection, False for 0 to 1.
         for key, value in control_dict.items():
@@ -229,10 +249,7 @@ class JoystickController(BaseController):
                 self._angular_control[key] = False
             
             # Get the mapping
-            self._control_mapping[key] = value["input_axis"]
-
-            # Store control names
-            self._controls.append(key)
+            self._axis_mapping[key] = value["input_axis"]
 
         # Set variable for knowing if the user has perturbed from the trim state yet
         self._perturbed_set = False
@@ -274,15 +291,11 @@ class JoystickController(BaseController):
         setting_list = []
         for name in self._controls:
             if self._angular_control[name]:
-                setting = (self._joy_def[self._control_mapping[name]]**3)*-self._control_limits[name]
+                setting = (self._joy_def[self._axis_mapping[name]]**3)*-self._control_limits[name]
             else:
-                setting = (-self._joy_def[self._control_mapping[name]]+1.)*0.5
+                setting = (-self._joy_def[self._axis_mapping[name]]+1.)*0.5
             control_state[name] = setting
             setting_list.append(setting)
-
-        # Store
-        if self._write_controls:
-            self._output_controls()
 
         return control_state
 
@@ -297,7 +310,7 @@ class KeyboardController(BaseController):
     """
 
     def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+        super().__init__(control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Initialize user inputs
         self._UP = False
@@ -310,7 +323,7 @@ class KeyboardController(BaseController):
         self._DD = False
 
         # Get mapping and limits
-        self._control_mapping = {}
+        self._axis_mapping = {}
         self._control_limits = {}
         self._angular_control = {} # True for angular deflection, False for 0 to 1.
         for key, value in control_dict.items():
@@ -324,11 +337,11 @@ class KeyboardController(BaseController):
                 self._angular_control[key] = False
             
             # Get the mapping
-            self._control_mapping[key] = value["input_axis"]
+            self._axis_mapping[key] = value["input_axis"]
             
             # Store reverse mapping
             self._control_reverse_mapping = [0]*4
-            for key, value in self._control_mapping.items():
+            for key, value in self._axis_mapping.items():
                 self._control_reverse_mapping[value] = key
 
             # Store control names
@@ -356,7 +369,7 @@ class KeyboardController(BaseController):
         """
 
         # Check for perturbation
-        if not self._perturbed and len(self._control_keys) > 0:
+        if not self._perturbed and len(self._keys_pressed) > 0:
             self._perturbed = True
 
         if self._perturbed:
@@ -368,27 +381,27 @@ class KeyboardController(BaseController):
 
                 # Get axis input
                 if i == 0: # Input roll axis
-                    if 'left' in self._control_keys and not 'right' in self._control_keys:
+                    if 'left' in self._keys_pressed and not 'right' in self._keys_pressed:
                         defl = 1.0
-                    elif not 'left' in self._control_keys and 'right' in self._control_keys:
+                    elif not 'left' in self._keys_pressed and 'right' in self._keys_pressed:
                         defl = -1.0
 
                 elif i == 1: # Input pitch axis
-                    if 'up' in self._control_keys and not 'down' in self._control_keys:
+                    if 'up' in self._keys_pressed and not 'down' in self._keys_pressed:
                         defl = 1.0
-                    elif not 'up' in self._control_keys and 'down' in self._control_keys:
+                    elif not 'up' in self._keys_pressed and 'down' in self._keys_pressed:
                         defl = -1.0
 
                 elif i == 2: # Input yaw axis
-                    if 'a' in self._control_keys and not 'd' in self._control_keys:
+                    if 'a' in self._keys_pressed and not 'd' in self._keys_pressed:
                         defl = 1.0
-                    elif not 'a' in self._control_keys and 'd' in self._control_keys:
+                    elif not 'a' in self._keys_pressed and 'd' in self._keys_pressed:
                         defl = -1.0
 
                 else: # Input throttle axis
-                    if 'w' in self._control_keys and not 's' in self._control_keys:
+                    if 'w' in self._keys_pressed and not 's' in self._keys_pressed:
                         defl = 1.0
-                    elif not 'w' in self._control_keys and 's' in self._control_keys:
+                    elif not 'w' in self._keys_pressed and 's' in self._keys_pressed:
                         defl = -1.0
 
                 # Apply deflection
@@ -399,10 +412,10 @@ class KeyboardController(BaseController):
                     sensitivity = 0.001
                     control_state[name] = min(1.0, max(prev_controls[name]+defl*sensitivity, 0.0))
 
-            return control_state
-
         else: # Otherwise, send back the previous controls
-            return prev_controls
+            control_state = copy.deepcopy(prev_controls)
+
+        return control_state
 
 
 class TimeSequenceController(BaseController):
@@ -416,18 +429,19 @@ class TimeSequenceController(BaseController):
 
 
     def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
-        super().__init__(quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+        super().__init__(control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
-        # Store column mapping
-        self._control_mapping = {}
-        for key, value in control_dict.items():
-            self._controls.append(key)
-            self._control_mapping[key] = value["column_index"]
+        self._input_dict = control_dict
 
 
-    def set_input(self, control_file):
+    def read_control_file(self, control_file):
         """Reads in a time sequence input file of control settings."""
+
+        # Read in file
         self._control_data = np.genfromtxt(control_file, delimiter=',')
+
+        # Get final time
+        self._t_end = np.max(self._control_data[:,0])
 
 
     def get_control(self, t, state_vec, prev_controls):
@@ -446,13 +460,17 @@ class TimeSequenceController(BaseController):
         """
 
         # Get control
-        controls = {}
+        control_state = {}
         for name in self._controls:
-            i = self._control_mapping[name]
+            i = self._column_mapping[name]
             default = prev_controls[name]
-            controls[name] = np.interp(t, self._control_data[:,0], self._control_data[:,i], left=default, right=default)
+            control_state[name] = np.interp(t, self._control_data[:,0], self._control_data[:,i], left=default, right=default)
 
-        return controls
+        # Check if we've reached the end
+        if t > self._t_end:
+            self._quit_flag.value = 1
+
+        return control_state
 
 
 def joystick_listener(axes_def, quit_flag):

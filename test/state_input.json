@@ -2,7 +2,8 @@
     "tag" : "Example of flight simulator input.",
     "simulation" : {
         "real_time" : true,
-        "enable_graphics" : true
+        "enable_graphics" : true,
+        "simple_graphics" : true
     },
     "units" : "English",
     "atmosphere" : {
@@ -23,6 +24,7 @@
                 "rudder" : -0.54199836594454420
             }
         },
-        "controller" : "keyboard"
+        "controller" : "controls.csv",
+        "state_output" : "states.txt"
     }
 }
