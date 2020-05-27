@@ -354,39 +354,39 @@ class LinearizedAirplane(BaseAircraft):
         self._CL0 = self._input_dict["coefficients"]["CL0"]
         self._CL_a = self._input_dict["coefficients"]["CL,a"]
         self._CL_a_hat = self._input_dict["coefficients"]["CL,a_hat"]
-        self._CL_q = self._input_dict["coefficients"]["CL,q"]
+        self._CL_q = self._input_dict["coefficients"]["CL,q_bar"]
 
         # Drag
         self._CD0 = self._input_dict["coefficients"]["CD0"]
         self._CD1 = self._input_dict["coefficients"]["CD1"]
         self._CD2 = self._input_dict["coefficients"]["CD2"]
         self._CD3 = self._input_dict["coefficients"]["CD3"]
-        self._CD_q = self._input_dict["coefficients"]["CD,q"]
+        self._CD_q = self._input_dict["coefficients"]["CD,q_bar"]
         self._CD_a_hat = self._input_dict["coefficients"]["CD,a_hat"]
 
         # Sideforce
         self._CS_b = self._input_dict["coefficients"]["CS,b"]
         self._CS_b_hat = self._input_dict["coefficients"]["CS,b_hat"]
-        self._CS_p = self._input_dict["coefficients"]["CS,p"]
-        self._CS_r = self._input_dict["coefficients"]["CS,r"]
+        self._CS_p = self._input_dict["coefficients"]["CS,p_bar"]
+        self._CS_r = self._input_dict["coefficients"]["CS,r_bar"]
 
         # Rolling Moment
         self._Cl_b = self._input_dict["coefficients"]["Cl,b"]
         self._Cl_b_hat = self._input_dict["coefficients"]["Cl,b_hat"]
-        self._Cl_p = self._input_dict["coefficients"]["Cl,p"]
-        self._Cl_r = self._input_dict["coefficients"]["Cl,r"]
+        self._Cl_p = self._input_dict["coefficients"]["Cl,p_bar"]
+        self._Cl_r = self._input_dict["coefficients"]["Cl,r_bar"]
 
         # Pitching moment
         self._Cm0 = self._input_dict["coefficients"]["Cm0"]
         self._Cm_a = self._input_dict["coefficients"]["Cm,a"]
         self._Cm_a_hat = self._input_dict["coefficients"]["Cm,a_hat"]
-        self._Cm_q = self._input_dict["coefficients"]["Cm,q"]
+        self._Cm_q = self._input_dict["coefficients"]["Cm,q_bar"]
 
         # Yawing moment
         self._Cn_b = self._input_dict["coefficients"]["Cn,b"]
         self._Cn_b_hat = self._input_dict["coefficients"]["Cn,b_hat"]
-        self._Cn_p = self._input_dict["coefficients"]["Cn,p"]
-        self._Cn_r = self._input_dict["coefficients"]["Cn,r"]
+        self._Cn_p = self._input_dict["coefficients"]["Cn,p_bar"]
+        self._Cn_r = self._input_dict["coefficients"]["Cn,r_bar"]
 
         # Parse control derivatives and reference control settings
         self._control_derivs = {}

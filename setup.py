@@ -5,7 +5,7 @@ import os
 import sys
 
 setup(name = 'Pylot',
-    version = '1.1',
+    version = '1.2',
     description = "Pylot: A light and fast aircraft flight simulator.",
     url = 'https://github.com/usuaero/Pylot',
     author = 'usuaero',
