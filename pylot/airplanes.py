@@ -97,32 +97,32 @@ class BaseAircraft:
 
         # No control input
         if control_type is None:
-            self._controller = NoController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+            self.controller = NoController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Joystick
         elif control_type == "joystick":
-            self._controller = JoystickController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+            self.controller = JoystickController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Keyboard
         elif control_type == "keyboard":
-            self._controller = KeyboardController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+            self.controller = KeyboardController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # User-defined
         elif control_type == "user-defined":
             from user_defined_controller import UserDefinedController
-            self._controller = UserDefinedController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+            self.controller = UserDefinedController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
         # Time sequence file
         elif ".csv" in control_type:
-            self._controller = TimeSequenceController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
-            self._controller.set_input(control_type)
+            self.controller = TimeSequenceController(self._input_dict.get("controls", {}), quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
+            self.controller.read_control_file(control_type)
 
         else:
             raise IOError("{0} is not a valid controller specification.".format(control_type))
 
         # Setup storage
-        self._control_names = self._controller.get_control_names()
-        self._controls = {}
+        self._control_names = self.controller.get_control_names()
+        self.controls = {}
 
 
     def __del__(self):
@@ -434,7 +434,7 @@ class LinearizedAirplane(BaseAircraft):
         verbose = trim_dict.get("verbose", False)
 
         # Parse controls
-        avail_controls = trim_dict.get("trim_controls", list(self._controls.keys()))
+        avail_controls = trim_dict.get("trim_controls", list(self.controls.keys()))
         fixed_controls = trim_dict.get("fixed_controls", {})
         for name in self._control_names:
             if name in avail_controls:
@@ -647,10 +647,10 @@ class LinearizedAirplane(BaseAircraft):
         # Apply trim controls
         # Variable
         for i,name in enumerate(avail_controls):
-            self._controls[name] = m.degrees(trim_vals[i+2]+m.radians(self._control_ref[name]))
+            self.controls[name] = m.degrees(trim_vals[i+2]+m.radians(self._control_ref[name]))
         # Fixed
         for key, value in fixed_controls:
-            self._controls[key] = value
+            self.controls[key] = value
 
 
     def _set_initial_state(self, state_dict):
@@ -668,14 +668,14 @@ class LinearizedAirplane(BaseAircraft):
 
         # Set controls
         for name in self._control_names:
-            self._controls[name] = state_dict.get("control_state", {}).get(name, 0.0)
+            self.controls[name] = state_dict.get("control_state", {}).get(name, 0.0)
 
 
     def get_FM(self, t):
         """Returns the aerodynamic forces and moments."""
 
         # Get control state
-        self._controls = self._controller.get_control(t, self.y, self._controls)
+        self.controls = self.controller.get_control(t, self.y, self.controls)
 
         # Declare force and moment vector
         FM = np.zeros(6)
@@ -715,7 +715,7 @@ class LinearizedAirplane(BaseAircraft):
         Cn = self._Cn_b*B+self._Cn_p*p_bar+self._Cn_r*r_bar+self._Cn_b_hat*B_hat
 
         # Determine influence of controls
-        for key, value in self._controls.items():
+        for key, value in self.controls.items():
             control_deriv = self._control_derivs[key]
             control_def = m.radians(value)
             CL += control_def*control_deriv["CL"]
@@ -747,7 +747,7 @@ class LinearizedAirplane(BaseAircraft):
 
         # Get effect of engines
         for engine in self._engines:
-            FM += engine.get_thrust_FM(self._controls, rho, u_inf, V)
+            FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
 
         return FM
 
@@ -842,7 +842,7 @@ class MachUpXAirplane(BaseAircraft):
         self._trim_verbose = trim_dict.get("verbose", False)
 
         # Parse controls
-        self._avail_controls = trim_dict.get("trim_controls", list(self._controls.keys()))
+        self._avail_controls = trim_dict.get("trim_controls", list(self.controls.keys()))
         self._fixed_controls = trim_dict.get("fixed_controls", {})
         for name in self._control_names:
             if name in self._avail_controls:
@@ -932,7 +932,7 @@ class MachUpXAirplane(BaseAircraft):
         self.y[9:] = Euler2Quat([self._bank, theta, self._heading])
 
         # Set controls
-        self._controls = controls
+        self.controls = controls
 
 
     def _set_initial_state(self, initial_state):
@@ -940,7 +940,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Store controls
         for name in self._control_names:
-            self._controls[name] = initial_state["control_state"].get(name, 0.0)
+            self.controls[name] = initial_state["control_state"].get(name, 0.0)
 
         # Store state
         self.y[0:3] = import_value("velocity", initial_state, self._units, None)
@@ -962,14 +962,14 @@ class MachUpXAirplane(BaseAircraft):
         self._mx_scene.set_aircraft_state(state=mx_state, aircraft=self.name)
 
         # Update controls
-        self._mx_scene.set_aircraft_control_state(control_state=self._controls, aircraft=self.name)
+        self._mx_scene.set_aircraft_control_state(control_state=self.controls, aircraft=self.name)
 
 
     def get_FM(self, t):
 
         # Initialize
         FM = np.zeros(6)
-        self._controls = self._controller.get_control(t, self.y, self._controls)
+        self.controls = self.controller.get_control(t, self.y, self.controls)
         self._update_machupx_state()
 
         # Get redimensionalizer
@@ -1009,7 +1009,7 @@ class MachUpXAirplane(BaseAircraft):
 
         # Get effect of engines
         for engine in self._engines:
-            FM += engine.get_thrust_FM(self._controls, rho, u_inf, V)
+            FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
 
         return FM
 

@@ -40,9 +40,10 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     # Get an initial guess for how long each sim step is going to take
     t0 = time.time()
     if real_time:
-        RK4(aircraft, t0, 0.0)
+        RK4(aircraft, t_start, 0.0)
         aircraft.normalize()
-        aircraft.output_state(t0)
+        aircraft.output_state(t_start)
+        aircraft.controller.output_controls(t_start, aircraft.controls)
         t1 = time.time()
         dt = t1-t0
         t0 = t1
@@ -69,6 +70,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
 
         # Write output
         aircraft.output_state(t)
+        aircraft.controller.output_controls(t, aircraft.controls)
 
         # Handle graphics only things
         if render_graphics:
@@ -78,7 +80,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
             state_manager[13] = dt
             state_manager[14] = t
             state_manager[15] = time.time()
-            for key, value in aircraft._controls.items():
+            for key, value in aircraft.controls.items():
                 control_manager[key] = value
 
             while pause_flag.value and not quit_flag.value:
