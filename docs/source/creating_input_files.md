@@ -326,7 +326,7 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>
 >>q = 0.5\*rho\*V^2
 >>
->>For a full explanation and derivation of the aerodynamic model used here, see Hunsaker and Thurgood, "Aerodynamic Model and Trim Algorithm for Fixed-Wing Aircraft", *AIAA SciTech Conference*, 2021 (not yet published).
+>>For a full explanation and derivation of the aerodynamic model used here, see Hunsaker and Thurgood, "Aerodynamic Model and Trim Algorithm for Fixed-Wing Aircraft", *AIAA SciTech Conference*, 2021 (not yet published). The damping derivatives are fully nondimensional.
 >>
 >>**"CL0" : float**
 >>>Lift coefficient at zero angle of attack, sideslip, angular rates, and control deflections.
@@ -337,7 +337,7 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"CL,a_hat" : float**
 >>>Derivative of lift with respect to vertical acceleration.
 >>
->>**"CL,q" : float**
+>>**"CL,q_bar" : float**
 >>>Derivative of lift coefficient with respect to pitching rate.
 >>
 >>**"CD0" : float**
@@ -352,7 +352,7 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"CD3" : float**
 >>>Sets the proportionality of drag coefficient to the sideforce coefficient squared.
 >>
->>**"CD,q" : float**
+>>**"CD,q_bar" : float**
 >>>Derivative of drag coefficient with respect to pitching rate.
 >>
 >>**"CD,a_hat" : float**
@@ -364,10 +364,10 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"CS,b_hat" : float**
 >>>Derivative of sideforce coefficient with respect to lateral acceleration.
 >>
->>**"CS,p" : float**
+>>**"CS,p_bar" : float**
 >>>Derivative of sideforce coefficient with respect to roll rate.
 >>
->>**"CS,r" : float**
+>>**"CS,r_bar" : float**
 >>>Derivative of sideforce coefficient with respect to yawing rate.
 >>
 >>**"Cl,b" : float**
@@ -376,10 +376,10 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"Cl,b_hat" : float**
 >>>Derivative of rolling moment coefficient with respect to lateral acceleration.
 >>
->>**"Cl,p" : float**
+>>**"Cl,p_bar" : float**
 >>>Roll damping derivative.
 >>
->>**"Cl,r" : float**
+>>**"Cl,r_bar" : float**
 >>>Derivative of rolling moment coefficient with respect to yaw rate.
 >>
 >>**"Cm0" : float**
@@ -391,7 +391,7 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"Cm,a_hat" : float**
 >>>Derivative of pitching moment coefficient with respect to vertical acceleration.
 >>
->>**"Cm,q" : float**
+>>**"Cm,q_bar" : float**
 >>>Pitch damping derivative.
 >>
 >>**"Cn,b" : float**
@@ -400,10 +400,10 @@ As mentioned above, this model relies on a set of equations given by Phillips. T
 >>**"Cn,b_hat" : float**
 >>>Derivative of yawing moment coefficient with respect to lateral acceleration.
 >>
->>**"Cn,p" : float**
+>>**"Cn,p_bar" : float**
 >>>Derivative of yawing moment coefficient with respect to roll rate.
 >>
->>**"Cn,r" : float**
+>>**"Cn,r_bar" : float**
 >>>Yaw damping derivative.
 >>
 >>**"<CONTROL_NAME>" : dict**
