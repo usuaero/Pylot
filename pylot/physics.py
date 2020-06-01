@@ -18,7 +18,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     render_graphics = input_dict["simulation"].get("enable_graphics", False)
     enable_interface = input_dict["simulation"].get("enable_interface", render_graphics)
     if not real_time:
-        dt = input_dict["simulation"].get("timestep", 0.01)
+        dt = input_dict["simulation"].get("timestep", 0.05)
 
     # Load aircraft
     aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
