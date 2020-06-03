@@ -20,11 +20,11 @@ class Simulator:
 
     Parameters
     ----------
-    input_dict : dict
-        Dictionary describing the simulation and world parameters.
+    input_dict : dict or str
+        Dictionary describing the simulation and world parameters. Can also be a path to an input JSON.
     """
 
-    def __init__(self, input_dict):
+    def __init__(self, input_val):
 
         # Print welcome
         print("\n--------------------------------------------------")
@@ -33,7 +33,11 @@ class Simulator:
         print(  "--------------------------------------------------")
 
         # Store input
-        self._input_dict = input_dict
+        if isinstance(input_val, str):
+            with open(input_val, 'r') as input_handle:
+                self._input_dict = json.load(input_handle)
+        else:
+            self._input_dict = input_val
         self._units = self._input_dict.get("units", "English")
 
         # Get simulation parameters
