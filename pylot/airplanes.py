@@ -307,6 +307,13 @@ class LinearizedAirplane(BaseAircraft):
         # Import reference params
         self._import_reference_params()
 
+        # Initialize accelerations
+        self._t_prev = 0.0
+        self._a_prev = None
+        self._B_prev = None
+        self._a_hat = 0.0
+        self._B_hat = 0.0
+
         # Set initial state
         trim = param_dict.get("trim", False)
         initial_state = param_dict.get("initial_state", False)
@@ -398,7 +405,7 @@ class LinearizedAirplane(BaseAircraft):
             self._control_derivs[name]["CL"] = derivs.get("CL", 0.0)
             self._control_derivs[name]["CD"] = derivs.get("CD", 0.0)
             self._control_derivs[name]["Cm"] = derivs.get("Cm", 0.0)
-            self._control_derivs[name]["CY"] = derivs.get("CY", 0.0)
+            self._control_derivs[name]["CS"] = derivs.get("CS", 0.0)
             self._control_derivs[name]["Cl"] = derivs.get("Cl", 0.0)
             self._control_derivs[name]["Cn"] = derivs.get("Cn", 0.0)
 
@@ -532,14 +539,14 @@ class LinearizedAirplane(BaseAircraft):
                 deflection = old_trim_vals[2+i]
                 CL += deflection*control_deriv["CL"]
                 CD += deflection*control_deriv["CD"]
-                CS += deflection*control_deriv["CY"]
+                CS += deflection*control_deriv["CS"]
 
             # Determine influence of fixed controls
             for key,value in fixed_controls.items():
                 control_deriv = self._control_derivs[key]
                 CL += m.radians(value-self._control_ref[key])*control_deriv["CL"]
                 CD += m.radians(value-self._control_ref[key])*control_deriv["CD"]
-                CS += m.radians(value-self._control_ref[key])*control_deriv["CY"]
+                CS += m.radians(value-self._control_ref[key])*control_deriv["CS"]
 
             # Factor in terms involving CL and CS
             CD += self._CD1*CL+self._CD2*CL*CL+self._CD3*CS*CS
@@ -555,7 +562,7 @@ class LinearizedAirplane(BaseAircraft):
             # Now loop through trim controls
             for i,name in enumerate(avail_controls):
                 A[0,2+i] = redim_inv*thrust_derivs[name][0]-self._control_derivs[name]["CD"]*u*V0_inv
-                A[1,2+i] = redim_inv*thrust_derivs[name][1]+self._control_derivs[name]["CY"]*C_B
+                A[1,2+i] = redim_inv*thrust_derivs[name][1]+self._control_derivs[name]["CS"]*C_B
                 A[2,2+i] = redim_inv*thrust_derivs[name][2]-self._control_derivs[name]["CL"]*C_a
                 A[3,2+i] = redim_inv*thrust_moment_derivs[name][0]+self._control_derivs[name]["Cl"]*self._bw
                 A[4,2+i] = redim_inv*thrust_moment_derivs[name][1]+self._control_derivs[name]["Cm"]*self._cw
@@ -579,7 +586,7 @@ class LinearizedAirplane(BaseAircraft):
                 # Change in aerodynamics due to controls
                 CD_control = delta_control*control_deriv["CD"]
                 CL_control = delta_control*control_deriv["CL"]
-                CY_control = delta_control*control_deriv["CY"]
+                CY_control = delta_control*control_deriv["CS"]
 
                 # Apply to B vector
                 B[0] += -CL_control*S_a+CY_control*S_B+CD_control*u*V0_inv
@@ -692,27 +699,33 @@ class LinearizedAirplane(BaseAircraft):
         V_inv = 1.0/V
         a = m.atan2(w,u)
         B = m.atan2(v,u)
-
-        # TODO: actually calculate these
-        a_hat = 0.0
-        B_hat = 0.0
-
         const = 0.5*V_inv
         p_bar = self._bw*p*const
         q_bar = self._cw*q*const
         r_bar = self._bw*r*const
         u_inf = self.y[0:3]*V_inv
 
+        # Get accelerations
+        dt = t-self._t_prev
+        if dt>1e-10 and self._a_prev is not None and self._B_prev is not None:
+            self._a_hat = 0.5*self._cw*V_inv*(a-self._a_prev)/dt
+            self._B_hat = 0.5*self._bw*V_inv*(B-self._B_prev)/dt
+
+        # Store for next evaluation
+        self._t_prev = t
+        self._a_prev = a
+        self._B_prev = B
+
         # Get redimensionalizer
         redim = 0.5*rho*V*V*self._Sw
 
         # Determine coefficients without knowing final values for CL and CS
-        CL = self._CL0+self._CL_a*a+self._CL_q*q_bar+self._CL_a_hat*a_hat
-        CS = self._CS_b*B+self._CS_p*p_bar+self._CS_r*r_bar+self._CS_b_hat*B_hat
-        CD = self._CD0+self._CD_q*q_bar+self._CD_a_hat*a_hat
-        Cl = self._Cl_b*B+self._Cl_p*p_bar+self._Cl_r*r_bar+self._Cl_b_hat*B_hat
-        Cm = self._Cm0+self._Cm_a*a+self._Cm_q*q_bar+self._Cm_a_hat*a_hat
-        Cn = self._Cn_b*B+self._Cn_p*p_bar+self._Cn_r*r_bar+self._Cn_b_hat*B_hat
+        CL = self._CL0+self._CL_a*a+self._CL_q*q_bar+self._CL_a_hat*self._a_hat
+        CS = self._CS_b*B+self._CS_p*p_bar+self._CS_r*r_bar+self._CS_b_hat*self._B_hat
+        CD = self._CD0+self._CD_q*q_bar+self._CD_a_hat*self._a_hat
+        Cl = self._Cl_b*B+self._Cl_p*p_bar+self._Cl_r*r_bar+self._Cl_b_hat*self._B_hat
+        Cm = self._Cm0+self._Cm_a*a+self._Cm_q*q_bar+self._Cm_a_hat*self._a_hat
+        Cn = self._Cn_b*B+self._Cn_p*p_bar+self._Cn_r*r_bar+self._Cn_b_hat*self._B_hat
 
         # Determine influence of controls
         for key, value in self.controls.items():
@@ -720,7 +733,7 @@ class LinearizedAirplane(BaseAircraft):
             control_def = m.radians(value)
             CL += control_def*control_deriv["CL"]
             CD += control_def*control_deriv["CD"]
-            CS += control_def*control_deriv["CY"]
+            CS += control_def*control_deriv["CS"]
             Cl += control_def*control_deriv["Cl"]
             Cm += control_def*control_deriv["Cm"]
             Cn += control_def*control_deriv["Cn"]
