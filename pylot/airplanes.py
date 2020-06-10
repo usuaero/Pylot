@@ -268,13 +268,145 @@ class BaseAircraft:
         self.y[9:] = NormalizeQuaternion(self.y[9:])
 
 
+    def _trim(self, trim_dict):
+        # Trims the aircraft at the given condition
+
+        # Get params
+        self._V0 = trim_dict["airspeed"]
+        self.y[6:9] = trim_dict["position"]
+        self._climb = m.radians(trim_dict.get("climb_angle", 0.0))
+        self._bank = m.radians(trim_dict.get("bank_angle", 0.0))
+        self._heading = m.radians(trim_dict.get("heading", 0.0))
+        self._trim_verbose = trim_dict.get("verbose", False)
+
+        # Parse controls
+        self._avail_controls = trim_dict.get("trim_controls", list(self.controls.keys()))
+        self._fixed_controls = trim_dict.get("fixed_controls", {})
+        for name in self._control_names:
+            if name in self._avail_controls:
+                continue
+            self._fixed_controls[name] = self._fixed_controls.get(name, 0.0)
+
+        # Check we have enough
+        if len(self._avail_controls) != 4:
+            raise IOError("Exactly 4 controls must be used to trim the aircraft. Got {0}.".format(len(self._avail_controls)))
+
+        # Initialize output
+        if self._trim_verbose:
+            print("Trimming at {0} deg bank and {1} deg climb...".format(m.degrees(self._bank), m.degrees(self._climb)))
+            header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
+            for name in self._avail_controls:
+                header.append("{0:>20}".format(name.title()))
+            header.append("{0:>20}".format("Elevation [deg]"))
+            print("".join(header))
+
+        # Solve for trim
+        trim_val_guess = np.zeros(6)
+        x, info_dict, ier, mesg = opt.fsolve(self._trim_residual_function, trim_val_guess, full_output=True)
+        trim_settings = x
+
+        # Output results of trim
+        if self._trim_verbose:
+            if ier != 1:
+                print("No trim solution found. Scipy returned '{0}'.".format(mesg))
+            print("\nFinal trim residuals: {0}".format(info_dict["fvec"]))
+
+        # Parse trimmed state
+        alpha = trim_settings[0]
+        beta = trim_settings[1]
+        controls = copy.deepcopy(self._fixed_controls)
+        for i, name in enumerate(self._avail_controls):
+            controls[name] = trim_settings[i+2]
+
+        # Set state
+        self._set_state_in_coordinated_turn(alpha, beta, controls)
+
+
+    def _trim_residual_function(self, trim_vals):
+        # Returns the trim residuals as a function of the control inputs
+
+        # Unpack args
+        alpha = trim_vals[0]
+        beta = trim_vals[1]
+        controls = copy.deepcopy(self._fixed_controls)
+        for i, name in enumerate(self._avail_controls):
+            controls[name] = trim_vals[i+2]
+
+        # Calculate elevation angle
+        theta = self._get_elevation(alpha, beta, self._bank, self._climb)
+
+        # Output
+        if self._trim_verbose:
+            print("{0:>20.10f}{1:>20.10f}{2:>20.10f}{3:>20.10f}{4:>20.10f}{5:>20.10f}{6:>20.10f}".format(m.degrees(alpha), m.degrees(beta), *trim_vals[2:], m.degrees(theta)))
+
+        # Set state
+        self._set_state_in_coordinated_turn(alpha, beta, controls)
+
+        # Get residuals
+        dy_dt = self.dy_dt(0.0)
+        return dy_dt[:6]
+
+
+    def _set_state_in_coordinated_turn(self, alpha, beta, controls):
+
+        # Set state
+        theta = self._get_elevation(alpha, beta, self._bank, self._climb)
+        C_theta = m.cos(theta)
+        S_theta = m.sin(theta)
+        C_phi = m.cos(self._bank)
+        S_phi = m.sin(self._bank)
+        C_a = m.cos(alpha)
+        S_a = m.sin(alpha)
+        C_B = m.cos(beta)
+        S_B = m.sin(beta)
+        D = m.sqrt(1-S_a*S_a*S_B*S_B)
+        u = self._V0*C_a*C_B/D
+        v = self._V0*C_a*S_B/D
+        w = self._V0*S_a*C_B/D
+        self.y[0] = u
+        self.y[1] = v
+        self.y[2] = w
+        self.y[3:6] = self._get_rotation_rates(C_phi, S_phi, C_theta, S_theta, self._g, u, w)
+        self.y[9:] = Euler2Quat([self._bank, theta, self._heading])
+
+        # Set controls
+        self.controls = controls
+
+
+    def _initialize_state(self, param_dict):
+        # Sets the state from the input by calling _trim or _set_initial_state
+        trim = param_dict.get("trim", False)
+        initial_state = param_dict.get("initial_state", False)
+        if trim and initial_state:
+            raise IOError("Both an initial state and trim parameters cannot be specified.")
+        elif trim:
+            self._trim(trim)
+        elif initial_state:
+            self._set_initial_state(initial_state)
+        else:
+            raise IOError("An initial condition must be specified.")
+
+
+    def _set_initial_state(self, initial_state):
+        # Sets the initial state of the aircraft without trimming
+
+        # Store controls
+        for name in self._control_names:
+            self.controls[name] = initial_state["control_state"].get(name, 0.0)
+
+        # Store state
+        self.y[0:3] = import_value("velocity", initial_state, self._units, None)
+        self.y[3:6] = import_value("angular_rates", initial_state, self._units, [0.0, 0.0, 0.0])
+        self.y[6:9] = import_value("position", initial_state, self._units, None)
+        self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
+
+
+    
+
+
+    # These methods must be defined in any derived class. Any of the preceding methods can also be redefined.
     @abstractmethod
     def get_FM(self, t):
-        pass
-
-
-    @abstractmethod
-    def _trim(self, **kwargs):
         pass
 
 
@@ -315,17 +447,7 @@ class LinearizedAirplane(BaseAircraft):
         self._B_hat = 0.0
 
         # Set initial state
-        trim = param_dict.get("trim", False)
-        initial_state = param_dict.get("initial_state", False)
-        if trim and initial_state:
-            raise IOError("Both a trim condition and an initial state may not be specified.")
-        elif trim:
-            raise RuntimeError("Trim functionality for the linearized model is not currently available.")
-            self._trim(trim)
-        elif initial_state:
-            self._set_initial_state(initial_state)
-        else:
-            raise IOError("An initial condition was not specified!")
+        self._initialize_state(param_dict)
 
 
     def _initialize_density(self, density):
@@ -429,7 +551,7 @@ class LinearizedAirplane(BaseAircraft):
             raise IOError("At least two of area, lateral length, or longitudinal length must be specified.")
 
 
-    def _trim(self, trim_dict):
+    def _obsolete_trim(self, trim_dict):
         # Trims the aircraft according to the input conditions
 
         # Get initial params
@@ -660,24 +782,6 @@ class LinearizedAirplane(BaseAircraft):
             self.controls[key] = value
 
 
-    def _set_initial_state(self, state_dict):
-        # Sets the initial state of the aircraft according to the input
-
-        # Set values
-        self.y[:3] = import_value("velocity", state_dict, self._units, None)
-        self.y[3:6] = import_value("angular_rates", state_dict, self._units, [0.0, 0.0, 0.0])
-        self.y[6:9] = import_value("position", state_dict, self._units, None)
-        orientation = import_value("orientation", state_dict, self._units, [1.0, 0.0, 0.0, 0.0])
-        if len(orientation) == 3: # Euler angles
-            self.y[9:] = Euler2Quat(orientation)
-        else:
-            self.y[9:] = orientation
-
-        # Set controls
-        for name in self._control_names:
-            self.controls[name] = state_dict.get("control_state", {}).get(name, 0.0)
-
-
     def get_FM(self, t):
         """Returns the aerodynamic forces and moments."""
 
@@ -831,135 +935,7 @@ class MachUpXAirplane(BaseAircraft):
         self._Sw, self._cw, self._bw = self._mx_scene.get_aircraft_reference_geometry(name)
 
         # Set initial state
-        trim = param_dict.get("trim", False)
-        initial_state = param_dict.get("initial_state", False)
-        if trim and initial_state:
-            raise IOError("Both an initial state and trim parameters cannot be specified.")
-        elif trim:
-            self._trim(trim)
-        elif initial_state:
-            self._set_initial_state(initial_state)
-        else:
-            raise IOError("An initial condition must be specified.")
-
-
-    def _trim(self, trim_dict):
-        # Trims the aircraft at the given condition
-
-        # Get params
-        self._V0 = trim_dict["airspeed"]
-        self.y[6:9] = trim_dict["position"]
-        self._climb = m.radians(trim_dict.get("climb_angle", 0.0))
-        self._bank = m.radians(trim_dict.get("bank_angle", 0.0))
-        self._heading = m.radians(trim_dict.get("heading", 0.0))
-        self._trim_verbose = trim_dict.get("verbose", False)
-
-        # Parse controls
-        self._avail_controls = trim_dict.get("trim_controls", list(self.controls.keys()))
-        self._fixed_controls = trim_dict.get("fixed_controls", {})
-        for name in self._control_names:
-            if name in self._avail_controls:
-                continue
-            self._fixed_controls[name] = self._fixed_controls.get(name, 0.0)
-
-        # Check we have enough
-        if len(self._avail_controls) != 4:
-            raise IOError("Exactly 4 controls must be used to trim the aircraft. Got {0}.".format(len(self._avail_controls)))
-
-        # Initialize output
-        if self._trim_verbose:
-            print("Trimming at {0} deg bank and {1} deg climb...".format(m.degrees(self._bank), m.degrees(self._climb)))
-            header = ["{0:>20}{1:>20}".format("Alpha [deg]", "Beta [deg]")]
-            for name in self._avail_controls:
-                header.append("{0:>20}".format(name.title()))
-            header.append("{0:>20}".format("Elevation [deg]"))
-            print("".join(header))
-
-        # Solve for trim
-        trim_val_guess = np.zeros(6)
-        x, info_dict, ier, mesg = opt.fsolve(self._trim_residual_function, trim_val_guess, full_output=True)
-        trim_settings = x
-
-        # Output results of trim
-        if self._trim_verbose:
-            if ier != 1:
-                print("No trim solution found. Scipy returned '{0}'.".format(mesg))
-            print("\nFinal trim residuals: {0}".format(info_dict["fvec"]))
-
-        # Parse trimmed state
-        alpha = trim_settings[0]
-        beta = trim_settings[1]
-        controls = copy.deepcopy(self._fixed_controls)
-        for i, name in enumerate(self._avail_controls):
-            controls[name] = trim_settings[i+2]
-
-        # Set state
-        self._set_state_in_coordinated_turn(alpha, beta, controls)
-
-
-    def _trim_residual_function(self, trim_vals):
-        # Returns the trim residuals as a function of the control inputs
-
-        # Unpack args
-        alpha = trim_vals[0]
-        beta = trim_vals[1]
-        controls = copy.deepcopy(self._fixed_controls)
-        for i, name in enumerate(self._avail_controls):
-            controls[name] = trim_vals[i+2]
-
-        # Calculate elevation angle
-        theta = self._get_elevation(alpha, beta, self._bank, self._climb)
-
-        # Output
-        if self._trim_verbose:
-            print("{0:>20.10f}{1:>20.10f}{2:>20.10f}{3:>20.10f}{4:>20.10f}{5:>20.10f}{6:>20.10f}".format(m.degrees(alpha), m.degrees(beta), *trim_vals[2:], m.degrees(theta)))
-
-        # Set state
-        self._set_state_in_coordinated_turn(alpha, beta, controls)
-
-        # Get residuals
-        dy_dt = self.dy_dt(0.0)
-        return dy_dt[:6]
-
-
-    def _set_state_in_coordinated_turn(self, alpha, beta, controls):
-
-        # Set state
-        theta = self._get_elevation(alpha, beta, self._bank, self._climb)
-        C_theta = m.cos(theta)
-        S_theta = m.sin(theta)
-        C_phi = m.cos(self._bank)
-        S_phi = m.sin(self._bank)
-        C_a = m.cos(alpha)
-        S_a = m.sin(alpha)
-        C_B = m.cos(beta)
-        S_B = m.sin(beta)
-        D = m.sqrt(1-S_a*S_a*S_B*S_B)
-        u = self._V0*C_a*C_B/D
-        v = self._V0*C_a*S_B/D
-        w = self._V0*S_a*C_B/D
-        self.y[0] = u
-        self.y[1] = v
-        self.y[2] = w
-        self.y[3:6] = self._get_rotation_rates(C_phi, S_phi, C_theta, S_theta, self._g, u, w)
-        self.y[9:] = Euler2Quat([self._bank, theta, self._heading])
-
-        # Set controls
-        self.controls = controls
-
-
-    def _set_initial_state(self, initial_state):
-        # Sets the initial state of the aircraft without trimming
-
-        # Store controls
-        for name in self._control_names:
-            self.controls[name] = initial_state["control_state"].get(name, 0.0)
-
-        # Store state
-        self.y[0:3] = import_value("velocity", initial_state, self._units, None)
-        self.y[3:6] = import_value("angular_rates", initial_state, self._units, [0.0, 0.0, 0.0])
-        self.y[6:9] = import_value("position", initial_state, self._units, None)
-        self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
+        self._initialize_state(param_dict)
 
 
     def _update_machupx_state(self):
@@ -1001,16 +977,10 @@ class MachUpXAirplane(BaseAircraft):
         S_a = w/u*C_a
 
         # Get MachUpX predicted coefficients
-        coef_dict = self._mx_scene.solve_forces(dimensional=False, body_frame=True, wind_frame=True)[self.name]["total"]
-        CL = coef_dict["CL"]
-        CS = coef_dict["CS"]
-        CD = coef_dict["CD"]
-        Cl = coef_dict["Cl"]
-        Cm = coef_dict["Cm"]
-        Cn = coef_dict["Cn"]
+        coefs = self._mx_scene.solve_forces(dimensional=False, body_frame=True, wind_frame=True)[self.name]["total"]
 
         # Correct for stall
-        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(CL, CD, CS, Cl, Cm, Cn, a, B, S_a, S_B, C_a, C_B)
+        CL, CD, CS, Cl, Cm, Cn = self._correct_stall(coefs["CL"], coefs["CD"], coefs["CS"], coefs["Cl"], coefs["Cm"], coefs["Cn"], a, B, S_a, S_B, C_a, C_B)
 
         # Get forces
         FM[0] = redim*(CL*S_a-CS*C_a*S_B-CD*C_a*C_B)
