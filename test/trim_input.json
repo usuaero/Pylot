@@ -18,8 +18,9 @@
             "climb_angle" : 0.0,
             "bank_angle" : 0.0,
             "heading" : 0.0,
+            "verbose" : true,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
         },
-        "controller" : "keyboard"
+        "controller" : "joystick"
     }
 }

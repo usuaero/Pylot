@@ -7,7 +7,7 @@
     },
     "units" : "English",
     "atmosphere" : {
-        "density" : 0.0023769
+        "density" : "standard"
     },
     "aircraft" : {
         "name" : "my_airplane",
@@ -24,7 +24,6 @@
                 "rudder" : -0.54199836594454420
             }
         },
-        "controller" : "controls.csv",
-        "state_output" : "states.txt"
+        "controller" : "joystick"
     }
 }
