@@ -140,15 +140,15 @@ class Simulator:
                 pos = [rho*np.cos(theta), rho*np.sin(theta), 0.0]
                 self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", pos, [1.0, 0.0, 0.0, 0.0]))
 
-            # Initialize fog
-            self._render_loading_message('fog')
-            glFogi(GL_FOG_MODE, GL_LINEAR)
-            glFogfv(GL_FOG_COLOR, [0.5, 0.5, 0.5, 1.0])
-            glFogf(GL_FOG_DENSITY, 0.05)
-            glHint(GL_FOG_HINT, GL_DONT_CARE)
-            glFogf(GL_FOG_START, 0.0)
-            glFogf(GL_FOG_END, 5.0)
-            glEnable(GL_FOG)
+            ## Initialize fog
+            #self._render_loading_message('fog')
+            #glFogi(GL_FOG_MODE, GL_LINEAR)
+            #glFogfv(GL_FOG_COLOR, [0.5, 0.5, 0.5, 1.0])
+            #glFogf(GL_FOG_DENSITY, 0.05)
+            #glHint(GL_FOG_HINT, GL_DONT_CARE)
+            #glFogf(GL_FOG_START, 0.0)
+            #glFogf(GL_FOG_END, 5.0)
+            #glEnable(GL_FOG)
 
         # Initialize camera object
         self._render_loading_message('camera')
@@ -222,6 +222,7 @@ class Simulator:
             while True:
                 try:
                     # Get graphics files
+                    self._render_loading_message("aircraft")
                     obj_path = self._aircraft_graphics_info["obj_file"]
                     v_shader_path = self._aircraft_graphics_info["v_shader_file"]
                     f_shader_path = self._aircraft_graphics_info["f_shader_file"]

@@ -11,7 +11,7 @@ import copy
 from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne
 from .std_atmos import statee, statsi
 from .controllers import NoController, KeyboardController, JoystickController, TimeSequenceController
-from .engine import Engine
+from .components import Engine, LandingGear
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
@@ -82,6 +82,13 @@ class BaseAircraft:
         for key, value in self._input_dict.get("engines", {}).items():
             self._engines.append(Engine(key, **value, units=self._units))
             self._num_engines += 1
+
+        # Load landing gear
+        self._landing_gear = []
+        self._num_landing_gear = 0
+        for key, value in self._input_dict.get("landing_gear", {}).items():
+            self._landing_gear.append(LandingGear(key, **value, units=self._units))
+            self._num_landing_gear += 1
 
         # Load controls
         controller = param_dict.get("controller", None)
@@ -868,6 +875,10 @@ class LinearizedAirplane(BaseAircraft):
         for engine in self._engines:
             FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
 
+        # Get effect of landing_gear
+        for gear in self._landing_gear:
+            FM += gear.get_landing_FM(self.y)
+
         return FM
 
 
@@ -995,6 +1006,10 @@ class MachUpXAirplane(BaseAircraft):
         # Get effect of engines
         for engine in self._engines:
             FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
+
+        # Get effect of landing_gear
+        for gear in self._landing_gear:
+            FM += gear.get_landing_FM(self.y)
 
         return FM
 
