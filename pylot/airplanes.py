@@ -125,9 +125,11 @@ class BaseAircraft:
         self.controls = {}
 
 
-    def __del__(self):
+    def finalize(self):
         if self._output_state:
             self._output_handle.close()
+
+        self.controller.finalize()
 
 
     def output_state(self, t):

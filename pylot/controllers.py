@@ -110,11 +110,13 @@ class BaseController:
                         raise IOError("'column_index' must be specified for each control if a time-sequence controller is used.")
 
 
-    def __del__(self):
+    def finalize(self):
         if self._enable_interface:
             self._keyboard_listener.stop()
         if self._write_controls:
             self._control_output.close()
+        if isinstance(self, JoystickController):
+            self._joy_listener.kill()
 
 
     def get_control_names(self):
