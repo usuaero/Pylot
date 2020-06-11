@@ -97,6 +97,8 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     if t > t_final:
         quit_flag.value = 1
 
+    aircraft.finalize()
+
 
 def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
     # Loads the aircraft from the input file
