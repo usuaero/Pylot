@@ -48,6 +48,28 @@
             "area" : 5.0
         }
     },
+    "landing_gear" : {
+        "nose" : {
+            "tip_loc" : [3.0, 0.0, 3.0],
+            "shock_dir" : [0.0, 0.0, 1.0],
+            "shock_stiffness" : 2000.0,
+            "shock_damping" : 0.0,
+            "rolling_friction_coef" : 0.001,
+            "sliding_friction_coef" : 0.6
+        },
+        "right" : {
+            "tip_loc" : [-3.0, 3.0, 3.0],
+            "shock_dir" : [0.0, 0.0, 1.0],
+            "shock_stiffness" : 2000.0,
+            "shock_damping" : 0.0
+        },
+        "left" : {
+            "tip_loc" : [-3.0, -3.0, 3.0],
+            "shock_dir" : [0.0, 0.0, 1.0],
+            "shock_stiffness" : 2000.0,
+            "shock_damping" : 0.0
+        }
+    },
     "aero_model" : {
         "type" : "linearized_coefficients",
         "stall_angle_of_attack" : 15

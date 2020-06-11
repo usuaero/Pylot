@@ -137,7 +137,9 @@ def convert_units(in_value, units, system):
         "slug ft^2" : 1.0,
         "kg m^2" : 0.7375621419,
         "slug ft^2/s" : 1.0,
-        "kg m^2/s" : 0.7375621419
+        "kg m^2/s" : 0.7375621419,
+        "lbf/ft" : 1.0,
+        "N/m" : 0.0685217659
     }
 
     to_si_default = {
@@ -163,7 +165,9 @@ def convert_units(in_value, units, system):
         "slug ft^2" : 1.355817961,
         "kg m^2" : 1.0,
         "slug ft^2/s" : 1.355817961,
-        "kg m^2/s" : 1.0
+        "kg m^2/s" : 1.0,
+        "lbf/ft" : 14.593902928003786,
+        "N/m" : 1.0
     }
     try:
         if system == "English":
