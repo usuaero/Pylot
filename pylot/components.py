@@ -200,6 +200,8 @@ class LandingGear:
 
             # Determine velocity of the shock
 
+            ### THIS STUFF NEEDS TO BE MORE IN THE EARTH FRAME!!!
+
             # Determine force exerted by the shock
             F = -self._dir*(delta_shock*self._k)
 
@@ -213,6 +215,5 @@ class LandingGear:
 
             # Determine moment vector
             FM[3:] = np.cross(self._pos, F)
-
 
         return FM
