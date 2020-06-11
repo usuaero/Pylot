@@ -3,6 +3,7 @@
     "simulation" : {
         "real_time" : true,
         "enable_graphics" : true,
+        "simple_graphics" : true,
         "target_framerate" : 30
     },
     "units" : "English",
@@ -13,7 +14,7 @@
         "name" : "my_airplane",
         "file" : "test/airplane.json",
         "trim" : {
-            "airspeed" : 175,
+            "airspeed" : 100,
             "position" : [-100.0, 0.0, -5.0],
             "climb_angle" : 0.0,
             "bank_angle" : 0.0,

@@ -54,20 +54,24 @@
             "shock_dir" : [0.0, 0.0, 1.0],
             "shock_stiffness" : 2000.0,
             "shock_damping" : 0.0,
-            "rolling_friction_coef" : 0.001,
-            "sliding_friction_coef" : 0.6
+            "rolling_friction_coef" : 0.01,
+            "sliding_friction_coef" : 0.0
         },
         "right" : {
             "tip_loc" : [-3.0, 3.0, 3.0],
             "shock_dir" : [0.0, 0.0, 1.0],
             "shock_stiffness" : 2000.0,
-            "shock_damping" : 0.0
+            "shock_damping" : 0.0,
+            "rolling_friction_coef" : 0.01,
+            "sliding_friction_coef" : 0.6
         },
         "left" : {
             "tip_loc" : [-3.0, -3.0, 3.0],
             "shock_dir" : [0.0, 0.0, 1.0],
             "shock_stiffness" : 2000.0,
-            "shock_damping" : 0.0
+            "shock_damping" : 0.0,
+            "rolling_friction_coef" : 0.01,
+            "sliding_friction_coef" : 0.6
         }
     },
     "aero_model" : {
