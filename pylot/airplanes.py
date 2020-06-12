@@ -410,7 +410,18 @@ class BaseAircraft:
         self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
 
 
-    
+    def _component_effects(self, rho, u_inf, V):
+        # Gives the forces and moments due to engines, landing gear, etc.
+
+        # Get effect of engines
+        for engine in self._engines:
+            FM = engine.get_thrust_FM(self.controls, rho, u_inf, V)
+
+        # Get effect of landing_gear
+        for gear in self._landing_gear:
+            FM += gear.get_landing_FM(self.y, self.controls, rho, u_inf, V)
+
+        return FM
 
 
     # These methods must be defined in any derived class. Any of the preceding methods can also be redefined.
@@ -871,13 +882,8 @@ class LinearizedAirplane(BaseAircraft):
         FM[4] = redim*Cm*self._cw
         FM[5] = redim*Cn*self._bw
 
-        # Get effect of engines
-        for engine in self._engines:
-            FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
-
-        # Get effect of landing_gear
-        for gear in self._landing_gear:
-            FM += gear.get_landing_FM(self.y)
+        # Get component effects
+        FM += self._component_effects(rho, u_inf, V)
 
         return FM
 
@@ -1003,13 +1009,8 @@ class MachUpXAirplane(BaseAircraft):
         FM[4] = redim*Cm*self._cw
         FM[5] = redim*Cn*self._bw
 
-        # Get effect of engines
-        for engine in self._engines:
-            FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
-
-        # Get effect of landing_gear
-        for gear in self._landing_gear:
-            FM += gear.get_landing_FM(self.y)
+        # Get component effects
+        FM += self._component_effects(rho, u_inf, V)
 
         return FM
 
