@@ -619,9 +619,14 @@ class Camera:
 
         # Otherwise, perform linear interpolation on the times to get position, up, and target
         else:
-            self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)
-            self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
-            self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
+            try:
+                self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)
+                self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
+                self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
+            except ValueError:
+                self.camera_pos = self.pos_storage[0]
+                self.camera_up = self.up_storage[0]
+                self.target = self.target_storage[0]
 
             # Clean up really old values
             if self.time_storage[1] < camera_time:
