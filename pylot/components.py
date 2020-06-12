@@ -203,11 +203,12 @@ class LandingGear:
             v_tip = np.cross(w, self._pos) + v
 
             # Determine velocity of the shock
-
-            ### THIS STUFF NEEDS TO BE MORE IN THE EARTH FRAME!!!
+            v_tip_f = Body2Fixed(v_tip, q)
+            d_prime = dir_f*v_tip_f/dir_f[2]
+            vel_shock = m.sqrt(d_prime[0]*d_prime[0]+d_prime[1]*d_prime[1]+d_prime[2]*d_prime[2])
 
             # Determine force exerted by the shock
-            F_f = -dir_f*(delta_shock*self._k)
+            F_f = -dir_f*(delta_shock*self._k+vel_shock*self._c)
             F_f[0] = 0.0
             F_f[1] = 0.0
             F = Fixed2Body(F_f, q)
