@@ -1,4 +1,4 @@
-from .helpers import import_value, Body2Fixed, Fixed2Body
+from .helpers import import_value, Body2Fixed, Fixed2Body, Quat2Euler
 from .std_atmos import statee, statsi
 import numpy as np
 import math as m
@@ -164,6 +164,11 @@ class LandingGear:
         self._ref_area = import_value("area", kwargs, self._units, 1.0)
         self._CD = import_value("CD", kwargs, self._units, 0.0)
         self._drag_param = self._ref_area*self._CD
+        self._steer_cntrl = kwargs.get("steering_control", None)
+        if kwargs.get("steering_reversed", False):
+            self._steer_orient = -1.0
+        else:
+            self._steer_orient = 1.0
 
 
     def get_landing_FM(self, y, controls, rho, u_inf, V):
@@ -198,19 +203,30 @@ class LandingGear:
             velocity = v_tip_f[2]
 
             # Determine normal force exerted by the shock
-            N = depth*self._k+velocity*self._c
+            N = depth*self._k+velocity*self._c*float(velocity>0.0) # So the airplane doesn't stick to the ground... ;)
             F_f = [0.0, 0.0, -N]
-            F = Fixed2Body(F_f, q)
+
+            # Determine the direction the wheel is pointing
+            psi = Quat2Euler(q)[2]
+
+            # Get steering deflection
+            if self._steer_cntrl is not None:
+                psi += self._steer_orient*m.radians(controls.get(self._steer_cntrl, 0.0))
+
+            # Determine rolling and sliding directions
+            C_psi = m.cos(psi)
+            S_psi = m.sin(psi)
+            u_roll = np.asarray([C_psi, S_psi, 0.0])
+            u_slid = np.asarray([-S_psi, C_psi, 0.0])
+
+            # Determine rolling and sliding velocities
+            v_roll = v_tip_f[0]*u_roll[0]+v_tip_f[1]*u_roll[1]+v_tip_f[2]*u_roll[2]
+            v_slid = v_tip_f[0]*u_slid[0]+v_tip_f[1]*u_slid[1]+v_tip_f[2]*u_slid[2]
 
             # Determine friction forces on the wheel
-            if v_tip[0] != 0.0:
-                F[0] -= self._u_f_roll*N*np.sign(v_tip[0])
-            if v_tip[1] != 0.0:
-                F[1] -= self._u_f_slid*N*np.sign(v_tip[1])
-            FM[:3] = F
-
-            # Determine moment vector
-            FM[3:] = np.cross(self._pos, F)
+            F_f -= u_roll*self._u_f_roll*N*np.sign(v_roll)
+            F_f -= u_slid*self._u_f_slid*N*np.sign(v_slid)
+            FM[:3] = Fixed2Body(F_f, q)
 
         # Get drag
         FM[:3] += -0.5*rho*V*V*self._drag_param*u_inf

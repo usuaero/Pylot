@@ -629,11 +629,14 @@ class Camera:
                 self.target = self.target_storage[0]
 
             # Clean up really old values
-            if self.time_storage[1] < camera_time:
-                self.time_storage.pop(0)
-                self.pos_storage.pop(0)
-                self.up_storage.pop(0)
-                self.target_storage.pop(0)
+            try:
+                if self.time_storage[1] < camera_time:
+                    self.time_storage.pop(0)
+                    self.pos_storage.pop(0)
+                    self.up_storage.pop(0)
+                    self.target_storage.pop(0)
+            except IndexError:
+                pass
 
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
 

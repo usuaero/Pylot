@@ -51,24 +51,32 @@
     "landing_gear" : {
         "nose" : {
             "tip_loc" : [3.0, 0.0, 3.0],
-            "shock_stiffness" : 50000.0,
-            "shock_damping" : 900.0,
+            "shock_stiffness" : 5000.0,
+            "shock_damping" : 9000.0,
             "rolling_friction_coef" : 0.01,
-            "sliding_friction_coef" : 0.0
+            "sliding_friction_coef" : 0.6,
+            "area" : 0.25,
+            "CD" : 1.2,
+            "steering_control" : "rudder",
+            "steering_reversed" : true
         },
         "right" : {
             "tip_loc" : [-3.0, 3.0, 3.0],
-            "shock_stiffness" : 50000.0,
-            "shock_damping" : 900.0,
+            "shock_stiffness" : 5000.0,
+            "shock_damping" : 9000.0,
             "rolling_friction_coef" : 0.01,
-            "sliding_friction_coef" : 0.6
+            "sliding_friction_coef" : 0.6,
+            "area" : 0.25,
+            "CD" : 1.2
         },
         "left" : {
             "tip_loc" : [-3.0, -3.0, 3.0],
-            "shock_stiffness" : 50000.0,
-            "shock_damping" : 900.0,
+            "shock_stiffness" : 5000.0,
+            "shock_damping" : 9000.0,
             "rolling_friction_coef" : 0.01,
-            "sliding_friction_coef" : 0.6
+            "sliding_friction_coef" : 0.6,
+            "area" : 0.25,
+            "CD" : 1.2
         }
     },
     "aero_model" : {
