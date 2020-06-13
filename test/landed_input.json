@@ -1,0 +1,22 @@
+{
+    "tag" : "Example of flight simulator input.",
+    "simulation" : {
+        "real_time" : true,
+        "enable_graphics" : true,
+        "simple_graphics" : false,
+        "target_framerate" : 30
+    },
+    "units" : "English",
+    "atmosphere" : {
+        "density" : 0.0023769
+    },
+    "aircraft" : {
+        "name" : "my_airplane",
+        "file" : "test/airplane.json",
+        "landed" : {
+            "position" : [0.0, 0.0, 0.0],
+            "heading" : 0.0
+        },
+        "controller" : "joystick"
+    }
+}

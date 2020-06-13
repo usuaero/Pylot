@@ -386,12 +386,15 @@ class BaseAircraft:
         # Sets the state from the input by calling _trim or _set_initial_state
         trim = param_dict.get("trim", False)
         initial_state = param_dict.get("initial_state", False)
-        if trim and initial_state:
-            raise IOError("Both an initial state and trim parameters cannot be specified.")
+        landed = param_dict.get("landed", False)
+        if (trim and initial_state) or (trim and landed) or (initial_state and landed):
+            raise IOError("Please specify only one initial condition.")
         elif trim:
             self._trim(trim)
         elif initial_state:
             self._set_initial_state(initial_state)
+        elif landed:
+            self._set_landed(landed)
         else:
             raise IOError("An initial condition must be specified.")
 
@@ -408,6 +411,31 @@ class BaseAircraft:
         self.y[3:6] = import_value("angular_rates", initial_state, self._units, [0.0, 0.0, 0.0])
         self.y[6:9] = import_value("position", initial_state, self._units, None)
         self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
+
+
+    def _set_landed(self, landed_dict):
+        # Sets the aircraft landed at the given position at the given heading
+
+        # Determine if we have landing gear to land on
+        if len(self._landing_gear) == 0:
+            raise IOError("Plane cannot be started in landing condition because no landing gear has been specified.")
+
+        # Get user parameters
+        pos = import_value("position", landed_dict, self._units, [0.0, 0.0, 0.0])
+        heading = import_value("heading", landed_dict, self._units, 0.0)
+
+        # Determine height of landing gear
+        max_height = 0.0
+        for gear in self._landing_gear:
+            if gear._pos[2]>max_height:
+                max_height = gear._pos[2]
+
+        # Set state
+        pos[2] = -max_height
+        self.y[0:3] = 0.0
+        self.y[3:6] = 0.0
+        self.y[6:9] = pos
+        self.y[9:] = Euler2Quat([0.0, 0.0, heading])
 
 
     def _component_effects(self, rho, u_inf, V):
