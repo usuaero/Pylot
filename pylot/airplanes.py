@@ -422,7 +422,7 @@ class BaseAircraft:
 
         # Get user parameters
         pos = import_value("position", landed_dict, self._units, [0.0, 0.0, 0.0])
-        heading = import_value("heading", landed_dict, self._units, 0.0)
+        heading = m.radians(import_value("heading", landed_dict, self._units, 0.0))
 
         # Determine height of landing gear
         max_height = 0.0
@@ -432,7 +432,8 @@ class BaseAircraft:
 
         # Set state
         pos[2] = -max_height
-        self.y[0:3] = 0.0
+        self.y[0] = 1e-10 # To keep the get_FM methods from crashing
+        self.y[1:3] = 0.0
         self.y[3:6] = 0.0
         self.y[6:9] = pos
         self.y[9:] = Euler2Quat([0.0, 0.0, heading])
