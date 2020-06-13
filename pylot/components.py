@@ -156,9 +156,9 @@ class LandingGear:
         # Load params
         self.name = name
         self._units = kwargs.get("units")
-        self._pos = import_value("tip_loc", kwargs, self._units, None)
-        self._k = import_value("shock_stiffness", kwargs, self._units, None)
-        self._c = import_value("shock_damping", kwargs, self._units, None)
+        self._pos = import_value("position", kwargs, self._units, None)
+        self._k = import_value("stiffness", kwargs, self._units, None)
+        self._c = import_value("damping", kwargs, self._units, 0.0)
         self._u_f_roll = import_value("rolling_friction_coef", kwargs, self._units, 0.0)
         self._u_f_slid = import_value("sliding_friction_coef", kwargs, self._units, 0.0)
         self._ref_area = import_value("area", kwargs, self._units, 1.0)
