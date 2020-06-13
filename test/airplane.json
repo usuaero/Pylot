@@ -51,25 +51,22 @@
     "landing_gear" : {
         "nose" : {
             "tip_loc" : [3.0, 0.0, 3.0],
-            "shock_dir" : [0.0, 0.0, 1.0],
             "shock_stiffness" : 50000.0,
-            "shock_damping" : 3000.0,
+            "shock_damping" : 900.0,
             "rolling_friction_coef" : 0.01,
             "sliding_friction_coef" : 0.0
         },
         "right" : {
             "tip_loc" : [-3.0, 3.0, 3.0],
-            "shock_dir" : [0.0, 0.0, 1.0],
             "shock_stiffness" : 50000.0,
-            "shock_damping" : 3000.0,
+            "shock_damping" : 900.0,
             "rolling_friction_coef" : 0.01,
             "sliding_friction_coef" : 0.6
         },
         "left" : {
             "tip_loc" : [-3.0, -3.0, 3.0],
-            "shock_dir" : [0.0, 0.0, 1.0],
             "shock_stiffness" : 50000.0,
-            "shock_damping" : 3000.0,
+            "shock_damping" : 900.0,
             "rolling_friction_coef" : 0.01,
             "sliding_friction_coef" : 0.6
         }

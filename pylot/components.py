@@ -141,9 +141,6 @@ class LandingGear:
     tip_loc : list
         Location of the tip of the landing gear in body-fixed coordinates.
 
-    shock_dir : list
-        Direction of action for the shock system on this landing gear. Points towards the ground.
-
     shock_stiffness : float
         Spring constant for the shock system.
 
@@ -160,7 +157,6 @@ class LandingGear:
         self.name = name
         self._units = kwargs.get("units")
         self._pos = import_value("tip_loc", kwargs, self._units, None)
-        self._dir = import_value("shock_dir", kwargs, self._units, [0.0, 0.0, 1.0])
         self._k = import_value("shock_stiffness", kwargs, self._units, None)
         self._c = import_value("shock_damping", kwargs, self._units, None)
         self._u_f_roll = import_value("rolling_friction_coef", kwargs, self._units, 0.0)
@@ -192,29 +188,21 @@ class LandingGear:
         depth = Body2Fixed(self._pos, q)[2]+z
         if depth > 0.0:
 
-            # Determine how far the shock is depressed
-            dir_f = np.asarray(Body2Fixed(self._dir, q))
-            d = dir_f*depth/dir_f[2]
-            delta_shock = m.sqrt(d[0]*d[0]+d[1]*d[1]+d[2]*d[2])
-
             # Determine velocity of the tip
             v = y[:3]
             w = y[3:6]
-            v_tip = np.cross(w, self._pos) + v
+            v_tip = np.cross(w, self._pos)+v
 
-            # Determine velocity of the shock
+            # Determine how fast the depth is changing
             v_tip_f = Body2Fixed(v_tip, q)
-            d_prime = dir_f*v_tip_f/dir_f[2]
-            vel_shock = m.sqrt(d_prime[0]*d_prime[0]+d_prime[1]*d_prime[1]+d_prime[2]*d_prime[2])
+            velocity = v_tip_f[2]
 
-            # Determine force exerted by the shock
-            F_f = -dir_f*(delta_shock*self._k+vel_shock*self._c)
-            F_f[0] = 0.0
-            F_f[1] = 0.0
+            # Determine normal force exerted by the shock
+            N = depth*self._k+velocity*self._c
+            F_f = [0.0, 0.0, -N]
             F = Fixed2Body(F_f, q)
 
             # Determine friction forces on the wheel
-            N = d[2]*self._k
             if v_tip[0] != 0.0:
                 F[0] -= self._u_f_roll*N*np.sign(v_tip[0])
             if v_tip[1] != 0.0:
