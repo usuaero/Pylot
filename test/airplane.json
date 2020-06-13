@@ -50,9 +50,9 @@
     },
     "landing_gear" : {
         "nose" : {
-            "tip_loc" : [3.0, 0.0, 3.0],
-            "shock_stiffness" : 50000.0,
-            "shock_damping" : 900.0,
+            "position" : [3.0, 0.0, 3.0],
+            "stiffness" : 50000.0,
+            "damping" : 900.0,
             "rolling_friction_coef" : 0.01,
             "sliding_friction_coef" : 0.6,
             "area" : 0.25,
@@ -61,18 +61,18 @@
             "steering_reversed" : true
         },
         "right" : {
-            "tip_loc" : [-3.0, 3.0, 3.0],
-            "shock_stiffness" : 50000.0,
-            "shock_damping" : 900.0,
+            "position" : [-3.0, 3.0, 3.0],
+            "stiffness" : 50000.0,
+            "damping" : 900.0,
             "rolling_friction_coef" : 0.01,
             "sliding_friction_coef" : 0.6,
             "area" : 0.25,
             "CD" : 1.2
         },
         "left" : {
-            "tip_loc" : [-3.0, -3.0, 3.0],
-            "shock_stiffness" : 50000.0,
-            "shock_damping" : 900.0,
+            "position" : [-3.0, -3.0, 3.0],
+            "stiffness" : 50000.0,
+            "damping" : 900.0,
             "rolling_friction_coef" : 0.01,
             "sliding_friction_coef" : 0.6,
             "area" : 0.25,

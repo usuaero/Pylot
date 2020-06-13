@@ -106,7 +106,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>Path to file containing the JSON object describing the aircraft.
 >>
 >>**"trim" : dict, optional**
->>>If this key is specified, the simulator will start the aircraft trimmed in a climbing turn described by the following keys. If this key is not specified, "initial_state" must be alternately specified.
+>>>If this key is specified, the simulator will start the aircraft trimmed in a climbing turn described by the following keys. If this key is not specified, "initial_state" or "landed" must be alternately specified.
 >>>
 >>>**"velocity" : float**
 >>>>Initial airspeed.
@@ -136,7 +136,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>>Whether to output intermediate guesses at each step of the iterative trim algorithm. Helps inform the user as to the progress/convergence of trim. Defaults to false.
 >>
 >>**"initial_state" : dict, optional**
->>>If this key is specified, the simulator will start the aircraft in the given state. No trimming will be performed. If this key is not specified, "trim" must be alternately specified.
+>>>If this key is specified, the simulator will start the aircraft in the given state. No trimming will be performed. If this key is not specified, "trim" or "landed" must be alternately specified.
 >>>
 >>>**"position" : vector**
 >>>>Position of the origin of the aircraft's body-fixed coordinate system in earth-fixed coordinates.
@@ -155,7 +155,16 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>
 >>>>**"<CONTROL_NAME>" : float, optional**
 >>>>>Control setting. Defaults to neutral setting.
->>>>
+>>
+>>**"landed" : dict, optional**
+>>>If this key is specified, the simulator will start the aircraft landed at the given position and heading. If this key is not specified, "initial_state" or "landed" must be alternately specified.
+>>>
+>>>**"position" : list, optional**
+>>>>Initial position of the aircraft. Any altitude value given will be overridden to place the aircraft on the ground. Defaults to [0.0, 0.0, 0.0].
+>>>
+>>>**"heading" : float, optional**
+>>>>Initial heading angle in degrees. Defaults to 0.0.
+>>>
 >>**"state_output" : string, optional**
 >>>If specified, the simulator will write the 13 element state vector of the aircraft to this file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Defaults to no output.
 >>
@@ -248,7 +257,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is always the time index (i.e. the first column after the time indices is denoted 1). Only required if a time sequence control input is used.
 >
 >**"engines" : dict, optional**
->>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated. can also be used to simulate external stores and nacelles.
+>>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated. Can also be used to simulate external stores and nacelles.
 >>
 >>**"<ENGINE_NAME>" : dict**
 >>>Describes a single engine. The thrust produced is assumed to be modelled by the function
@@ -280,6 +289,39 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>
 >>>**"CD" : float, optional**
 >>>>Coefficient of drag for the powerplant. This should be a positive value. Defaults to 0.0.
+>>>
+>>>**"area" : float, optional**
+>>>>Reference area for redimensionalizing the drag coefficient. Defaults to 1.0.
+>
+>**"landing_gear" : dict, optional**
+>>Specifies the ground contact point(s) of the aircraft. The aircraft may have any number of landing gear. If more than one is desired, the following set of keys is simply repeated. Can also be used to simulate external stores and nacelles.
+>>
+>>**"<LANDING_GEAR_NAME>" : dict**
+>>>Describes a single landing gear fixture (i.e. the back right wheel).
+>>>
+>>>**"postision" : vector**
+>>>>Location of the tip of the landing gear in body-fixed coordinates.
+>>>
+>>>**"stiffness" : float**
+>>>>Spring constant of the gear.
+>>>
+>>>**"damping" : float, optional**
+>>>>Damping constant of the gear. Defaults to 0.0.
+>>>
+>>>**"rolling_friction_coef" : float, optional**
+>>>>The resistance of the gear to rolling (i.e. travel in the axis of the gear) as a fraction of the normal force applied. If the gear is not a wheel, this should be the same as or close to "sliding_friction_coef". Defaults to 0.0.
+>>>
+>>>**"sliding_friction_coef" : float, optional**
+>>>>The resistance of the gear to sliding (i.e. travel perpendicular the axis of the gear) as a fraction of the normal force applied. Defaults to 0.0.
+>>>
+>>>**"steering_control" : string or int, optional**
+>>>>Name of the control which steers this landing gear. If not specified, the landing gear is assumed fixed.
+>>>
+>>>**"steering_reversed" : bool, optional**
+>>>>Whether the angle of the gear is mirror that of the control. For example, a tail dragger would not have reversed steering, since the wheel/skid track the rudder. But for an aircraft with a nose wheel, the steering should be reversed. Defaults to False.
+>>>
+>>>**"CD" : float, optional**
+>>>>Coefficient of drag for the gear. This should be a positive value. Defaults to 0.0.
 >>>
 >>>**"area" : float, optional**
 >>>>Reference area for redimensionalizing the drag coefficient. Defaults to 1.0.
