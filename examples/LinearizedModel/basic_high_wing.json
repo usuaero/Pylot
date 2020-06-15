@@ -46,6 +46,37 @@
             "control" : "throttle"
         }
     },
+    "landing_gear" : {
+        "nose" : {
+            "position" : [3.0, 0.0, 3.0],
+            "stiffness" : 50000.0,
+            "damping" : 900.0,
+            "rolling_friction_coef" : 0.01,
+            "sliding_friction_coef" : 0.6,
+            "area" : 0.25,
+            "CD" : 1.2,
+            "steering_control" : "rudder",
+            "steering_reversed" : true
+        },
+        "right" : {
+            "position" : [-3.0, 3.0, 3.0],
+            "stiffness" : 50000.0,
+            "damping" : 900.0,
+            "rolling_friction_coef" : 0.01,
+            "sliding_friction_coef" : 0.6,
+            "area" : 0.25,
+            "CD" : 1.2
+        },
+        "left" : {
+            "position" : [-3.0, -3.0, 3.0],
+            "stiffness" : 50000.0,
+            "damping" : 900.0,
+            "rolling_friction_coef" : 0.01,
+            "sliding_friction_coef" : 0.6,
+            "area" : 0.25,
+            "CD" : 1.2
+        }
+    },
     "aero_model" : {
         "type" : "linearized_coefficients",
         "stall_angle_of_attack" : 15
