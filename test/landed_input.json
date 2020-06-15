@@ -14,8 +14,8 @@
         "name" : "my_airplane",
         "file" : "test/airplane.json",
         "landed" : {
-            "position" : [0.0, 100.0, 0.0],
-            "heading" : 90.0
+            "position" : [0.0, 0.0, 0.0],
+            "heading" : 0.0
         },
         "controller" : "joystick"
     }

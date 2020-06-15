@@ -95,10 +95,6 @@ class Simulator:
         # Initialize game over screen
         self._gameover = Text(150)
 
-        # Initialize HUD
-        self._render_loading_message('HUD')
-        self._HUD = HeadsUp(self._width, self._height, self._objects_path, self._shaders_path, self._textures_path, self._screen)
-
         # Initialize flight data overlay
         self._render_loading_message('data overlay')
         self._data = FlightData(self._units)
@@ -118,6 +114,10 @@ class Simulator:
                                [0., 1., 0., 0.]] # I'm not storing these because they don't change
         for i in range(4):
             self._ground_quad.append(self._create_mesh("field.obj", "field.vs", "field.fs", "field_texture.jpg", self._ground_positions[i], ground_orientations[i]))
+
+        # Initialize HUD
+        self._render_loading_message('HUD')
+        self._HUD = HeadsUp(self._width, self._height, self._objects_path, self._shaders_path, self._textures_path, self._screen)
 
         # Initialize scenery
         if not self._simple_graphics:
