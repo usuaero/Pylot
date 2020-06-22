@@ -10,7 +10,7 @@ import pygame.display
 import pygame.image
 import os
 from .physics import run_physics, load_aircraft, RK4
-from .helpers import Quat2Euler
+from .helpers import Quat2Euler, Body2Fixed
 from pygame.locals import HWSURFACE, OPENGL, DOUBLEBUF
 from OpenGL.GL import glClear, glClearColor
 from .graphics import *
@@ -27,10 +27,19 @@ class Simulator:
     def __init__(self, input_val):
 
         # Print welcome
-        print("\n--------------------------------------------------")
-        print(  "              Welcome to Pylot!                   ")
-        print(  "                 USU AeroLab                      ")
-        print(  "--------------------------------------------------")
+        print()
+        print("-----------------------------------------------------")
+        print("|                                                   |")
+        print("|                    Pylot 1.3.1                    |")
+        print("|                                                   |")
+        print("|               (c) USU AeroLab 2020                |")
+        print("|                                                   |")
+        print("|             This software comes with              |")
+        print("|    ABSOLUTELY NO WARRANTY EXPRESSED OR IMPLIED    |")
+        print("|                                                   |")
+        print("|           Submit bug reports on Github.           |")
+        print("|                                                   |")
+        print("-----------------------------------------------------")
 
         # Store input
         if isinstance(input_val, str):
@@ -267,10 +276,11 @@ class Simulator:
         self._manager.shutdown()
 
         # Print quit message
-        print("\n--------------------------------------------------")
-        print(  "           Pylot exited successfully.             ")
-        print(  "                  Thank you!                      ")
-        print(  "--------------------------------------------------")
+        print()
+        print("-----------------------------------------------------")
+        print("|            Pylot exited successfully.             |")
+        print("|                   Thank you!                      |")
+        print("-----------------------------------------------------")
 
 
     def _update_graphics(self):
@@ -336,7 +346,7 @@ class Simulator:
             # Display Game Over screen and quit physics
             glClearColor(0,0,0,1.0)
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_ACCUM_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)
-            self._gameover.draw(-(450/self._width),-0.05,"Game Over",(0,255,0,1))
+            self._gameover.draw(-(450/self._width),-0.05,"Crashed!",(0,255,0,1))
             self._game_over.value = 1
 	
         # Otherwise, render graphics
