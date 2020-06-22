@@ -138,6 +138,11 @@ class Simulator:
                 theta = np.random.rand(1)*2*np.pi
                 rho = np.random.rand(1)*70+30
                 pos = [rho*np.cos(theta), rho*np.sin(theta), 0.0]
+                if abs(pos[1]) < 15.0:
+                    if pos[1] < 0.0:
+                        pos[1] -= 15.0 # Get yo trees offa my airstrip!
+                    else:
+                        pos[1] += 15.0
                 self._trees.append(self._create_mesh("spruce.obj", "field.vs", "field.fs", "tree_texture.jpg", pos, [1.0, 0.0, 0.0, 0.0]))
 
             ## Initialize fog
