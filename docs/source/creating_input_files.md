@@ -164,6 +164,39 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>
 >>>**"heading" : float, optional**
 >>>>Initial heading angle in degrees. Defaults to 0.0.
+>>
+>>**"elastic_launch" : dict, optional**
+>>>If this key is specified, the simulator will start the aircraft in the given state with an elastic attached between the hook on the aircraft and the given anchor position. THis elastic will then tow the aircraft into the air, given the parameters are properly specified. The full state of the aircraft can be specified as well to allow the aircraft to be launched from various orientations and initial velocities. The elastic will stop exerting a force on the aircraft as soon as it would exert a force in the negative body-x direction (i.e. the elastic is pulled off the hook).
+>>>
+>>>**"position" : vector**
+>>>>Position of the origin of the aircraft's body-fixed coordinate system in earth-fixed coordinates.
+>>>
+>>>**"velocity" : vector, optional**
+>>>>Body-fixed velocity components. Defaults to [0.0, 0.0, 0.0].
+>>>
+>>>**"orientation" : vector, optional**
+>>>>Orientation of the aircraft, going from earth-fixed frame to body-fixed frame. If this is a 3-element vector it is assumed the ZYX Euler angle formulation is used (i.e. [psi, theta, phi]). If this is a 4-element vector it is assumed the quaternion formulation is used where the first element is the scalar (i.e. [e0, ex, ey, ez]). Defaults to [1.0, 0.0, 0.0, 0.0], which will align the body- fixed frame with the earth-fixed frame.
+>>>
+>>>**"angular_rates" : vector, optional**
+>>>>Angular rates of the aircraft in body-fixed coordinates, corresponding to p, q, and r. Defaults to [0.0, 0.0, 0.0].
+>>>
+>>>**"control_state" : dict, optional**
+>>>>Describes the control settings. The number and names of controls are arbitrary and may be specified by the user.
+>>>
+>>>>**"<CONTROL_NAME>" : float, optional**
+>>>>>Control setting. Defaults to neutral setting.
+>>>
+>>>**"anchor_position" : list, optional**
+>>>>Where the end of the elastic is anchored to the Earth. Will determine in which direction the aircraft is launched. Defaults to [0.0, 0.0, 0.0].
+>>>
+>>>**"unstretched_length" : float, optional**
+>>>>Unstretched length of the elastic. If the elastic is calculated to be shorter than this length, no force will be applied. Defaults to 0.0.
+>>>
+>>>**"stiffness" : float**
+>>>>Spring constant of the elastic.
+>>>
+>>>**"launch_time" : float, optional**
+>>>>Time in the simulation at which the airplane will be released and the elastic will be allowed to pull on it. Defaults to 0.0.
 >>>
 >>**"state_output" : string, optional**
 >>>If specified, the simulator will write the 13 element state vector of the aircraft to this file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Defaults to no output.
@@ -325,6 +358,9 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>
 >>>**"area" : float, optional**
 >>>>Reference area for redimensionalizing the drag coefficient. Defaults to 1.0.
+>
+>**"launch_hook_position" : list, optional**
+>>Position of the launching hook on the aircraft. Defaults to [0.0, 0.0, 0.0].
 >
 >**"graphics" : dict, optional**
 >>Optionally provides graphics objects for rendering the aircraft in the simulator. If nothing is specified here, the aircraft will be rendered as a single-engine Cessna, unless the MachUpX aerodynamic model is being used.

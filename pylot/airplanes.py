@@ -8,7 +8,7 @@ import scipy.optimize as opt
 import os
 import copy
 
-from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne
+from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne, Fixed2Body
 from .std_atmos import statee, statsi
 from .controllers import NoController, KeyboardController, JoystickController, TimeSequenceController
 from .components import Engine, LandingGear
@@ -89,6 +89,10 @@ class BaseAircraft:
         for key, value in self._input_dict.get("landing_gear", {}).items():
             self._landing_gear.append(LandingGear(key, **value, units=self._units))
             self._num_landing_gear += 1
+
+        # Get position of bungee hook
+        self._hook_pos = import_value("launch_hook_position", self._input_dict, self._units, [0.0, 0.0, 0.0])
+        self._hooked = False
 
         # Load controls
         controller = param_dict.get("controller", None)
@@ -387,14 +391,17 @@ class BaseAircraft:
         trim = param_dict.get("trim", False)
         initial_state = param_dict.get("initial_state", False)
         landed = param_dict.get("landed", False)
-        if (trim and initial_state) or (trim and landed) or (initial_state and landed):
+        bungee = param_dict.get("elastic_launch", False)
+        if len([x for x in [trim, initial_state, landed, bungee] if x is not False])>1:
             raise IOError("Please specify only one initial condition.")
-        elif trim:
+        elif isinstance(trim, dict):
             self._trim(trim)
-        elif initial_state:
+        elif isinstance(initial_state, dict):
             self._set_initial_state(initial_state)
-        elif landed:
+        elif isinstance(landed, dict):
             self._set_landed(landed)
+        elif isinstance(bungee, dict):
+            self._set_elastic_launch(bungee)
         else:
             raise IOError("An initial condition must be specified.")
 
@@ -404,13 +411,17 @@ class BaseAircraft:
 
         # Store controls
         for name in self._control_names:
-            self.controls[name] = initial_state["control_state"].get(name, 0.0)
+            self.controls[name] = initial_state.get("control_state", {}).get(name, 0.0)
 
         # Store state
         self.y[0:3] = import_value("velocity", initial_state, self._units, None)
         self.y[3:6] = import_value("angular_rates", initial_state, self._units, [0.0, 0.0, 0.0])
         self.y[6:9] = import_value("position", initial_state, self._units, None)
         self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
+
+        # Make sure we have some x velocity
+        if self.y[0] == 0.0:
+            self.y[0] = 1e-10
 
 
     def _set_landed(self, landed_dict):
@@ -438,8 +449,22 @@ class BaseAircraft:
         self.y[6:9] = pos
         self.y[9:] = Euler2Quat([0.0, 0.0, heading])
 
+    def _set_elastic_launch(self, bungee_dict):
+        # Sets up a bungee launch
 
-    def _component_effects(self, rho, u_inf, V):
+        # Set initial state normally, except velocity need not be specified
+        bungee_dict["velocity"] = bungee_dict.get("velocity", [0.0, 0.0, 0.0])
+        self._set_initial_state(bungee_dict)
+
+        # Set up bungee parameters
+        self._hooked = True
+        self._anchor_pos = import_value("anchor_position", bungee_dict, self._units, [0.0, 0.0, 0.0])
+        self._k_launch = import_value("stiffness", bungee_dict, self._units, None)
+        self._l_unstretched = import_value("unstretched_length", bungee_dict, self._units, 0.0)
+        self._launch_time = import_value("launch_time", bungee_dict, self._units, 0.0)
+
+
+    def _component_effects(self, t, rho, u_inf, V):
         # Gives the forces and moments due to engines, landing gear, etc.
 
         # Get effect of engines
@@ -449,6 +474,30 @@ class BaseAircraft:
         # Get effect of landing_gear
         for gear in self._landing_gear:
             FM += gear.get_landing_FM(self.y, self.controls, rho, u_inf, V)
+
+        # Get effect of bungee
+        if self._hooked and t > self._launch_time:
+
+            # Get bungee vector
+            d_vec = Fixed2Body(-self.y[6:9]+self._anchor_pos, self.y[9:])-self._hook_pos
+
+            # Check if we've come off the hook
+            if d_vec[0] < 0.0:
+                self._hooked = False
+
+            else:
+
+                # Determine the length of the bungee
+                d = m.sqrt(d_vec[0]*d_vec[0]+d_vec[1]*d_vec[1]+d_vec[2]*d_vec[2])
+                if d > self._l_unstretched:
+
+                    # Calculate force
+                    F = self._k_launch*(d-self._l_unstretched)
+
+                    # Turn into a vector
+                    F_vec = d_vec/d*F
+                    FM[:3] += F_vec
+                    FM[3:] += np.cross(self._hook_pos, F_vec)
 
         return FM
 
@@ -912,7 +961,7 @@ class LinearizedAirplane(BaseAircraft):
         FM[5] = redim*Cn*self._bw
 
         # Get component effects
-        FM += self._component_effects(rho, u_inf, V)
+        FM += self._component_effects(t, rho, u_inf, V)
 
         return FM
 
@@ -1039,7 +1088,7 @@ class MachUpXAirplane(BaseAircraft):
         FM[5] = redim*Cn*self._bw
 
         # Get component effects
-        FM += self._component_effects(rho, u_inf, V)
+        FM += self._component_effects(t, rho, u_inf, V)
 
         return FM
 
