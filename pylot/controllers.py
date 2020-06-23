@@ -233,7 +233,8 @@ class JoystickController(BaseController):
         self._manager = mp.Manager()
         self._joy_def = self._manager.list()
         self._joy_def[:] = [0.0]*4
-        self._joy_listener = mp.Process(target=joystick_listener, args=(self._joy_def, self._quit_flag))
+        self._throttle_perturbed = self._manager.Value('i', 0)
+        self._joy_listener = mp.Process(target=joystick_listener, args=(self._joy_def, self._quit_flag, self._throttle_perturbed))
         self._joy_listener.start()
 
         # Get mapping and limits
@@ -289,15 +290,15 @@ class JoystickController(BaseController):
                 return prev_controls # No point in parsing things if nothing's changed
 
         # Parse new controls
-        control_state = {}
-        setting_list = []
+        control_state = copy.deepcopy(prev_controls)
         for name in self._controls:
-            if self._angular_control[name]:
+            if not self._throttle_perturbed.value and self._axis_mapping[name] == 3:
+                continue
+            elif self._angular_control[name]:
                 setting = (self._joy_def[self._axis_mapping[name]]**3)*-self._control_limits[name]
             else:
                 setting = (-self._joy_def[self._axis_mapping[name]]+1.)*0.5
             control_state[name] = setting
-            setting_list.append(setting)
 
         return control_state
 
@@ -475,7 +476,7 @@ class TimeSequenceController(BaseController):
         return control_state
 
 
-def joystick_listener(axes_def, quit_flag):
+def joystick_listener(axes_def, quit_flag, throttle_perturbed_flag):
     """Listens to the joystick input and posts latest values to the manager list."""
 
     # While the game is still going
@@ -503,6 +504,8 @@ def joystick_listener(axes_def, quit_flag):
 
                     # Throttle axis
                     elif event.code == 'ABS_THROTTLE':
+                        if not throttle_perturbed_flag.value:
+                            throttle_perturbed_flag.value = 1
                         axes_def[3] = event.state/127.5-1.0
 
         except BrokenPipeError:
