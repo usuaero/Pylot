@@ -14,11 +14,11 @@
         "name" : "my_airplane",
         "file" : "test/airplane.json",
         "elastic_launch" : {
-            "position" : [0.0, 0.0, -3.0],
-            "anchor_position" : [1000.0, 0.0, 0.0],
+            "position" : [0.0, 0.0, -20.0],
+            "anchor_position" : [500.0, 0.0, 0.0],
             "unstretched_length" : 30.0,
             "stiffness" : 30.0,
-            "launch_time" : 5.0
+            "launch_time" : 1.0
         },
         "controller" : "joystick"
     }
