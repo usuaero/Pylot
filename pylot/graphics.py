@@ -562,12 +562,16 @@ class Frame:
 
 class Camera:
     def __init__(self):
+
+        # Set up storage
         self.pos_storage = []
         self.up_storage = []
         self.target_storage =[]
         self.time_storage = []
         self.IDENTITY = np.identity(4)
         self.IDENTITY2 = np.identity(4)
+
+        # Create Butterworth filter for smoothing out 
 
 
     def third_view(self, graphics_aircraft, physics_time, graphics_delay, airspeed, offset=[-10., 0., -2.]):
@@ -593,13 +597,13 @@ class Camera:
         quat_orientation = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
         graphics_aircraft_to_camera = Body2Fixed(offset, quat_orientation)
 		
-        cam_up = [0.,0.,-1.]
-        rotated_cam_up = Body2Fixed(cam_up,quat_orientation)
+        cam_up = [0.0, 0.0, -1.0]
+        rotated_cam_up = Body2Fixed(cam_up, quat_orientation)
 
         # Store position, target, up, and time
         self.pos_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
         self.up_storage.append(np.array(rotated_cam_up))
-        self.target_storage.append(graphics_aircraft.position)
+        self.target_storage.append(graphics_aircraft.position+graphics_aircraft_to_camera)
         self.time_storage.append(physics_time)
         
         # Make sure the storage arrays are the same length
@@ -608,25 +612,29 @@ class Camera:
         self.target_storage = self.target_storage[-n:]
 
         # Delay in seconds. The camera will lag behind the aircraft by this time
-        delay = -4*offset[0]/airspeed
+        if airspeed > 1.0:
+            delay = -2.0*offset[0]/airspeed
+        else:
+            delay = -2.0*offset[0]
         camera_time = physics_time-delay
 	
         # If we don't have enough history, just pull the oldest
         if self.time_storage[0] > camera_time:
             self.camera_pos = self.pos_storage[0]
             self.camera_up = self.up_storage[0]
-            self.target = self.target_storage[0]
+            self.target = self.target_storage[-1]
 
         # Otherwise, perform linear interpolation on the times to get position, up, and target
         else:
             try:
                 self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)
                 self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
-                self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
+                self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(physics_time)
+                #self.target = self.target_storage[-1]
             except ValueError:
                 self.camera_pos = self.pos_storage[0]
                 self.camera_up = self.up_storage[0]
-                self.target = self.target_storage[0]
+                self.target = self.target_storage[-1]
 
             # Clean up really old values
             try:
@@ -662,7 +670,7 @@ class Camera:
 
 		
         # Camera is always normal to the ground and near the tent
-        cam_up = [0.,0.,-1.]
+        cam_up = [0.0, 0.0, -1.0]
         pos = [20.0, 25.0, -5.0]
 
         # Store position, target, up, and time
@@ -687,6 +695,7 @@ class Camera:
                 self.target_storage.pop(0)
 
         return self.look_at(pos, self.target, cam_up)	
+
 
     def cockpit_view(self, graphics_aircraft):
         """creates view matrix such that camera is positioned at the graphics_aircraft location, as if in the cockpit

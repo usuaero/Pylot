@@ -449,6 +449,7 @@ class BaseAircraft:
         self.y[6:9] = pos
         self.y[9:] = Euler2Quat([0.0, 0.0, heading])
 
+
     def _set_elastic_launch(self, bungee_dict):
         # Sets up a bungee launch
 
