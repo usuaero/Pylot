@@ -218,7 +218,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>Specifies the unit system to be used when importing the aircraft object. Can be "SI" or "English". Any units not explicitly defined for each value in the input objects will be assumed to be the default unit for that measurement in the system specified here. Defaults to "English".
 >
 >**"CG" : vector, optional**
->>Location of the aircraft's center of gravity in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0], as the origin of the body-fixed coordinate system is typically the aircraft's center of gravity.
+>>Location of the aircraft's center of gravity in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0], as the origin of the body-fixed coordinate system is typically the aircraft's center of gravity. **For a linearized model, this parameter will have no effect, as the CG is assumed to be at the aircraft origin. However, this will affect the MachUpX model.**
 >
 >**"weight" : float**
 >>Weight of the aircraft.
