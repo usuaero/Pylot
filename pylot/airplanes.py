@@ -55,6 +55,7 @@ class BaseAircraft:
             print(header, file=self._output_handle)
 
         # Set mass properties
+        self._CG = import_value("CG", self._input_dict, self._units, [0.0, 0.0, 0.0])
         self._W = import_value("weight", self._input_dict, self._units, None)
         self._m_inv = self._g/self._W
 
@@ -80,14 +81,14 @@ class BaseAircraft:
         self._engines = []
         self._num_engines = 0
         for key, value in self._input_dict.get("engines", {}).items():
-            self._engines.append(Engine(key, **value, units=self._units))
+            self._engines.append(Engine(key, **value, units=self._units, CG=self._CG))
             self._num_engines += 1
 
         # Load landing gear
         self._landing_gear = []
         self._num_landing_gear = 0
         for key, value in self._input_dict.get("landing_gear", {}).items():
-            self._landing_gear.append(LandingGear(key, **value, units=self._units))
+            self._landing_gear.append(LandingGear(key, **value, units=self._units, CG=self._CG))
             self._num_landing_gear += 1
 
         # Get position of bungee hook
@@ -182,6 +183,19 @@ class BaseAircraft:
 
 
     def dy_dt(self, t):
+        """Calculates the derivative of the state vector with respect to time
+        at the current state and time.
+
+        Parameters
+        ----------
+        t : float
+            Current simulation time.
+
+        Returns
+        -------
+        ndarray
+            Time reate of change of each state variable.
+        """
 
         # Get forces and moments
         FM = self.get_FM(t)
@@ -498,7 +512,7 @@ class BaseAircraft:
                     # Turn into a vector
                     F_vec = d_vec/d*F
                     FM[:3] += F_vec
-                    FM[3:] += np.cross(self._hook_pos, F_vec)
+                    FM[3:] += np.cross(self._hook_pos-self._CG, F_vec)
 
         return FM
 

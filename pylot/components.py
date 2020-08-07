@@ -51,6 +51,7 @@ class Engine:
         self._ref_area = import_value("area", kwargs, self._units, 1.0)
         self._CD = import_value("CD", kwargs, self._units, 0.0)
         self._drag_param = self._ref_area*self._CD
+        self._aircraft_CG = kwargs.get("CG")
 
         # Normalize direction vector
         self._direction /= np.linalg.norm(self._direction)
@@ -101,7 +102,7 @@ class Engine:
         FM[:3] = F
 
         # Set moments
-        FM[3:] = np.cross(self._position, F)
+        FM[3:] = np.cross(self._position-self._aircraft_CG, F)
 
         return FM
 
@@ -165,6 +166,7 @@ class LandingGear:
         self._CD = import_value("CD", kwargs, self._units, 0.0)
         self._drag_param = self._ref_area*self._CD
         self._steer_cntrl = kwargs.get("steering_control", None)
+        self._aircraft_CG = kwargs.get("CG")
         if kwargs.get("steering_reversed", False):
             self._steer_orient = -1.0
         else:
@@ -232,6 +234,6 @@ class LandingGear:
         FM[:3] += -0.5*rho*V*V*self._drag_param*u_inf
 
         # Set moments
-        FM[3:] = np.cross(self._pos, FM[:3])
+        FM[3:] = np.cross(self._pos-self._aircraft_CG, FM[:3])
 
         return FM
