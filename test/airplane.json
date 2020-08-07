@@ -79,7 +79,7 @@
             "CD" : 1.2
         }
     },
-    "launch_hook_position" : [5.0, 0.0, 0.0],
+    "launch_hook_position" : [-10.0, 0.0, 0.0],
     "aero_model" : {
         "type" : "linearized_coefficients",
         "stall_angle_of_attack" : 15

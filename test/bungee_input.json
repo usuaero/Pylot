@@ -3,7 +3,7 @@
     "simulation" : {
         "real_time" : true,
         "enable_graphics" : true,
-        "simple_graphics" : false,
+        "simple_graphics" : true,
         "target_framerate" : 30
     },
     "units" : "English",
@@ -14,11 +14,11 @@
         "name" : "my_airplane",
         "file" : "test/airplane.json",
         "elastic_launch" : {
-            "position" : [0.0, 0.0, -20.0],
+            "position" : [0.0, 0.0, -3.0],
             "anchor_position" : [500.0, 0.0, 0.0],
             "unstretched_length" : 30.0,
             "stiffness" : 30.0,
-            "launch_time" : 1.0
+            "launch_time" : 5.0
         },
         "controller" : "joystick"
     }
