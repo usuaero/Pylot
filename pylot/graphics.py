@@ -561,7 +561,7 @@ class Frame:
 
 
 class Camera:
-    def __init__(self, offset=[-10.0, 0.0, -2.0]):
+    def __init__(self, offset):
 
         # Set up storage
         self.pos_storage = []
@@ -570,6 +570,10 @@ class Camera:
         self.IDENTITY = np.identity(4)
         self.IDENTITY2 = np.identity(4)
         self.offset = np.array(offset)
+
+        # Camera is always normal to the ground and near the tent
+        self._gound_cam_up = [0.0, 0.0, -1.0]
+        self._ground_pos = [20.0, 25.0, -5.0]
 
 
     def update_storage(self, graphics_aircraft, physics_time):
@@ -588,8 +592,8 @@ class Camera:
         quat_orientation = [graphics_aircraft.orientation[3], graphics_aircraft.orientation[0], graphics_aircraft.orientation[1], graphics_aircraft.orientation[2]]
 		
         # Determine direction of up (non-trivial, mind you!)
-        cam_up = [0.0, 0.0, -1.0]
-        rotated_cam_up = Body2Fixed(cam_up, quat_orientation)
+        self._gound_cam_up = [0.0, 0.0, -1.0]
+        rotated_cam_up = Body2Fixed(self._gound_cam_up, quat_orientation)
 
         # Store position, target, up, and time
         self.q_latest = quat_orientation
@@ -637,13 +641,13 @@ class Camera:
 
         # Have the camera lag a maximum of one wingspan or two seconds behind the aircraft 
         delay = abs(self.offset[0]/airspeed)
-        delay = min(delay, 2.0)
+        delay = min(delay, 2.5)
         camera_time -= delay
 	
         # Interpolate values
-        self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)+graphics_aircraft_to_camera
-        self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0, fill_value="extrapolate")(camera_time)
         self.target = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)
+        self.camera_pos = self.target+graphics_aircraft_to_camera
+        self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0, fill_value="extrapolate")(camera_time)
 
         self._clean_up_storage(camera_time)
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
@@ -669,15 +673,11 @@ class Camera:
         This function does several conversions between (e0,ex,ey,ez) and (x,y,z,w) forms of quaternions. It should not be altered.
         """
 
-        # Camera is always normal to the ground and near the tent
-        cam_up = [0.0, 0.0, -1.0]
-        pos = [20.0, 25.0, -5.0]
-
         # Interpolate target position
         self.target = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)
 
         self._clean_up_storage(camera_time)
-        return self.look_at(pos, self.target, cam_up)	
+        return self.look_at(self._ground_pos, self.target, self._gound_cam_up)	
 
 
     def cockpit_view(self, camera_time):

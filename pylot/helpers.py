@@ -247,3 +247,10 @@ def import_value(key, dict_of_vals, system, default_value):
 
 
 vectorized_convert_units = np.vectorize(convert_units)
+
+
+def cross(v0, v1):
+    """Calculates the cross product of v0 and v1."""
+    v00, v01, v02 = v0
+    v10, v11, v12 = v1
+    return np.array([v01*v12-v11*v02, v10*v02-v00*v12, v00*v11-v10*v01])
