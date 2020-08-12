@@ -162,7 +162,7 @@ class BaseAircraft:
         # Get stall values
         CL_stall = 2.0*S_a*S_a*C_a*np.sign(alpha)
         CD_stall = 1-C_a*S_a*np.sign(alpha)
-        Cm_stall = -S_a
+        Cm_stall = -0.5*S_a
         CS_stall = 0.2*S_B*S_B*C_B*np.sign(beta)
         Cl_stall = -CS_stall*0.05
         Cn_stall = CS_stall*0.1
