@@ -1,4 +1,4 @@
-from .helpers import import_value, Body2Fixed, Fixed2Body, Quat2Euler
+from .helpers import import_value, Body2Fixed, Fixed2Body, Quat2Euler, cross
 from .std_atmos import statee, statsi
 import numpy as np
 import math as m
@@ -102,7 +102,7 @@ class Engine:
         FM[:3] = F
 
         # Set moments
-        FM[3:] = np.cross(self._position-self._aircraft_CG, F)
+        FM[3:] = cross(self._position-self._aircraft_CG, F)
 
         return FM
 
@@ -110,7 +110,7 @@ class Engine:
     def get_unit_thrust_moment(self):
         """Returns the thrust moment vector assuming a thrust magnitude of unity.
         """
-        return np.cross(self._position, self._direction)
+        return cross(self._position, self._direction)
 
 
     def get_thrust_deriv(self, control, rho, V):
@@ -126,7 +126,7 @@ class Engine:
         """Returns the derivative of the thrust moment with respect to the given control.
         """
         if control == self._control:
-            return np.cross(self._position, self._direction*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V))
+            return cross(self._position, self._direction*(rho/self._rho0)**self._a*(self._T0+self._T1*V+self._T2*V*V))
         else:
             return np.zeros(3)
 
@@ -198,7 +198,7 @@ class LandingGear:
             # Determine velocity of the tip
             v = y[:3]
             w = y[3:6]
-            v_tip = np.cross(w, self._pos)+v
+            v_tip = cross(w, self._pos)+v
 
             # Determine how fast the depth is changing
             v_tip_f = Body2Fixed(v_tip, q)
@@ -222,8 +222,8 @@ class LandingGear:
             u_slid = np.asarray([-S_psi, C_psi, 0.0])
 
             # Determine rolling and sliding velocities
-            v_roll = v_tip_f[0]*u_roll[0]+v_tip_f[1]*u_roll[1]+v_tip_f[2]*u_roll[2]
-            v_slid = v_tip_f[0]*u_slid[0]+v_tip_f[1]*u_slid[1]+v_tip_f[2]*u_slid[2]
+            v_roll = v_tip_f[0]*u_roll[0]+v_tip_f[1]*u_roll[1]
+            v_slid = v_tip_f[0]*u_slid[0]+v_tip_f[1]*u_slid[1]
 
             # Determine friction forces on the wheel
             F_f -= u_roll*self._u_f_roll*N*np.sign(v_roll)
@@ -234,6 +234,6 @@ class LandingGear:
         FM[:3] += -0.5*rho*V*V*self._drag_param*u_inf
 
         # Set moments
-        FM[3:] = np.cross(self._pos-self._aircraft_CG, FM[:3])
+        FM[3:] = cross(self._pos-self._aircraft_CG, FM[:3])
 
         return FM

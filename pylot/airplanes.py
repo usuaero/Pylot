@@ -8,7 +8,7 @@ import scipy.optimize as opt
 import os
 import copy
 
-from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne, Fixed2Body
+from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne, Fixed2Body, cross
 from .std_atmos import statee, statsi
 from .controllers import NoController, KeyboardController, JoystickController, TimeSequenceController
 from .components import Engine, LandingGear
@@ -483,8 +483,9 @@ class BaseAircraft:
         # Gives the forces and moments due to engines, landing gear, etc.
 
         # Get effect of engines
+        FM = np.zeros(6)
         for engine in self._engines:
-            FM = engine.get_thrust_FM(self.controls, rho, u_inf, V)
+            FM += engine.get_thrust_FM(self.controls, rho, u_inf, V)
 
         # Get effect of landing_gear
         for gear in self._landing_gear:
@@ -512,7 +513,7 @@ class BaseAircraft:
                     # Turn into a vector
                     F_vec = d_vec/d*F
                     FM[:3] += F_vec
-                    FM[3:] += np.cross(self._hook_pos-self._CG, F_vec)
+                    FM[3:] += cross(self._hook_pos-self._CG, F_vec)
 
         return FM
 
