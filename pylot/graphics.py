@@ -566,7 +566,6 @@ class Camera:
         # Set up storage
         self.pos_storage = []
         self.up_storage = []
-        self.target_storage =[]
         self.time_storage = []
         self.IDENTITY = np.identity(4)
         self.IDENTITY2 = np.identity(4)
@@ -596,7 +595,6 @@ class Camera:
         self.q_latest = quat_orientation
         self.pos_storage.append(graphics_aircraft.position)
         self.up_storage.append(np.array(rotated_cam_up))
-        self.target_storage.append(graphics_aircraft.position)
         self.time_storage.append(physics_time)
 
 
@@ -607,7 +605,6 @@ class Camera:
                 self.time_storage.pop(0)
                 self.pos_storage.pop(0)
                 self.up_storage.pop(0)
-                self.target_storage.pop(0)
         except IndexError:
             pass
 
@@ -638,18 +635,15 @@ class Camera:
         # Get offset
         graphics_aircraft_to_camera = Body2Fixed(self.offset, self.q_latest)
 
-        # Have the camera lag a wingspan behind the aircraft
-        if airspeed > 1.0:
-            delay = -self.offset[0]/airspeed
-        else:
-            delay = -self.offset[0]
+        # Have the camera lag a maximum of one wingspan or two seconds behind the aircraft 
+        delay = abs(self.offset[0]/airspeed)
         delay = min(delay, 2.0)
         camera_time -= delay
 	
         # Interpolate values
         self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)+graphics_aircraft_to_camera
         self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0, fill_value="extrapolate")(camera_time)
-        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0, fill_value="extrapolate")(camera_time)
+        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)
 
         self._clean_up_storage(camera_time)
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
@@ -680,7 +674,7 @@ class Camera:
         pos = [20.0, 25.0, -5.0]
 
         # Interpolate target position
-        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0, fill_value="extrapolate")(camera_time)
+        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)
 
         self._clean_up_storage(camera_time)
         return self.look_at(pos, self.target, cam_up)	
