@@ -164,10 +164,6 @@ class Simulator:
             #glFogf(GL_FOG_END, 5.0)
             #glEnable(GL_FOG)
 
-        # Initialize camera object
-        self._render_loading_message('camera')
-        self._cam = Camera()
-
         # Clock object for tracking frames and timestep
         self._clock = pygame.time.Clock()
 
@@ -261,6 +257,10 @@ class Simulator:
                 except KeyError: # If it's not there, just keep waiting
                     continue
 
+            # Initialize camera object
+            self._render_loading_message('camera')
+            self._cam = Camera(offset=[-self._bw, 0.0, -self._cw])
+
             # Let the physics know we're good to go
             self._graphics_ready.value = 1
 
@@ -351,27 +351,27 @@ class Simulator:
 	
         # Otherwise, render graphics
         else:
+
+            # Update storage
+            self._cam.update_storage(self._aircraft_graphics, t_physics, y[0:3])
+            t_camera = t_physics+graphics_delay
+
             # Third person view
             if self._view.value == 0:
-                view = self._cam.third_view(self._aircraft_graphics, t_physics, graphics_delay, y[0], offset=[-self._bw, 0.0, -self._cw])
+                view = self._cam.third_view(t_camera)
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
             # Cockpit view
             elif self._view.value == 1:
-                self._cam.pos_storage.clear()
-                self._cam.up_storage.clear()
-                self._cam.target_storage.clear()
-                self._cam.time_storage.clear()
-                view = self._cam.cockpit_view(self._aircraft_graphics)
+                view = self._cam.cockpit_view(t_camera)
                 self._HUD.render(y[:3], self._aircraft_graphics, view)
 
             # Ground view
             elif self._view.value == 2:
-                view = self._cam.ground_view(self._aircraft_graphics, t_physics, graphics_delay)
+                view = self._cam.ground_view(t_camera)
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
-
 
             # Determine aircraft displacement in quad widths
             x_pos = y[6]
