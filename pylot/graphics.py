@@ -564,8 +564,6 @@ class Camera:
     def __init__(self, offset=[-10.0, 0.0, -2.0]):
 
         # Set up storage
-        self.orient_storage = []
-        self.vel_storage = []
         self.pos_storage = []
         self.up_storage = []
         self.target_storage =[]
@@ -575,7 +573,7 @@ class Camera:
         self.offset = np.array(offset)
 
 
-    def update_storage(self, graphics_aircraft, physics_time, vel):
+    def update_storage(self, graphics_aircraft, physics_time):
         """Updates the storage lists for determining the camera position and target.
 
         Parameters
@@ -585,9 +583,6 @@ class Camera:
 
         physics_time : float
             Time at which the current state was determined by the physics process.
-
-        vel : list
-            Body-fixed velocity vector of the aircraft.
         """
 
         # Determine position of camera
@@ -598,8 +593,7 @@ class Camera:
         rotated_cam_up = Body2Fixed(cam_up, quat_orientation)
 
         # Store position, target, up, and time
-        self.orient_storage.append(quat_orientation)
-        self.vel_storage.append(vel)
+        self.q_latest = quat_orientation
         self.pos_storage.append(graphics_aircraft.position)
         self.up_storage.append(np.array(rotated_cam_up))
         self.target_storage.append(graphics_aircraft.position)
@@ -618,13 +612,16 @@ class Camera:
             pass
 
 
-    def third_view(self, camera_time):
+    def third_view(self, camera_time, airspeed):
         """creates view matrix such that camera is positioned behind and slightly above graphics_aircraft. camera location and orientation is tied to storage lists
 
         Parameters
         ----------
         camera_time : float
             Time at which to position the camera.
+
+        airspeed : float
+            The airspeed.
 
         Returns
         -------
@@ -639,34 +636,20 @@ class Camera:
         """
 
         # Get offset
-        graphics_aircraft_to_camera = Body2Fixed(self.offset, self.orient_storage[-1])
+        graphics_aircraft_to_camera = Body2Fixed(self.offset, self.q_latest)
 
         # Have the camera lag a wingspan behind the aircraft
-        airspeed = self.vel_storage[-1][0]
         if airspeed > 1.0:
             delay = -self.offset[0]/airspeed
         else:
             delay = -self.offset[0]
+        delay = min(delay, 2.0)
         camera_time -= delay
-        print(self.time_storage)
-        print(camera_time)
 	
-        # If we don't have enough history, just pull the oldest
-        if self.time_storage[0] > camera_time:
-            self.camera_pos = self.pos_storage[0]+graphics_aircraft_to_camera
-            self.camera_up = self.up_storage[0]
-            self.target = self.target_storage[-1]
-
-        # Otherwise, perform linear interpolation on the times to get position, up, and target
-        else:
-            try:
-                self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0)(camera_time)+graphics_aircraft_to_camera
-                self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0)(camera_time)
-                self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
-            except ValueError:
-                self.camera_pos = self.pos_storage[0]+graphics_aircraft_to_camera
-                self.camera_up = self.up_storage[0]
-                self.target = self.target_storage[-1]
+        # Interpolate values
+        self.camera_pos = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)+graphics_aircraft_to_camera
+        self.camera_up = intp.interp1d(np.array(self.time_storage), np.array(self.up_storage), axis=0, fill_value="extrapolate")(camera_time)
+        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0, fill_value="extrapolate")(camera_time)
 
         self._clean_up_storage(camera_time)
         return self.look_at(self.camera_pos, self.target, self.camera_up)	
@@ -696,16 +679,8 @@ class Camera:
         cam_up = [0.0, 0.0, -1.0]
         pos = [20.0, 25.0, -5.0]
 
-        # If we don't have enough history, just pull the oldest
-        if self.time_storage[0] > camera_time:
-            self.target = self.target_storage[0]
-
-        # Otherwise, perform linear interpolation on the times to get position, up, and target
-        else:
-            try:
-                self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0)(camera_time)
-            except ValueError:
-                self.target = self.target_storage[-1]
+        # Interpolate target position
+        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.target_storage), axis=0, fill_value="extrapolate")(camera_time)
 
         self._clean_up_storage(camera_time)
         return self.look_at(pos, self.target, cam_up)	
@@ -732,7 +707,7 @@ class Camera:
         """
 
         # Get latest position and orientation
-        q = self.orient_storage[-1]
+        q = self.q_latest
         p = self.pos_storage[-1]
 
         # Determine forward and up vectors
