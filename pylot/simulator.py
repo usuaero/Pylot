@@ -353,12 +353,12 @@ class Simulator:
         else:
 
             # Update storage
-            self._cam.update_storage(self._aircraft_graphics, t_physics, y[0:3])
+            self._cam.update_storage(self._aircraft_graphics, t_physics)
             t_camera = t_physics+graphics_delay
 
             # Third person view
             if self._view.value == 0:
-                view = self._cam.third_view(t_camera)
+                view = self._cam.third_view(t_camera, y[0])
                 self._aircraft_graphics.set_view(view)
                 self._aircraft_graphics.render()
 	
