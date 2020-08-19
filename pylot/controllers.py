@@ -234,13 +234,19 @@ class JoystickController(BaseController):
         self._joy_def = self._manager.list()
         self._joy_def[:] = [0.0]*4
         self._throttle_perturbed = self._manager.Value('i', 0)
-        self._joy_listener = mp.Process(target=joystick_listener, args=(self._joy_def, self._quit_flag, self._throttle_perturbed))
+        self._trim_up_pressed = self._manager.Value('i', 0)
+        self._trim_dn_pressed = self._manager.Value('i', 0)
+        self._dn_cycles_held = 0
+        self._up_cycles_held = 0
+        self._trim_tab = 0.0
+        self._joy_listener = mp.Process(target=joystick_listener, args=(self._joy_def, self._quit_flag, self._throttle_perturbed, self._trim_dn_pressed, self._trim_up_pressed))
         self._joy_listener.start()
 
         # Get mapping and limits
         self._axis_mapping = {}
         self._control_limits = {}
         self._angular_control = {} # True for angular deflection, False for 0 to 1.
+        self._tied_to_trim_tab = {}
         for key, value in control_dict.items():
 
             # See if limits have been defined
@@ -253,6 +259,7 @@ class JoystickController(BaseController):
             
             # Get the mapping
             self._axis_mapping[key] = value["input_axis"]
+            self._tied_to_trim_tab[key] = value.get("trim_tab", False)
 
         # Set variable for knowing if the user has perturbed from the trim state yet
         self._perturbed_set = False
@@ -289,15 +296,28 @@ class JoystickController(BaseController):
             else:
                 return prev_controls # No point in parsing things if nothing's changed
 
+        # Update trim tab
+        if self._trim_dn_pressed.value:
+            self._dn_cycles_held += 1
+            self._trim_tab -= 0.000005*self._dn_cycles_held
+        else:
+            self._dn_cycles_held = 0
+
+        if self._trim_up_pressed.value:
+            self._up_cycles_held += 1
+            self._trim_tab += 0.000005*self._up_cycles_held
+        else:
+            self._up_cycles_held = 0
+
         # Parse new controls
         control_state = copy.deepcopy(prev_controls)
         for name in self._controls:
             if not self._throttle_perturbed.value and self._axis_mapping[name] == 3:
                 continue
             elif self._angular_control[name]:
-                setting = (self._joy_def[self._axis_mapping[name]]**3)*-self._control_limits[name]
+                setting = (self._joy_def[self._axis_mapping[name]]**3)*-self._control_limits[name]+self._tied_to_trim_tab[name]*self._trim_tab
             else:
-                setting = (-self._joy_def[self._axis_mapping[name]]+1.)*0.5
+                setting = (-self._joy_def[self._axis_mapping[name]]+1.)*0.5+self._tied_to_trim_tab[name]*self._trim_tab
             control_state[name] = setting
 
         return control_state
@@ -476,7 +496,7 @@ class TimeSequenceController(BaseController):
         return control_state
 
 
-def joystick_listener(axes_def, quit_flag, throttle_perturbed_flag):
+def joystick_listener(axes_def, quit_flag, throttle_perturbed_flag, trim_dn_pressed, trim_up_pressed):
     """Listens to the joystick input and posts latest values to the manager list."""
 
     # While the game is still going
@@ -488,6 +508,8 @@ def joystick_listener(axes_def, quit_flag, throttle_perturbed_flag):
         # Parse events
         try:
             for event in events:
+
+                # Analog inputs
                 if event.ev_type == 'Absolute':
 
                     # Roll axis
@@ -507,6 +529,17 @@ def joystick_listener(axes_def, quit_flag, throttle_perturbed_flag):
                         if not throttle_perturbed_flag.value:
                             throttle_perturbed_flag.value = 1
                         axes_def[3] = event.state/127.5-1.0
+
+                # Button inputs
+                elif event.ev_type == "Key":
+
+                    # Increase trim
+                    if event.code == "BTN_TOP2":
+                        trim_up_pressed.value = not trim_up_pressed.value
+
+                    # Decrease trim
+                    elif event.code == "BTN_THUMB2":
+                        trim_dn_pressed.value = not trim_dn_pressed.value
 
         except BrokenPipeError:
             return
