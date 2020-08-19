@@ -26,8 +26,8 @@ The keyboard controls four independent axes or channels using the key pairs A-D,
 The example files have all been configured such that UP-DOWN controls elevator deflection, LEFT-RIGHT controls aileron deflection, W-S controls throttle, and A-D controls rudder deflection.
 
 ### Joystick Control
-Joystick control is more ambiguous than keyboard control due to the variety of possible joysticks being used. The developers have used a Logitech Extreme 3D pro joystick, though any USB joystick should serve equally well. You may have to experiment with your joystick to determine which movement of the joystick corresponds to which axis.
+Joystick control is more ambiguous than keyboard control due to the variety of possible joysticks being used. The developers have used a Logitech Extreme 3D Pro joystick, though any USB joystick should serve equally well. You may have to experiment with your joystick to determine which movement of the joystick corresponds to which axis.
 
 The example files have all been configured such that the pitch axis controls elevator deflection, the roll axis controls aileron deflection, the yaw axis controls rudder deflection, and the auxiliary axis controls throttle. Again, this is for the developers' joystick and may not necessarily be the same with your setup. however, changing this configuration to match your setup should be straightforward.
 
-When using the joystick, upon quitting the simulator (either manually or through crashing into the ground), the simulator may appear to freeze. This is due to a listener waiting to receive input from the joystick. All you have to do is give the joystick a nudge and the simulator will exit. We're planning to have this fixed in a soon-to-be-released update to Pylot.
+When using the joystick, a trim tab has also been implemented. The trim can be increased using button 5 on our joystick and decreased using button 3. You may have to experiment with your joystick. Which control setting the trim tab is tied to is determined by setting "trim_tab" under a specific control within the aircraft object.

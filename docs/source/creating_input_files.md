@@ -288,6 +288,9 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>
 >>>**"column_index" : int, optional**
 >>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is always the time index (i.e. the first column after the time indices is denoted 1). Only required if a time sequence control input is used.
+>>>
+>>>**"trim_tab" : bool, optional**
+>>>>Specifies whether this control is tied to the trim tab. Only valid for a joystick control input. Defaults to False.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated. Can also be used to simulate external stores and nacelles.

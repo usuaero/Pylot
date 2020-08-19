@@ -24,7 +24,8 @@
         "elevator" : {
             "max_deflection" : 20.0,
             "input_axis" : 1,
-            "column_index" : 2
+            "column_index" : 2,
+            "trim_tab" : true
         },
         "rudder" : {
             "max_deflection" : 20.0,
