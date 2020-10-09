@@ -68,6 +68,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>**"final_time" : float, optional**
 >>>Time index at which to stop the simulation. Defaults to infinity, meaning the simulator will run indefinitely.
 >>
+>>**"quit_on_crash" : boolean, optional**
+>>>Whether the simulator should exit if the aircraft origin goes below the ground. Has no effect if the graphics are turned off. Defaults to True.
+>>
 >>**"enable_graphics" : boolean, optional**
 >>>Whether to render the aircraft in a simulated environment. Defaults to false.
 >>

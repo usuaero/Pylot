@@ -52,6 +52,7 @@ class Simulator:
         # Get simulation parameters
         self._render_graphics = self._input_dict["simulation"].get("enable_graphics", False)
         self._simple_graphics = self._input_dict["simulation"].get("simple_graphics", False)
+        self._quit_on_crash = self._input_dict["simulation"].get("quit_on_crash", True)
 
         # Initialize inter-process communication
         self._manager = mp.Manager()
@@ -341,7 +342,7 @@ class Simulator:
         self._aircraft_graphics.set_position(y[6:9])
 
         # Check for crashing into the ground
-        if y[8] > 0.0:
+        if self._quit_on_crash and y[8] > 0.0:
 
             # Display Game Over screen and quit physics
             glClearColor(0,0,0,1.0)
