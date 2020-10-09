@@ -4,6 +4,7 @@
         "real_time" : true,
         "enable_graphics" : true,
         "simple_graphics" : true,
+        "quit_on_crash" : false,
         "target_framerate" : 30
     },
     "units" : "English",
