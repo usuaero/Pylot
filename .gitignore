@@ -136,3 +136,4 @@ states.txt
 *.stl
 airplane.obj
 *.dat
+/dev
