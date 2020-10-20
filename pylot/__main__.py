@@ -10,7 +10,7 @@ def simulate(filename):
     # Initialize sim
     with open(filename, 'r') as input_handle:
         input_dict = json.load(input_handle)
-    sim = Simulator(input_dict)
+    sim = Simulator(input_dict, verbose=True)
 
     # Run
     sim.run_sim()

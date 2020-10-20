@@ -20,26 +20,31 @@ class Simulator:
 
     Parameters
     ----------
-    input_dict : dict or str
+    input_val : dict or str
         Dictionary describing the simulation and world parameters. Can also be a path to an input JSON.
+
+    verbose : bool, optional
     """
 
-    def __init__(self, input_val):
+    def __init__(self, input_val, **kwargs):
+
+        self._verbose = kwargs.get("verbose", False)
 
         # Print welcome
-        print()
-        print("-----------------------------------------------------")
-        print("|                                                   |")
-        print("|                    Pylot 1.3.3                    |")
-        print("|                                                   |")
-        print("|               (c) USU AeroLab 2020                |")
-        print("|                                                   |")
-        print("|             This software comes with              |")
-        print("|    ABSOLUTELY NO WARRANTY EXPRESSED OR IMPLIED    |")
-        print("|                                                   |")
-        print("|           Submit bug reports on Github.           |")
-        print("|                                                   |")
-        print("-----------------------------------------------------")
+        if self._verbose:
+            print()
+            print("-----------------------------------------------------")
+            print("|                                                   |")
+            print("|                    Pylot 1.3.3                    |")
+            print("|                                                   |")
+            print("|               (c) USU AeroLab 2020                |")
+            print("|                                                   |")
+            print("|             This software comes with              |")
+            print("|    ABSOLUTELY NO WARRANTY EXPRESSED OR IMPLIED    |")
+            print("|                                                   |")
+            print("|           Submit bug reports on Github.           |")
+            print("|                                                   |")
+            print("-----------------------------------------------------")
 
         # Store input
         if isinstance(input_val, str):
@@ -277,11 +282,12 @@ class Simulator:
         self._manager.shutdown()
 
         # Print quit message
-        print()
-        print("-----------------------------------------------------")
-        print("|            Pylot exited successfully.             |")
-        print("|                   Thank you!                      |")
-        print("-----------------------------------------------------")
+        if self._verbose:
+            print()
+            print("-----------------------------------------------------")
+            print("|            Pylot exited successfully.             |")
+            print("|                   Thank you!                      |")
+            print("-----------------------------------------------------")
 
 
     def _update_graphics(self):
