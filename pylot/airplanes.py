@@ -916,7 +916,7 @@ class LinearizedAirplane(BaseAircraft):
         V = m.sqrt(u*u+v*v+w*w)
         V_inv = 1.0/V
         a = m.atan2(w,u)
-        B = m.atan2(v,u)
+        B = m.asin(v/V)
         const = 0.5*V_inv
         p_bar = self._bw*p*const
         q_bar = self._cw*q*const
