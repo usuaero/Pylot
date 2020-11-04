@@ -898,6 +898,7 @@ class LinearizedAirplane(BaseAircraft):
 
     def get_FM(self, t):
         """Returns the aerodynamic forces and moments."""
+        np.set_printoptions(precision=12)
 
         # Get control state
         self.controls = self.controller.get_control(t, self.y, self.controls)
@@ -977,7 +978,8 @@ class LinearizedAirplane(BaseAircraft):
         FM[5] = redim*Cn*self._bw
 
         # Get component effects
-        FM += self._component_effects(t, rho, u_inf, V)
+        FM_e = self._component_effects(t, rho, u_inf, V)
+        FM += FM_e
 
         return FM
 
