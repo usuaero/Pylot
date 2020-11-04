@@ -12,7 +12,7 @@ class Engine:
     name : str
         Name of the engine.
 
-    offset : vector
+    position : vector
         Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
 
     T0 : float
@@ -52,6 +52,7 @@ class Engine:
         self._CD = import_value("CD", kwargs, self._units, 0.0)
         self._drag_param = self._ref_area*self._CD
         self._aircraft_CG = kwargs.get("CG")
+        self._r = self._position-self._aircraft_CG
 
         # Normalize direction vector
         self._direction /= np.linalg.norm(self._direction)
@@ -61,6 +62,7 @@ class Engine:
             self._rho0 = statee(0)[-1]
         else:
             self._rho0 = statsi(0)[-1]
+        self._rho0 = kwargs.get("rho0", self._rho0)
 
 
     def get_thrust_FM(self, controls, rho, u_inf, V):
@@ -102,7 +104,7 @@ class Engine:
         FM[:3] = F
 
         # Set moments
-        FM[3:] = cross(self._position-self._aircraft_CG, F)
+        FM[3:] = cross(self._r, F)
 
         return FM
 
@@ -139,7 +141,7 @@ class LandingGear:
     name : str
         Name of the engine.
 
-    tip_loc : list
+    position : list
         Location of the tip of the landing gear in body-fixed coordinates.
 
     shock_stiffness : float

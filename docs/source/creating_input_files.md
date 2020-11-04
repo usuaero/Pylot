@@ -305,7 +305,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>
 >>>where T is the thrust, t is the control setting, d is the air density at the current altitude, d0 is the air density at sea level, V is the airspeed, and a, T0, T1, and T2 are engine-specific parameters. This object can also be used to simulate the effect of nacelles and external stores, simply by specifying a drag coefficient and reference area, but not thrust parameters.
 >>>
->>>**"postision" : vector, optional**
+>>>**"position" : vector, optional**
 >>>>Location of the engine in body-fixed coordinates. Defaults to [0.0, 0.0, 0.0].
 >>>
 >>>**"direction" : vector, optional**
@@ -338,7 +338,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>**"<LANDING_GEAR_NAME>" : dict**
 >>>Describes a single landing gear fixture (i.e. the back right wheel).
 >>>
->>>**"postision" : vector**
+>>>**"position" : vector**
 >>>>Location of the tip of the landing gear in body-fixed coordinates.
 >>>
 >>>**"stiffness" : float**
