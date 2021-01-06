@@ -21,6 +21,6 @@
             "verbose" : true,
             "trim_controls" : ["throttle", "aileron", "elevator", "rudder"]
         },
-        "controller" : "keyboard"
+        "controller" : "joystick"
     }
 }
