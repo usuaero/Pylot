@@ -106,8 +106,12 @@ def load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag
     # Read in aircraft input
     aircraft_name = input_dict["aircraft"]["name"]
     aircraft_file = input_dict["aircraft"]["file"]
-    with open(aircraft_file, 'r') as aircraft_file_handle:
-        aircraft_dict = json.load(aircraft_file_handle)
+
+    if isinstance(aircraft_file, str):
+        with open(aircraft_file, 'r') as aircraft_file_handle:
+            aircraft_dict = json.load(aircraft_file_handle)
+    elif isinstance(aircraft_file, dict):
+        aircraft_dict = copy.copy(aircraft_file)
 
     # Get density model, controller, and output file
     density = import_value("density", input_dict.get("atmosphere", {}), units, [0.0023769, "slug/ft^3"])
