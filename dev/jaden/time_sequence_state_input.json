@@ -1,0 +1,24 @@
+{
+    "tag" : "Example of flight simulator input.",
+    "simulation" : {
+        "real_time" : false,
+        "timestep" : 0.04,
+        "enable_graphics" : false,
+        "final_tie" : 0.03
+    },
+    "units" : "English",
+    "atmosphere" : {
+        "density" : 0.0023769
+    },
+    "aircraft" : {
+        "name" : "my_airplane",
+        "file" : "test/jaden/original_aircraft_TERRA_2.4.json",
+        "initial_state" : {
+            "position"  :   [0,0,-500],
+            "velocity"  :   [69,0,0],
+            "control_state" : {}
+        },
+        "state_output" : "test/jaden/trial_states.txt",
+        "controller" : "test/jaden/baseline_TERRA_controls_test.csv"
+    }
+}

@@ -674,7 +674,10 @@ class Camera:
         """
 
         # Interpolate target position
-        self.target = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)
+        if len(self.time_storage)>1:
+            self.target = intp.interp1d(np.array(self.time_storage), np.array(self.pos_storage), axis=0, fill_value="extrapolate")(camera_time)
+        else:
+            self.target = self.pos_storage[0]
 
         self._clean_up_storage(camera_time)
         return self.look_at(self._ground_pos, self.target, self._gound_cam_up)	

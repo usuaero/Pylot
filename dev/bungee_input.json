@@ -12,7 +12,7 @@
     },
     "aircraft" : {
         "name" : "my_airplane",
-        "file" : "test/airplane.json",
+        "file" : "dev/airplane.json",
         "elastic_launch" : {
             "position" : [0.0, 0.0, -3.0],
             "anchor_position" : [500.0, 0.0, 0.0],
