@@ -1,9 +1,12 @@
-import numpy as np
 import time
 import copy
-from .airplanes import MachUpXAirplane, LinearizedAirplane
 import json
+
+import numpy as np
+
 from .helpers import import_value
+from .airplanes import MachUpXAirplane, LinearizedAirplane
+from pylot.integrators import RK4Integrator
 
 def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager):
     """Runs the physics on a separate process."""
@@ -23,6 +26,10 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     # Load aircraft
     aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
+    # Initialize integrator
+    if input_dict["simulation"].get("integrator", "RK4") == "RK4":
+        integrator = RK4Integrator(aircraft)
+
     # Pass airplane graphics information to parent process
     if render_graphics:
         aircraft_graphics_info = aircraft.get_graphics_info()
@@ -37,27 +44,35 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
         while not graphics_ready_flag.value:
             continue
 
-    # Get an initial guess for how long each sim step is going to take
+    # Initial computer time
     t0 = time.time()
+
+    # If we're running real time, get an initial guess for how long each sim step is going to take
     if real_time:
-        RK4(aircraft, t_start, 0.0)
+        integrator.step(t_start, 0.0)
         aircraft.normalize()
         aircraft.output_state(t_start)
         aircraft.controller.output_controls(t_start, aircraft.controls)
         t1 = time.time()
         dt = t1-t0
         t0 = t1
+
+    # Otherwise, still perform the necessary output actions
     else:
         aircraft.output_state(t_start)
         aircraft.controller.output_controls(t_start, aircraft.controls)
 
+
+    # Initialize simulation time index
     t = copy.copy(t_start)
 
     # Simulation loop
+    first = True
     while t <= t_final and not (quit_flag.value or game_over_flag.value):
 
         # Integrate
-        RK4(aircraft, t, dt)
+        if first or integrator=="RK4":
+            integrator.step(t, dt)
 
         # Normalize
         aircraft.normalize()
