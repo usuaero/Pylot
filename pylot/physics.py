@@ -1,12 +1,15 @@
+"""Defines the physics engine for Pylot."""
+
 import time
 import copy
 import json
 
 import numpy as np
 
-from .helpers import import_value
-from .airplanes import MachUpXAirplane, LinearizedAirplane
-from pylot.integrators import RK4Integrator
+from pylot.helpers import import_value
+from pylot.airplanes import MachUpXAirplane, LinearizedAirplane
+from pylot.integrators import RK4Integrator, ABM4Integrator
+
 
 def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager):
     """Runs the physics on a separate process."""
@@ -14,14 +17,15 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     # cannot be passed as the target to multiprocessing.Process() on
     # Windows. This irks me Bill...
 
-    # Get simulation params
-    real_time = input_dict["simulation"].get("real_time", True)
-    t_start = input_dict["simulation"].get("start_time", 0.0)
-    t_final = input_dict["simulation"].get("final_time", np.inf)
-    render_graphics = input_dict["simulation"].get("enable_graphics", False)
-    enable_interface = input_dict["simulation"].get("enable_interface", render_graphics)
+    # Get simulation options
+    sim_dict = input_dict["simulation"]
+    real_time = sim_dict.get("real_time", True)
+    t_start = sim_dict.get("start_time", 0.0)
+    t_final = sim_dict.get("final_time", np.inf)
+    render_graphics = sim_dict.get("enable_graphics", False)
+    enable_interface = sim_dict.get("enable_interface", render_graphics)
     if not real_time:
-        dt = input_dict["simulation"].get("timestep", 0.05)
+        dt = sim_dict.get("timestep", 0.05)
 
     # Load aircraft
     aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
@@ -29,6 +33,8 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     # Initialize integrator
     if input_dict["simulation"].get("integrator", "RK4") == "RK4":
         integrator = RK4Integrator(aircraft)
+    else:
+        integrator = ABM4Integrator(aircraft)
 
     # Pass airplane graphics information to parent process
     if render_graphics:
@@ -49,7 +55,7 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
 
     # If we're running real time, get an initial guess for how long each sim step is going to take
     if real_time:
-        integrator.step(t_start, 0.0)
+        integrator.step(t_start, 0.0, store=False)
         aircraft.normalize()
         aircraft.output_state(t_start)
         aircraft.controller.output_controls(t_start, aircraft.controls)
