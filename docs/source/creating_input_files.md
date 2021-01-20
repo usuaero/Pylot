@@ -57,10 +57,10 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>Defines simulation parameters.
 >>
 >>**"real_time" : boolean, optional**
->>>Whether the physics should be solved in real time. If true, the physics will be solved at as high of a rate as the CPU can handle. Defaults to false.
+>>>Whether the physics should be solved in real time. If true, the physics will be solved at as high of a rate as the CPU can handle. Defaults to true.
 >>
 >>**"timestep" : float, optional**
->>>Timestep used in the physics if not set to solve in real time. Defaults to 0.05 s.
+>>>Timestep used in the physics if not set to solve in real time (note that "real_time" defaults to true). Defaults to 0.05 s.
 >>
 >>**"start_time" : float, optional**
 >>>Time index at which to start the simulation. Defaults to 0.0 s.
@@ -72,7 +72,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>Whether the simulator should exit if the aircraft origin goes below the ground. Has no effect if the graphics are turned off. Defaults to True.
 >>
 >>**"enable_graphics" : boolean, optional**
->>>Whether to render the aircraft in a simulated environment. Defaults to false.
+>>>Whether to render a visual display of the aircraft in a simulated environment. Defaults to false.
 >>
 >>**"simple_graphics" : boolean, optional**
 >>>If this is set to true, nonessential graphics objects will not be loaded. This can speed up loading. Defaults to false.
@@ -84,7 +84,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>Whether to allow the user to affect the simulation during execution (pause, quit, toggle views). Defaults to the same value as "enable_graphics".
 >>
 >>**"screen_resolution" : list, optional**
->>>Desired resolution of the simulator window in pixels. Defaults to [1800, 900].
+>>>Desired resolution of the simulator window in pixels. Note the window cannot be resized manually. Defaults to [1800, 900].
 >>
 >>**"integrator" : str, optional**
 >>>Numerical integration scheme to use in the simulator. Can be "RK4" (4th-order Runge-Kutta) or "ABM4" (4th-order Adams-Bashforth-Moulton). Defaults to "RK4". We recommend not using the "ABM4" integrator unless you understand the implications of using that method.
