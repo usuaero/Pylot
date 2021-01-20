@@ -119,10 +119,9 @@ class ABM4Integrator:
             f0 = self._aircraft.dy_dt(t)
 
             # Predictor
-            y1 = y0+dt*(2.2916666666666665*f0-2.4583333333333335*self._f[0]+1.5416666666666667*self._f[1]-0.375*self._f[2])
+            self._aircraft.y = y0+dt*(2.2916666666666665*f0-2.4583333333333335*self._f[0]+1.5416666666666667*self._f[1]-0.375*self._f[2])
 
             # Get derivative at predicted state
-            self._aircraft.y = y1
             f1 = self._aircraft.dy_dt(t+dt)
 
             # Corrector
