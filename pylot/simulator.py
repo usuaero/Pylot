@@ -446,9 +446,11 @@ class Simulator:
                     tree.render()
 
             # Check for the aerodynamic model falling apart
+            # I'm 99% confident this is caused by the numerical integrator going unstable for 
+            # roll modes with high damping rates.
             if np.isnan(y[0]):
                 error_msg = Text(100)
-                error_msg.draw(-1.0, 0.5, "Pylot encountered a physics error...", color=(255,0,0,1))
+                error_msg.draw(-0.8, 0.2, "Integrator divergence. See documentation.", color=(255,0,0,1))
 
             # Display flight data
             elif self._flight_data.value:
