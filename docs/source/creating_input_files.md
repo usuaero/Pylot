@@ -85,6 +85,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>
 >>**"screen_resolution" : list, optional**
 >>>Desired resolution of the simulator window in pixels. Defaults to [1800, 900].
+>>
+>>**"integrator" : str, optional**
+>>>Numerical integration scheme to use in the simulator. Can be "RK4" (4th-order Runge-Kutta) or "ABM4" (4th-order Adams-Bashforth-Moulton). Defaults to "RK4". We recommend not using the "ABM4" integrator unless you understand the implications of using that method.
 >
 >**"units" : string, optional**
 >>Specifies the unit system to be used for inputs and outputs. Can be "SI" or "English". Any units not explicitly defined for each value in the input objects will be assumed to be the default unit for that measurement in the system specified here. Defaults to "English".
