@@ -31,10 +31,13 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
     # Initialize integrator
-    if input_dict["simulation"].get("integrator", "RK4") == "RK4":
+    integrator_selection = input_dict["simulation"].get("integrator", "RK4")
+    if integrator_selection=="RK4":
         integrator = RK4Integrator(aircraft)
-    else:
+    elif integrator_selection=="ABM4":
         integrator = ABM4Integrator(aircraft)
+    else:
+        raise IOError("{0} is not a valid integrator.".format(integrator_selection))
 
     # Pass airplane graphics information to parent process
     if render_graphics:
@@ -73,12 +76,10 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
     t = copy.copy(t_start)
 
     # Simulation loop
-    first = True
     while t <= t_final and not (quit_flag.value or game_over_flag.value):
 
         # Integrate
-        if first or integrator=="RK4":
-            integrator.step(t, dt)
+        integrator.step(t, dt, store=True)
 
         # Normalize
         aircraft.normalize()

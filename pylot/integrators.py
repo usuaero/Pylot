@@ -110,23 +110,25 @@ class ABM4Integrator:
                 self._n_stored += 1
                 self._f[2-self._n_stored,:] = f
 
-        # Store the current state
-        y0 = copy.deepcopy(self._aircraft.y)
+        else:
 
-        # Get the current derivative
-        f0 = self._aircraft.dy_dt(t)
+            # Store the current state
+            y0 = copy.deepcopy(self._aircraft.y)
 
-        # Predictor
-        y1 = y0+dt*(2.2916666666666665*f0-2.4583333333333335*self._f[0]+1.5416666666666667*self._f[1]-0.375*self._f[2])
+            # Get the current derivative
+            f0 = self._aircraft.dy_dt(t)
 
-        # Get derivative at predicted state
-        self._aircraft.y = y1
-        f1 = self._aircraft.dy_dt(t+dt)
+            # Predictor
+            y1 = y0+dt*(2.2916666666666665*f0-2.4583333333333335*self._f[0]+1.5416666666666667*self._f[1]-0.375*self._f[2])
 
-        # Corrector
-        self._aircraft.y = y0+dt*(0.375*f1+0.7916666666666666*f0-0.20833333333333334*self._f[0]+0.041666666666666664*self._f[1])
+            # Get derivative at predicted state
+            self._aircraft.y = y1
+            f1 = self._aircraft.dy_dt(t+dt)
 
-        # Store derivatives for next step
-        self._f = np.roll(self._f, 1, axis=0)
-        self._f[0] = f0
+            # Corrector
+            self._aircraft.y = y0+dt*(0.375*f1+0.7916666666666666*f0-0.20833333333333334*self._f[0]+0.041666666666666664*self._f[1])
+
+            # Store derivatives for next step
+            self._f = np.roll(self._f, 1, axis=0)
+            self._f[0] = f0
         
