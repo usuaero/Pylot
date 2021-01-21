@@ -211,7 +211,9 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>If specified, the simulator will write the control inputs to this csv file at each time step. THIS WILL OVERWRITE ANY EXISTING FILE OF THE SAME NAME. Must be ".csv". Can only be used if "column_index" is specified for each control (see [Aircraft Object](Aircraft Object)). Defaults to no output.
 >>
 >>**"controller" : string**
->>>Specifies how the aircraft is to be controlled. Basic, Real-time, direct user control is chosen by specifying "joystick" or "keyboard". This allows for basic 4-channel control where the user selects the mapping between the input axes and the controls. For more information on this, see [User Interface](user_interface).
+>>>Specifies how the aircraft is to be controlled. Can be "joystick", "keyboard", a filename, or "user-defined".
+>>>
+>>>Basic, real-time, direct user control is chosen by specifying "joystick" or "keyboard". This allows for basic 4-channel control where the user selects the mapping between the input axes and the controls. For more information on this, see [User Interface](user_interface).
 >>>
 >>>The aircraft can also be controlled using a pre-defined control sequence. This sequence should be stored in a .csv file, the name of which is given here. Note, the filename given here must include ".csv", otherwise it will not be recognized by Pylot. The controls should be formatted in columns where the first column is the time index and each successive column corresponds the control settings. The order of the columns is determined by the "column_index" key in the "controls" object within the "aircraft" object. For example, if the aircraft has a control called "flaps" which was given the "column_index" of 1, then the second column in the csv file given here will be used as the "flaps" control setting. Angular deflections should be listed in degrees; other control settings should vary from 0.0 to 1.0. Using this type of control, the simulation will quit when the end of the control file is reached.
 >>>
