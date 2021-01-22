@@ -13,19 +13,21 @@ from pylot.integrators import RK4Integrator, ABM4Integrator
 
 def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over_flag, quit_flag, view_flag, pause_flag, data_flag, state_manager, control_manager):
     """Runs the physics on a separate process."""
-    # Note that this was a member function of Simulator, but bound methods
+    # That this was a member function of Simulator, but bound methods
     # cannot be passed as the target to multiprocessing.Process() on
     # Windows. This irks me Bill...
 
-    # Get simulation options
+    # Get timing options
     sim_dict = input_dict["simulation"]
     real_time = sim_dict.get("real_time", True)
     t_start = sim_dict.get("start_time", 0.0)
     t_final = sim_dict.get("final_time", np.inf)
-    render_graphics = sim_dict.get("enable_graphics", False)
-    enable_interface = sim_dict.get("enable_interface", render_graphics)
     if not real_time:
         dt = sim_dict.get("timestep", 0.05)
+
+    # Get graphics options relevant to the physics
+    render_graphics = sim_dict.get("enable_graphics", False)
+    enable_interface = sim_dict.get("enable_interface", render_graphics)
 
     # Load aircraft
     aircraft = load_aircraft(input_dict, units, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
@@ -104,7 +106,10 @@ def run_physics(input_dict, units, graphics_dict, graphics_ready_flag, game_over
             state_manager[14] = t
             state_manager[15] = time.time()
             for key, value in aircraft.controls.items():
-                control_manager[key] = value
+                if not callable(value):
+                    control_manager[key] = value
+                else:
+                    control_manager[key] = 0.0
 
             while pause_flag.value and not quit_flag.value:
 

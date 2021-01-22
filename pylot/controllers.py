@@ -1,12 +1,14 @@
 """Classes defining controllers for simulated aircraft."""
 
-from abc import abstractmethod
 import pynput
 import inputs
-from math import degrees, radians
-import numpy as np
 import copy
+
+import numpy as np
 import multiprocessing as mp
+
+from abc import abstractmethod
+from math import degrees, radians
 
 class BaseController:
     """An abstract aircraft controller class.
@@ -222,7 +224,7 @@ class JoystickController(BaseController):
     def __init__(self, control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
         super().__init__(control_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output)
 
-        # Check for device
+        # Check for joystick
         self._avail_pads = inputs.devices.gamepads
         if len(self._avail_pads) == 0:
             raise RuntimeError("Couldn't find any joysticks!")
