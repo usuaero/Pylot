@@ -1,17 +1,18 @@
 # Classes describing the aircraft used by the simulator
 
-import math as m
-import numpy as np
-import machupX as mx
-from abc import abstractmethod
-import scipy.optimize as opt
 import os
 import copy
 
-from .helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne, Fixed2Body, cross
-from .std_atmos import statee, statsi
-from .controllers import NoController, KeyboardController, JoystickController, TimeSequenceController
-from .components import Engine, LandingGear
+import math as m
+import numpy as np
+import machupX as mx
+import scipy.optimize as opt
+
+from abc import abstractmethod
+from pylot.helpers import import_value, Euler2Quat, Body2Fixed, NormalizeQuaternion, NormalizeQuaternionNearOne, Fixed2Body, cross
+from pylot.std_atmos import statee, statsi
+from pylot.controllers import NoController, KeyboardController, JoystickController, TimeSequenceController
+from pylot.components import Engine, LandingGear
 
 class BaseAircraft:
     """A base class for aircraft to be used in the simulator.
