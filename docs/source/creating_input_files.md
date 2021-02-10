@@ -278,7 +278,7 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>>>Specifies whether this control causes symmetric or asymmetric control surface deflections (e.g. for a typical aircraft, the elevator control causes symmetric deflections whereas the aileron causes asymmetric deflections). This is only required when MachUpX is used as the aerodynamic model.
 >>>
 >>>**"max_deflection" : float, optional**
->>>>Specifies the maximum control deflection in degrees. Only required if the keyboard or joystick are being used as input. If this is not specified, the control is assumed to vary from 0.0 to 1.0, as with a throttle control.
+>>>>Specifies the maximum control deflection in degrees. If this is not specified, the control is assumed to vary from 0.0 to 1.0, as with a throttle control. Only required if the built-in keyboard or joystick controller is being used. Does not affect other controllers.
 >>>
 >>>**"input_axis" : int, optional**
 >>>>Specifies which input axis maps to this control. The input axes are as follows
@@ -292,13 +292,13 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 | 3        | throttle  | W-S           |
 
 >>>>
->>>>Only required if the keyboard or joystick are being used as input.
+>>>>Only required if the built-in keyboard or joystick controller is being used. Does not affect other controllers.
 >>>
 >>>**"column_index" : int, optional**
->>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is always the time index (i.e. the first column after the time indices is denoted 1). Only required if a time sequence control input is used.
+>>>>Specifies the column of the time-sequence control input file that corresponds to this control. Note that zero-based indexing is used and the zeroth column is always the time index (i.e. the first column after the time indices is denoted 1). Only required if a time sequence control input is used. Does not affect other controllers
 >>>
 >>>**"trim_tab" : bool, optional**
->>>>Specifies whether this control is tied to the trim tab. Only valid for a joystick control input. Defaults to False.
+>>>>Specifies whether this control is tied to the trim tab. Only required if the built-in joystick controller is being used. Does not affect other controllers. Defaults to False.
 >
 >**"engines" : dict, optional**
 >>Specifies the propulsion system(s) of the aircraft. The aircraft may have any number of engines. If more than one is desired, the following set of keys is simply repeated. Can also be used to simulate external stores and nacelles.
