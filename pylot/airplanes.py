@@ -432,10 +432,11 @@ class BaseAircraft:
         self.y[0:3] = import_value("velocity", initial_state, self._units, None)
         self.y[3:6] = import_value("angular_rates", initial_state, self._units, [0.0, 0.0, 0.0])
         self.y[6:9] = import_value("position", initial_state, self._units, None)
-        try:
-            self.y[9:] = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
-        except ValueError:
-            self.y[9:] = Euler2Quat(import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0]))
+        q = import_value("orientation", initial_state, self._units, [1.0, 0.0, 0.0, 0.0])
+        if len(q)==4:
+            self.y[9:] = q
+        else:
+            self.y[9:] = Euler2Quat(np.radians(q))
 
         # Make sure we have some x velocity
         if self.y[0] == 0.0:
