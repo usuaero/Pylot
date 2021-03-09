@@ -151,7 +151,7 @@ The following are keys which can be specified in the simulation JSON object. NOT
 >>>>Body-fixed velocity components.
 >>>
 >>>**"orientation" : vector, optional**
->>>>Orientation of the aircraft, going from earth-fixed frame to body-fixed frame. If this is a 3-element vector it is assumed the ZYX Euler angle formulation is used (i.e. [psi, theta, phi]). If this is a 4-element vector it is assumed the quaternion formulation is used where the first element is the scalar (i.e. [e0, ex, ey, ez]). Defaults to [1.0, 0.0, 0.0, 0.0], which will align the body- fixed frame with the earth-fixed frame.
+>>>>Orientation of the aircraft, going from earth-fixed frame to body-fixed frame. If this is a 3-element vector it is assumed the ZYX Euler angle formulation is used, arranged as [bank, elevation, heading]. If this is a 4-element vector it is assumed the quaternion formulation is used where the first element is the scalar (i.e. [e0, ex, ey, ez]). Defaults to [1.0, 0.0, 0.0, 0.0], which will align the body-fixed frame with the earth-fixed frame.
 >>>
 >>>**"angular_rates" : vector, optional**
 >>>>Angular rates of the aircraft in body-fixed coordinates, corresponding to p, q, and r. Defaults to [0.0, 0.0, 0.0].
