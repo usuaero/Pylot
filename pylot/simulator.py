@@ -35,7 +35,7 @@ class Simulator:
             print()
             print("-----------------------------------------------------")
             print("|                                                   |")
-            print("|                    Pylot 1.3.3                    |")
+            print("|                    Pylot 1.3.4                    |")
             print("|                                                   |")
             print("|               (c) USU AeroLab 2020                |")
             print("|                                                   |")

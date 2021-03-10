@@ -100,9 +100,11 @@ class BaseAircraft:
         controller = param_dict.get("controller", None)
         self._initialize_controller(controller, quit_flag, view_flag, pause_flag, data_flag, enable_interface, param_dict.get("control_output", None))
 
-        # Get stall angle of attack
-        self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
-        self._beta_stall = m.radians(self._input_dict["aero_model"].get("stall_sideslip_angle", 200.0))
+        # Get stall model
+        self._stall_model = self._input_dict["aero_model"].get("stall_model", "exponential")
+        if self._stall_model=="exponential":
+            self._alpha_stall = m.radians(self._input_dict["aero_model"].get("stall_angle_of_attack", 15.0))
+            self._beta_stall = m.radians(self._input_dict["aero_model"].get("stall_sideslip_angle", 200.0))
 
 
     def _initialize_controller(self, control_type, quit_flag, view_flag, pause_flag, data_flag, enable_interface, control_output):
@@ -157,28 +159,31 @@ class BaseAircraft:
         # Corrects the aerodnamic coefficients for stall
         # TODO : Make this better!
 
-        # Blending coefficient
-        k = 100
+        # Exponential blending model
+        if self._stall_model=="exponential":
 
-        # Get stall values
-        CL_stall = 2.0*S_a*S_a*C_a*np.sign(alpha)
-        CD_stall = 1-C_a*S_a*np.sign(alpha)
-        Cm_stall = -0.5*S_a
-        CS_stall = 0.2*S_B*S_B*C_B*np.sign(beta)
-        Cl_stall = -CS_stall*0.05
-        Cn_stall = CS_stall*0.1
+            # Blending coefficient
+            k = 100
 
-        # Blending functions
-        lon_stall_weight = 1/(1+m.exp(-k*(-self._alpha_stall-alpha)))+1/(1+m.exp(-k*(alpha-self._alpha_stall)))
-        lat_stall_weight = 1/(1+m.exp(-k*(-self._beta_stall-beta)))+1/(1+m.exp(-k*(beta-self._beta_stall)))
+            # Get stall values
+            CL_stall = 2.0*S_a*S_a*C_a*np.sign(alpha)
+            CD_stall = 1-C_a*S_a*np.sign(alpha)
+            Cm_stall = -0.5*S_a
+            CS_stall = 0.2*S_B*S_B*C_B*np.sign(beta)
+            Cl_stall = -CS_stall*0.05
+            Cn_stall = CS_stall*0.1
 
-        # Blend
-        CL = CL*(1-lon_stall_weight)+CL_stall*lon_stall_weight
-        CD = CD*(1-lon_stall_weight)+CD_stall*lon_stall_weight
-        Cm = Cm*(1-lon_stall_weight)+Cm_stall*lon_stall_weight
-        CS = CS*(1-lat_stall_weight)+CS_stall*lat_stall_weight
-        Cl = Cl*(1-lat_stall_weight)+Cl_stall*lat_stall_weight
-        Cn = Cn*(1-lat_stall_weight)+Cn_stall*lat_stall_weight
+            # Blending functions
+            lon_stall_weight = 1/(1+m.exp(-k*(-self._alpha_stall-alpha)))+1/(1+m.exp(-k*(alpha-self._alpha_stall)))
+            lat_stall_weight = 1/(1+m.exp(-k*(-self._beta_stall-beta)))+1/(1+m.exp(-k*(beta-self._beta_stall)))
+
+            # Blend
+            CL = CL*(1-lon_stall_weight)+CL_stall*lon_stall_weight
+            CD = CD*(1-lon_stall_weight)+CD_stall*lon_stall_weight
+            Cm = Cm*(1-lon_stall_weight)+Cm_stall*lon_stall_weight
+            CS = CS*(1-lat_stall_weight)+CS_stall*lat_stall_weight
+            Cl = Cl*(1-lat_stall_weight)+Cl_stall*lat_stall_weight
+            Cn = Cn*(1-lat_stall_weight)+Cn_stall*lat_stall_weight
 
         return CL, CD, CS, Cl, Cm, Cn
 

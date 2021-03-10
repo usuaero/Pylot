@@ -13,7 +13,7 @@
     },
     "aircraft" : {
         "name" : "my_airplane",
-        "file" : "test/airplane.json",
+        "file" : "dev/airplane.json",
         "landed" : {},
         "controller" : "joystick"
     }
