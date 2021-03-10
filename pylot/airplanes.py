@@ -1041,7 +1041,7 @@ class MachUpXAirplane(BaseAircraft):
             "units" : units,
             "scene" : {
                 "atmosphere" : {
-                    "density" : density
+                    "rho" : density
                 },
                 "aircraft" : {
                     name : {
