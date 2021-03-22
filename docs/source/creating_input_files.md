@@ -396,8 +396,8 @@ Describes an aircraft. The aerodynamics of the aircraft may be determined in one
 >>**"type" : string**
 >>>May be "linearized_coefficients" to select a linearized model of aerodynamic coefficients or "MachUpX" to select a full numerical lifting-line solution.
 >>
->>**"solver" : string, optional**
->>>May be "linear" or "nonlinear". Specifies whether the linear approximation or full nonlinear correction should be used in computing the lifting-line solution. Has no effect on computation if "type" is specified as "linearized_coefficients". Defaults to "linear".
+>>**"machupX_solver_params" : dict, optional**
+>>>Specifies arguments for the solver in MachUpX. The available parameters are the same as found in the [MachUpX documentation](https://machupx.readthedocs.io/en/latest/creating_input_files.html#scene-object) under "solver".
 >>
 >>**"stall_model" : string, optional**
 >>>Defines the type of stall model to be used in correcting adjusting the aerodynamic coefficients as the aircraft approaches stall. May be "none" or "exponential". "none" means no stall corrections will be made. "exponential" uses an exponential blending function with a modified flat plate model. This stall model is not meant to be accurate for the specific airframe but rather gives the user a sense of the onset of stall. Defaults to "exponential".

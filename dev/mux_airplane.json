@@ -44,7 +44,9 @@
     },
     "aero_model" : {
         "type" : "MachUpX",
-        "solver" : "linear"
+        "machupX_solver_params" : {
+            "type" : "linear"
+        }
     },
     "airfoils" : {
         "NACA_0010" : {

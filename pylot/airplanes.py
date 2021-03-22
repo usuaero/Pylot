@@ -1032,13 +1032,16 @@ class MachUpXAirplane(BaseAircraft):
     def __init__(self, name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface):
         super().__init__(name, input_dict, density, units, param_dict, quit_flag, view_flag, pause_flag, data_flag, enable_interface)
 
+        # Determine MachUpX solver params
+        solver_params = self._input_dict["aero_model"].get("machupX_solver_params", {})
+        if "type" not in list(solver_params.keys()):
+            solver_params["type"] = "linear"
+
         # Create MachUpX scene
         import machupX as mx
         scene_dict = {
-            "solver" : {
-                "type" : self._input_dict["aero_model"].get("solver", "linear"),
-            },
             "units" : units,
+            "solver" : solver_params,
             "scene" : {
                 "atmosphere" : {
                     "rho" : density
