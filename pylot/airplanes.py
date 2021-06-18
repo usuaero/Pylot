@@ -748,7 +748,7 @@ class LinearizedAirplane(BaseAircraft):
             alpha = old_trim_vals[0]
             beta = old_trim_vals[1]
 
-            # Calulate trig values
+            # Calculate trig values
             C_theta = m.cos(theta)
             S_theta = m.sin(theta)
             C_a = m.cos(alpha)
